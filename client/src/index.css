@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 98%; /* #fafafa */
+  --foreground: 210 11% 15%; /* #222222 */
+  --muted: 0 0% 96%; /* #f5f5f5 */
+  --muted-foreground: 0 0% 45%; /* #737373 */
+  --popover: 0 0% 100%; /* #ffffff */
+  --popover-foreground: 210 11% 15%; /* #222222 */
+  --card: 0 0% 100%; /* #ffffff */
+  --card-foreground: 210 11% 15%; /* #222222 */
+  --border: 210 11% 90%; /* #e5e5e5 */
+  --input: 210 11% 90%; /* #e5e5e5 */
+  --primary: 212 90% 40%; /* #1976d2 */
+  --primary-foreground: 0 0% 100%; /* #ffffff */
+  --secondary: 0 0% 91%; /* #e8e8e8 */
+  --secondary-foreground: 210 11% 15%; /* #222222 */
+  --accent: 0 0% 91%; /* #e8e8e8 */
+  --accent-foreground: 210 11% 15%; /* #222222 */
+  --destructive: 0 74% 42%; /* #dc2626 */
+  --destructive-foreground: 0 0% 100%; /* #ffffff */
+  --ring: 212 90% 40%; /* #1976d2 */
+  --radius: 0.5rem;
+  
+  /* Custom colors from design */
+  --success: 122 48% 47%; /* #4caf50 */
+  --warning: 36 100% 50%; /* #ff9800 */
+  --error: 4 90% 58%; /* #f44336 */
+  --surface: 0 0% 100%; /* #ffffff */
+}
+
+.dark {
+  --background: 210 11% 4%; /* #0a0a0a */
+  --foreground: 0 0% 95%; /* #f2f2f2 */
+  --muted: 210 11% 10%; /* #1a1a1a */
+  --muted-foreground: 0 0% 65%; /* #a6a6a6 */
+  --popover: 210 11% 4%; /* #0a0a0a */
+  --popover-foreground: 0 0% 95%; /* #f2f2f2 */
+  --card: 210 11% 4%; /* #0a0a0a */
+  --card-foreground: 0 0% 95%; /* #f2f2f2 */
+  --border: 210 11% 15%; /* #262626 */
+  --input: 210 11% 15%; /* #262626 */
+  --primary: 212 90% 50%; /* #2196f3 */
+  --primary-foreground: 0 0% 100%; /* #ffffff */
+  --secondary: 210 11% 15%; /* #262626 */
+  --secondary-foreground: 0 0% 95%; /* #f2f2f2 */
+  --accent: 210 11% 15%; /* #262626 */
+  --accent-foreground: 0 0% 95%; /* #f2f2f2 */
+  --destructive: 0 74% 42%; /* #dc2626 */
+  --destructive-foreground: 0 0% 100%; /* #ffffff */
+  --ring: 212 90% 50%; /* #2196f3 */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom utility classes */
+.text-success {
+  color: hsl(var(--success));
+}
+
+.text-warning {
+  color: hsl(var(--warning));
+}
+
+.text-error {
+  color: hsl(var(--error));
+}
+
+.bg-success {
+  background-color: hsl(var(--success));
+}
+
+.bg-warning {
+  background-color: hsl(var(--warning));
+}
+
+.bg-error {
+  background-color: hsl(var(--error));
+}
+
+.bg-surface {
+  background-color: hsl(var(--surface));
+}
