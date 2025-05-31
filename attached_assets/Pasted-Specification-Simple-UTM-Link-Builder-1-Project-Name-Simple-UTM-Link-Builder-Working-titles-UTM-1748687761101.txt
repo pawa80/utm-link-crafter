@@ -1,0 +1,202 @@
+Specification: Simple UTM Link Builder
+1. Project Name
+Simple UTM Link Builder (Working titles: "UTM-Easy" or "Trackable")
+
+2. Goal
+To create a web-based application that simplifies the process of creating and managing UTM links for marketers. The application should be a more user-friendly and affordable alternative to existing complex tools, focusing on the core functionality needed for effective campaign tracking.
+
+3. Core Users
+Digital marketers (especially in small and medium-sized businesses or those with limited budgets).
+
+Marketing teams that need a standardized and simple way to generate UTM links.
+
+Users who find existing tools (like utm.io) too complicated or expensive for their needs.
+
+4. Value Proposition
+Simplicity: "It's easier with us." Intuitive interface that feels like a "smarter spreadsheet."
+
+Focused: "Exactly what you need." Offers core functionality without unnecessary complexity or costly additional features.
+
+Efficiency: Saves time in campaign setup by predefining elements and offering smart suggestions.
+
+Accessibility: A web-based solution that is easy to adopt.
+
+5. Core Functionality (MVP - Minimum Viable Product)
+5.1. User Authentication and Setup
+Simple user registration and login (email/password).
+
+Setup on first use (or via settings):
+
+Define Categories: The user can define their own categories to organize campaigns (e.g., "Electricity," "Mobile Subscription," "App Marketing," "Spring Campaign"). These are stored per user/team.
+
+Define Standard Sources: The user can enter a list of frequently used sources (e.g., google, facebook, linkedin, newsletter). These can be selected from a dropdown list later.
+
+Define Standard Mediums: The user can enter a list of frequently used mediums (e.g., cpc, social, display, email, banner). These can be selected from a dropdown list later.
+
+(Optional MVP) Define Standard Ad Platforms/Channels: Predefine ad platforms that can be linked to sources to provide better suggestions for utm_content.
+
+5.2. Campaign Configuration and Link Generation
+A central screen/section for building UTM links:
+
+Target URL: Mandatory field for the webpage the link should point to.
+
+Campaign Name (utm_campaign):
+
+The user can enter a new campaign name.
+
+The user can select from a list of existing campaign names (autocomplete based on previously used names for the user/team).
+
+Campaign Source (utm_source):
+
+Selected from a dropdown list based on the user's predefined sources.
+
+Option to add a new source directly.
+
+Campaign Medium (utm_medium):
+
+Selected from a dropdown list based on the user's predefined mediums.
+
+Option to add a new medium directly.
+
+Campaign Content (utm_content):
+
+Free text field.
+
+Smart suggestions (MVP+): If the user has selected a source/medium combination (e.g., Source: google, Medium: display), the system can suggest common utm_content values (e.g., "300x250_banner", "728x90_leaderboard"). This can be a simple list initially.
+
+Dynamic generation of multiple utm_content variants:
+
+A button to "duplicate" a line for utm_content so the user can quickly create multiple links for the same campaign/source/medium, but with different content (e.g., for A/B testing ad copy or different ad sizes). Each such variant generates its own unique UTM link.
+
+Campaign Term (utm_term) (Optional):
+
+Free text field for paid keywords.
+
+Category (Optional):
+
+Selected from the user's predefined categories to organize the link/campaign internally.
+
+Generate Link(s): A button that generates the full UTM link(s) based on the input.
+
+5.3. Link Management (Simple)
+List of Generated Links:
+
+Displays the recently generated links.
+
+For each link, displays: Target URL, Full UTM Link, Campaign Name, Source, Medium, Content, Term, Category, Date Created.
+
+Copy Button: Simple copying of the full UTM link to the clipboard.
+
+Storage: Links are stored in Firestore associated with the user's account.
+
+No advanced filtering, sorting, or grouping in MVP. Focus is on generation and easy access to recent links.
+
+5.4. URL Shortener (Consider for MVP or V2)
+Integration: Option to connect to an existing URL shortener service (e.g., Bitly API, Cuttly API) or build a very simple internal shortener.
+
+Functionality: After the UTM link is generated, the user can choose to shorten it.
+
+Display: The shortened link is displayed next to the full UTM link.
+
+Note: This can increase complexity. For MVP, generating only the long UTM link may be sufficient.
+
+6. Technology Stack (Suggested for Replit-friendliness)
+Frontend: React (Create React App or Vite for quick setup).
+
+Styling: Tailwind CSS for rapid UI development and responsive design.
+
+State Management: React Context API or Zustand for simple global state (e.g., user info, predefined lists).
+
+Backend/Database: Firebase
+
+Authentication: Firebase Authentication (Email/password).
+
+Database: Firestore for storing user data, categories, predefined sources/mediums, and generated UTM links.
+
+Hosting: Replit (for easy deployment and development) or Firebase Hosting.
+
+7. Data Model (Firestore Example)
+users collection:
+
+Document ID: userId (from Firebase Auth)
+
+Fields:
+
+email: string
+
+createdAt: timestamp
+
+categories: array of string (e.g., ["Power", "App"])
+
+defaultSources: array of string (e.g., ["google", "facebook"])
+
+defaultMediums: array of string (e.g., ["cpc", "social"])
+
+defaultCampaignNames: array of string (for autocomplete)
+
+utmLinks collection:
+
+Document ID: auto-generated
+
+Fields:
+
+userId: string (reference to users document)
+
+targetUrl: string
+
+utm_campaign: string
+
+utm_source: string
+
+utm_medium: string
+
+utm_content: string
+
+utm_term: string (can be null)
+
+fullUtmLink: string
+
+shortenedLink: string (can be null, if URL shortener is implemented)
+
+category: string (optional, from user's categories)
+
+createdAt: timestamp
+
+8. User Interface (High-Level UI/UX Thoughts)
+Clean and Minimalist Design: Focus on usability. Avoid clutter.
+
+One Main Page for Link Building: Most actions occur in one place to avoid much navigation.
+
+Clear Feedback: The user should see the generated link(s) immediately.
+
+Responsive Design: Works well on both desktop and mobile devices (although desktop is assumed to be primary).
+
+Easy Editing of Settings: Easily accessible page for managing categories, standard sources, and mediums.
+
+9. Future Possibilities (Post-MVP)
+More advanced link management (search, filter, edit).
+
+Team functionality (sharing standards and links within a team).
+
+Campaign templates.
+
+Simple reporting or integration with analytics tools (read-access).
+
+CSV export (if demand arises, although it was mentioned as something to avoid initially).
+
+Built-in URL shortener (if not in MVP).
+
+Dynamic QR codes for generated links.
+
+10. Success Criteria for MVP
+Users can easily register and set up their preferences.
+
+Users can quickly and intuitively generate one or more UTM links for a campaign.
+
+Generated links are stored and easily accessible for copying.
+
+The application is stable and works reliably.
+
+Positive feedback from a small test group regarding usability and time savings.
+
+This specification should provide a good foundation for starting the development of an MVP. Good luck!
