@@ -15,9 +15,9 @@ interface SetupScreenProps {
 }
 
 export default function SetupScreen({ user, onSetupComplete }: SetupScreenProps) {
-  const [categories, setCategories] = useState<string[]>(user.categories || []);
-  const [sources, setSources] = useState<string[]>(user.defaultSources || []);
-  const [mediums, setMediums] = useState<string[]>(user.defaultMediums || []);
+  const [categories, setCategories] = useState<string[]>(user?.categories || []);
+  const [sources, setSources] = useState<string[]>(user?.defaultSources || []);
+  const [mediums, setMediums] = useState<string[]>(user?.defaultMediums || []);
   const [newCategory, setNewCategory] = useState("");
   const [newSource, setNewSource] = useState("");
   const [newMedium, setNewMedium] = useState("");

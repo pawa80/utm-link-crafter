@@ -76,8 +76,20 @@ export default function Dashboard() {
     return <AuthScreen onAuthSuccess={() => refetch()} />;
   }
 
-  if (!user?.isSetupComplete) {
-    return <SetupScreen user={user!} onSetupComplete={() => refetch()} />;
+  if (user && !user.isSetupComplete) {
+    return <SetupScreen user={user} onSetupComplete={() => refetch()} />;
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="space-y-4 w-full max-w-md">
+          <Skeleton className="h-12 w-12 rounded-lg mx-auto" />
+          <Skeleton className="h-8 w-48 mx-auto" />
+          <Skeleton className="h-4 w-64 mx-auto" />
+        </div>
+      </div>
+    );
   }
 
   return <MainApp user={user!} onLogout={() => setFirebaseUser(null)} />;
