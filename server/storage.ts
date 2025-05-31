@@ -1,4 +1,6 @@
 import { users, utmLinks, type User, type InsertUser, type UtmLink, type InsertUtmLink, type UpdateUser } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -13,72 +15,58 @@ export interface IStorage {
   getUtmLink(id: number): Promise<UtmLink | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private utmLinks: Map<number, UtmLink>;
-  private currentUserId: number;
-  private currentUtmLinkId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.utmLinks = new Map();
-    this.currentUserId = 1;
-    this.currentUtmLinkId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.firebaseUid === firebaseUid,
-    );
+    const [user] = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: new Date(),
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async updateUser(id: number, updates: UpdateUser): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
   }
 
   async createUtmLink(insertUtmLink: InsertUtmLink): Promise<UtmLink> {
-    const id = this.currentUtmLinkId++;
-    const utmLink: UtmLink = {
-      ...insertUtmLink,
-      id,
-      createdAt: new Date(),
-    };
-    this.utmLinks.set(id, utmLink);
+    const [utmLink] = await db
+      .insert(utmLinks)
+      .values(insertUtmLink)
+      .returning();
     return utmLink;
   }
 
   async getUserUtmLinks(userId: number, limit = 20, offset = 0): Promise<UtmLink[]> {
-    const userLinks = Array.from(this.utmLinks.values())
-      .filter(link => link.userId === userId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
-      .slice(offset, offset + limit);
+    const userLinks = await db
+      .select()
+      .from(utmLinks)
+      .where(eq(utmLinks.userId, userId))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(utmLinks.createdAt);
     
     return userLinks;
   }
 
   async getUtmLink(id: number): Promise<UtmLink | undefined> {
-    return this.utmLinks.get(id);
+    const [utmLink] = await db.select().from(utmLinks).where(eq(utmLinks.id, id));
+    return utmLink || undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -16,7 +16,7 @@ export const users = pgTable("users", {
 
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id),
+  userId: serial("user_id").references(() => users.id).notNull(),
   targetUrl: text("target_url").notNull(),
   utm_campaign: text("utm_campaign").notNull(),
   utm_source: text("utm_source").notNull(),
