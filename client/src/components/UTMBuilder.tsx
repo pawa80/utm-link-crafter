@@ -302,53 +302,62 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Campaign Term */}
-            <div>
-              <Label htmlFor="campaign-term">
-                Campaign Term <span className="text-xs text-gray-500">(optional)</span>
-              </Label>
-              <Input
-                id="campaign-term"
-                value={campaignTerm}
-                onChange={(e) => setCampaignTerm(e.target.value)}
-                placeholder="paid keywords"
-              />
-            </div>
+          {/* Optional Fields - Conditionally Rendered */}
+          {(user.showCampaignTerm || user.showInternalCampaignId) && (
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Campaign Term */}
+              {user.showCampaignTerm && (
+                <div>
+                  <Label htmlFor="campaign-term">
+                    Campaign Term <span className="text-xs text-gray-500">(optional)</span>
+                  </Label>
+                  <Input
+                    id="campaign-term"
+                    value={campaignTerm}
+                    onChange={(e) => setCampaignTerm(e.target.value)}
+                    placeholder="paid keywords"
+                  />
+                </div>
+              )}
 
-            {/* Internal Campaign ID */}
-            <div>
-              <Label htmlFor="internal-campaign-id">
-                Internal Campaign ID <span className="text-xs text-gray-500">(optional)</span>
-              </Label>
-              <Input
-                id="internal-campaign-id"
-                value={internalCampaignId}
-                onChange={(e) => setInternalCampaignId(e.target.value)}
-                placeholder="CAMP-2024-001"
-              />
-              <p className="text-xs text-gray-500 mt-1">For internal tracking and organization</p>
+              {/* Internal Campaign ID */}
+              {user.showInternalCampaignId && (
+                <div>
+                  <Label htmlFor="internal-campaign-id">
+                    Internal Campaign ID <span className="text-xs text-gray-500">(optional)</span>
+                  </Label>
+                  <Input
+                    id="internal-campaign-id"
+                    value={internalCampaignId}
+                    onChange={(e) => setInternalCampaignId(e.target.value)}
+                    placeholder="CAMP-2024-001"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">For internal tracking and organization</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Category - Full Width */}
-          <div>
-            <Label htmlFor="campaign-category">
-              Category <span className="text-xs text-gray-500">(optional)</span>
-            </Label>
-            <Select value={campaignCategory} onValueChange={setCampaignCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category..." />
-              </SelectTrigger>
-              <SelectContent>
-                {user.categories?.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {user.showCategory && (
+            <div>
+              <Label htmlFor="campaign-category">
+                Category <span className="text-xs text-gray-500">(optional)</span>
+              </Label>
+              <Select value={campaignCategory} onValueChange={setCampaignCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {user.categories?.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Button 
             type="submit" 
