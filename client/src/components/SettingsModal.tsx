@@ -27,6 +27,23 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const [showCampaignTerm, setShowCampaignTerm] = useState(true);
   const [showInternalCampaignId, setShowInternalCampaignId] = useState(true);
   const [showCategory, setShowCategory] = useState(true);
+  const [showCustomFields, setShowCustomFields] = useState(false);
+  
+  // Custom field configurations
+  const [customField1Name, setCustomField1Name] = useState("");
+  const [customField1InUrl, setCustomField1InUrl] = useState(false);
+  const [customField1Options, setCustomField1Options] = useState<string[]>([]);
+  const [customField2Name, setCustomField2Name] = useState("");
+  const [customField2InUrl, setCustomField2InUrl] = useState(false);
+  const [customField2Options, setCustomField2Options] = useState<string[]>([]);
+  const [customField3Name, setCustomField3Name] = useState("");
+  const [customField3InUrl, setCustomField3InUrl] = useState(false);
+  const [customField3Options, setCustomField3Options] = useState<string[]>([]);
+  
+  // New option inputs
+  const [newCustomField1Option, setNewCustomField1Option] = useState("");
+  const [newCustomField2Option, setNewCustomField2Option] = useState("");
+  const [newCustomField3Option, setNewCustomField3Option] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,6 +57,18 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
       setShowCampaignTerm(user.showCampaignTerm ?? true);
       setShowInternalCampaignId(user.showInternalCampaignId ?? true);
       setShowCategory(user.showCategory ?? true);
+      setShowCustomFields(user.showCustomFields ?? false);
+      
+      // Initialize custom field settings
+      setCustomField1Name(user.customField1Name || "");
+      setCustomField1InUrl(user.customField1InUrl ?? false);
+      setCustomField1Options(user.customField1Options || []);
+      setCustomField2Name(user.customField2Name || "");
+      setCustomField2InUrl(user.customField2InUrl ?? false);
+      setCustomField2Options(user.customField2Options || []);
+      setCustomField3Name(user.customField3Name || "");
+      setCustomField3InUrl(user.customField3InUrl ?? false);
+      setCustomField3Options(user.customField3Options || []);
     }
   }, [user, isOpen]);
 
@@ -104,7 +133,39 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
       showCampaignTerm,
       showInternalCampaignId,
       showCategory,
+      showCustomFields,
+      customField1Name,
+      customField1InUrl,
+      customField1Options,
+      customField2Name,
+      customField2InUrl,
+      customField2Options,
+      customField3Name,
+      customField3InUrl,
+      customField3Options,
     });
+  };
+
+  // Helper functions for custom field options
+  const addCustomFieldOption = (fieldNumber: 1 | 2 | 3) => {
+    const inputValues = [newCustomField1Option, newCustomField2Option, newCustomField3Option];
+    const setters = [setCustomField1Options, setCustomField2Options, setCustomField3Options];
+    const resetters = [setNewCustomField1Option, setNewCustomField2Option, setNewCustomField3Option];
+    
+    const newOption = inputValues[fieldNumber - 1].trim();
+    if (newOption) {
+      const currentOptions = [customField1Options, customField2Options, customField3Options][fieldNumber - 1];
+      if (!currentOptions.includes(newOption)) {
+        setters[fieldNumber - 1]([...currentOptions, newOption]);
+      }
+      resetters[fieldNumber - 1]("");
+    }
+  };
+
+  const removeCustomFieldOption = (fieldNumber: 1 | 2 | 3, option: string) => {
+    const setters = [setCustomField1Options, setCustomField2Options, setCustomField3Options];
+    const currentOptions = [customField1Options, customField2Options, customField3Options][fieldNumber - 1];
+    setters[fieldNumber - 1](currentOptions.filter(opt => opt !== option));
   };
 
   const handleCancel = () => {
@@ -115,9 +176,25 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
     setShowCampaignTerm(user.showCampaignTerm ?? true);
     setShowInternalCampaignId(user.showInternalCampaignId ?? true);
     setShowCategory(user.showCategory ?? true);
+    setShowCustomFields(user.showCustomFields ?? false);
+    
+    // Reset custom field settings
+    setCustomField1Name(user.customField1Name || "");
+    setCustomField1InUrl(user.customField1InUrl ?? false);
+    setCustomField1Options(user.customField1Options || []);
+    setCustomField2Name(user.customField2Name || "");
+    setCustomField2InUrl(user.customField2InUrl ?? false);
+    setCustomField2Options(user.customField2Options || []);
+    setCustomField3Name(user.customField3Name || "");
+    setCustomField3InUrl(user.customField3InUrl ?? false);
+    setCustomField3Options(user.customField3Options || []);
+    
     setNewCategory("");
     setNewSource("");
     setNewMedium("");
+    setNewCustomField1Option("");
+    setNewCustomField2Option("");
+    setNewCustomField3Option("");
     onClose();
   };
 
@@ -312,6 +389,118 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
               />
             </div>
           </div>
+        </div>
+
+        {/* Custom Fields Configuration */}
+        <div className="border-t pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Plus className="text-primary mr-2" size={20} />
+              <h3 className="text-lg font-semibold">Custom Fields</h3>
+            </div>
+            <Switch
+              checked={showCustomFields}
+              onCheckedChange={setShowCustomFields}
+            />
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Create up to 3 custom fields for specialized tracking needs
+          </p>
+          
+          {showCustomFields && (
+            <div className="space-y-6">
+              {[1, 2, 3].map((fieldNum) => {
+                const fieldName = [customField1Name, customField2Name, customField3Name][fieldNum - 1];
+                const setFieldName = [setCustomField1Name, setCustomField2Name, setCustomField3Name][fieldNum - 1];
+                const fieldInUrl = [customField1InUrl, customField2InUrl, customField3InUrl][fieldNum - 1];
+                const setFieldInUrl = [setCustomField1InUrl, setCustomField2InUrl, setCustomField3InUrl][fieldNum - 1];
+                const fieldOptions = [customField1Options, customField2Options, customField3Options][fieldNum - 1];
+                const newOption = [newCustomField1Option, newCustomField2Option, newCustomField3Option][fieldNum - 1];
+                const setNewOption = [setNewCustomField1Option, setNewCustomField2Option, setNewCustomField3Option][fieldNum - 1];
+                
+                return (
+                  <div key={fieldNum} className="border rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-medium mb-3">Custom Field {fieldNum}</h4>
+                    
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <Label htmlFor={`custom-field-${fieldNum}-name`}>Field Name</Label>
+                        <Input
+                          id={`custom-field-${fieldNum}-name`}
+                          value={fieldName}
+                          onChange={(e) => setFieldName(e.target.value)}
+                          placeholder="e.g., Ad Format, Audience"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor={`custom-field-${fieldNum}-url`} className="text-sm font-medium">
+                            Include in URL
+                          </Label>
+                          <p className="text-xs text-gray-500">Add as URL parameter (utm_custom{fieldNum})</p>
+                        </div>
+                        <Switch
+                          id={`custom-field-${fieldNum}-url`}
+                          checked={fieldInUrl}
+                          onCheckedChange={setFieldInUrl}
+                        />
+                      </div>
+                    </div>
+                    
+                    {fieldName && (
+                      <div>
+                        <Label>Predefined Options (optional)</Label>
+                        <p className="text-xs text-gray-500 mb-2">Create a dropdown with common values</p>
+                        
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Input
+                            value={newOption}
+                            onChange={(e) => setNewOption(e.target.value)}
+                            placeholder="Add option..."
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addCustomFieldOption(fieldNum as 1 | 2 | 3);
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addCustomFieldOption(fieldNum as 1 | 2 | 3)}
+                          >
+                            <Plus size={16} />
+                          </Button>
+                        </div>
+                        
+                        {fieldOptions.length > 0 && (
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {fieldOptions.map((option) => (
+                              <div key={option} className="flex items-center justify-between">
+                                <Badge variant="secondary" className="flex-1 justify-start">
+                                  {option}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeCustomFieldOption(fieldNum as 1 | 2 | 3, option)}
+                                  className="ml-2 text-gray-400 hover:text-red-500"
+                                >
+                                  <X size={14} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 pt-6 border-t">

@@ -29,6 +29,9 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
   const [campaignTerm, setCampaignTerm] = useState("");
   const [campaignCategory, setCampaignCategory] = useState("");
   const [internalCampaignId, setInternalCampaignId] = useState("");
+  const [customField1Value, setCustomField1Value] = useState("");
+  const [customField2Value, setCustomField2Value] = useState("");
+  const [customField3Value, setCustomField3Value] = useState("");
   const [contentVariants, setContentVariants] = useState<ContentVariant[]>([
     { id: "1", value: "" }
   ]);
@@ -55,6 +58,9 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
       setCampaignTerm("");
       setCampaignCategory("");
       setInternalCampaignId("");
+      setCustomField1Value("");
+      setCustomField2Value("");
+      setCustomField3Value("");
       setContentVariants([{ id: "1", value: "" }]);
     },
     onError: (error: any) => {

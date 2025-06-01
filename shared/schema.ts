@@ -14,6 +14,16 @@ export const users = pgTable("users", {
   showCampaignTerm: boolean("show_campaign_term").default(true),
   showInternalCampaignId: boolean("show_internal_campaign_id").default(true),
   showCategory: boolean("show_category").default(true),
+  showCustomFields: boolean("show_custom_fields").default(false),
+  customField1Name: text("custom_field_1_name"),
+  customField1InUrl: boolean("custom_field_1_in_url").default(false),
+  customField1Options: text("custom_field_1_options").array(),
+  customField2Name: text("custom_field_2_name"),
+  customField2InUrl: boolean("custom_field_2_in_url").default(false),
+  customField2Options: text("custom_field_2_options").array(),
+  customField3Name: text("custom_field_3_name"),
+  customField3InUrl: boolean("custom_field_3_in_url").default(false),
+  customField3Options: text("custom_field_3_options").array(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -29,6 +39,9 @@ export const utmLinks = pgTable("utm_links", {
   fullUtmLink: text("full_utm_link").notNull(),
   category: text("category"),
   internalCampaignId: text("internal_campaign_id"),
+  customField1Value: text("custom_field_1_value"),
+  customField2Value: text("custom_field_2_value"),
+  customField3Value: text("custom_field_3_value"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
