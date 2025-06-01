@@ -146,6 +146,21 @@ export default function GeneratedLinks() {
                         ID: {link.internalCampaignId}
                       </Badge>
                     )}
+                    {link.customField1Value && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {link.customField1Value}
+                      </Badge>
+                    )}
+                    {link.customField2Value && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {link.customField2Value}
+                      </Badge>
+                    )}
+                    {link.customField3Value && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {link.customField3Value}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded border">

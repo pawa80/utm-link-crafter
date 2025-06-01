@@ -5,6 +5,9 @@ export interface UTMParams {
   utm_medium: string;
   utm_content?: string;
   utm_term?: string;
+  utm_custom1?: string;
+  utm_custom2?: string;
+  utm_custom3?: string;
 }
 
 export const generateUTMLink = (params: UTMParams): string => {
@@ -20,6 +23,18 @@ export const generateUTMLink = (params: UTMParams): string => {
   
   if (params.utm_term) {
     url.searchParams.set('utm_term', params.utm_term);
+  }
+  
+  if (params.utm_custom1) {
+    url.searchParams.set('utm_custom1', params.utm_custom1);
+  }
+  
+  if (params.utm_custom2) {
+    url.searchParams.set('utm_custom2', params.utm_custom2);
+  }
+  
+  if (params.utm_custom3) {
+    url.searchParams.set('utm_custom3', params.utm_custom3);
   }
   
   return url.toString();

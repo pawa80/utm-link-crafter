@@ -117,12 +117,18 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
     
     if (validVariants.length === 0) {
       // Create one link without content
+      const customParams: any = {};
+      if (user.customField1InUrl && customField1Value) customParams.utm_custom1 = customField1Value;
+      if (user.customField2InUrl && customField2Value) customParams.utm_custom2 = customField2Value;
+      if (user.customField3InUrl && customField3Value) customParams.utm_custom3 = customField3Value;
+
       const utmLink = generateUTMLink({
         targetUrl,
         utm_campaign: campaignName,
         utm_source: campaignSource,
         utm_medium: campaignMedium,
         utm_term: campaignTerm || undefined,
+        ...customParams,
       });
 
       createUtmLinkMutation.mutate({
@@ -135,10 +141,18 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
         fullUtmLink: utmLink,
         category: campaignCategory || null,
         internalCampaignId: internalCampaignId || null,
+        customField1Value: customField1Value || null,
+        customField2Value: customField2Value || null,
+        customField3Value: customField3Value || null,
       });
     } else {
       // Create multiple links for each content variant
       for (const variant of validVariants) {
+        const customParams: any = {};
+        if (user.customField1InUrl && customField1Value) customParams.utm_custom1 = customField1Value;
+        if (user.customField2InUrl && customField2Value) customParams.utm_custom2 = customField2Value;
+        if (user.customField3InUrl && customField3Value) customParams.utm_custom3 = customField3Value;
+
         const utmLink = generateUTMLink({
           targetUrl,
           utm_campaign: campaignName,
@@ -146,6 +160,7 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
           utm_medium: campaignMedium,
           utm_content: variant.value,
           utm_term: campaignTerm || undefined,
+          ...customParams,
         });
 
         createUtmLinkMutation.mutate({
@@ -158,6 +173,9 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
           fullUtmLink: utmLink,
           category: campaignCategory || null,
           internalCampaignId: internalCampaignId || null,
+          customField1Value: customField1Value || null,
+          customField2Value: customField2Value || null,
+          customField3Value: customField3Value || null,
         });
       }
     }
@@ -362,6 +380,111 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Custom Fields */}
+          {user.showCustomFields && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-700 border-b pb-2">Custom Fields</h3>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                {user.customField1Name && (
+                  <div>
+                    <Label htmlFor="custom-field-1">
+                      {user.customField1Name}
+                      {user.customField1InUrl && (
+                        <span className="text-xs text-blue-600 ml-1">(in URL)</span>
+                      )}
+                    </Label>
+                    {user.customField1Options && user.customField1Options.length > 0 ? (
+                      <Select value={customField1Value} onValueChange={setCustomField1Value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Select ${user.customField1Name.toLowerCase()}...`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {user.customField1Options.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="custom-field-1"
+                        value={customField1Value}
+                        onChange={(e) => setCustomField1Value(e.target.value)}
+                        placeholder={`Enter ${user.customField1Name.toLowerCase()}...`}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {user.customField2Name && (
+                  <div>
+                    <Label htmlFor="custom-field-2">
+                      {user.customField2Name}
+                      {user.customField2InUrl && (
+                        <span className="text-xs text-blue-600 ml-1">(in URL)</span>
+                      )}
+                    </Label>
+                    {user.customField2Options && user.customField2Options.length > 0 ? (
+                      <Select value={customField2Value} onValueChange={setCustomField2Value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Select ${user.customField2Name.toLowerCase()}...`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {user.customField2Options.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="custom-field-2"
+                        value={customField2Value}
+                        onChange={(e) => setCustomField2Value(e.target.value)}
+                        placeholder={`Enter ${user.customField2Name.toLowerCase()}...`}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {user.customField3Name && (
+                <div>
+                  <Label htmlFor="custom-field-3">
+                    {user.customField3Name}
+                    {user.customField3InUrl && (
+                      <span className="text-xs text-blue-600 ml-1">(in URL)</span>
+                    )}
+                  </Label>
+                  {user.customField3Options && user.customField3Options.length > 0 ? (
+                    <Select value={customField3Value} onValueChange={setCustomField3Value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${user.customField3Name.toLowerCase()}...`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {user.customField3Options.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="custom-field-3"
+                      value={customField3Value}
+                      onChange={(e) => setCustomField3Value(e.target.value)}
+                      placeholder={`Enter ${user.customField3Name.toLowerCase()}...`}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
