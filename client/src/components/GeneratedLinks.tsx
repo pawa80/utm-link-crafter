@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy } from "lucide-react";
+import { List, Copy, Download } from "lucide-react";
 import type { UtmLink } from "@shared/schema";
 
 export default function GeneratedLinks() {
@@ -26,6 +26,37 @@ export default function GeneratedLinks() {
       toast({
         title: "Copy Failed",
         description: "Failed to copy link to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const response = await fetch("/api/utm-links/export");
+      
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `utm-links-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful",
+        description: "UTM links exported to CSV file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export UTM links",
         variant: "destructive",
       });
     }
@@ -58,9 +89,22 @@ export default function GeneratedLinks() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <List className="text-primary mr-2" size={20} />
-          Generated Links
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            <List className="text-primary mr-2" size={20} />
+            Generated Links
+          </div>
+          {links.length > 0 && (
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              className="text-primary hover:text-primary/80"
+            >
+              <Download className="mr-2" size={16} />
+              Export CSV
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>

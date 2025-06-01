@@ -87,6 +87,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export user's UTM links as CSV
+  app.get("/api/utm-links/export", authMiddleware, async (req: any, res) => {
+    try {
+      // Get all user's links for export
+      const links = await storage.getUserUtmLinks(req.user.id, 1000, 0);
+      
+      // Create CSV headers
+      const csvHeaders = [
+        "Campaign Name",
+        "Source", 
+        "Medium",
+        "Content",
+        "Term",
+        "Category",
+        "Target URL",
+        "Full UTM Link",
+        "Created Date"
+      ];
+      
+      // Convert links to CSV rows
+      const csvRows = links.map(link => [
+        `"${link.utm_campaign}"`,
+        `"${link.utm_source}"`,
+        `"${link.utm_medium}"`,
+        `"${link.utm_content || ''}"`,
+        `"${link.utm_term || ''}"`,
+        `"${link.category || ''}"`,
+        `"${link.targetUrl}"`,
+        `"${link.fullUtmLink}"`,
+        `"${link.createdAt ? new Date(link.createdAt).toLocaleDateString() : ''}"`
+      ]);
+      
+      // Combine headers and rows
+      const csvContent = [csvHeaders.join(","), ...csvRows.map(row => row.join(","))].join("\n");
+      
+      // Set response headers for CSV download
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="utm-links-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
