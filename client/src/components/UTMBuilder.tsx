@@ -28,6 +28,7 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
   const [campaignMedium, setCampaignMedium] = useState("");
   const [campaignTerm, setCampaignTerm] = useState("");
   const [campaignCategory, setCampaignCategory] = useState("");
+  const [internalCampaignId, setInternalCampaignId] = useState("");
   const [contentVariants, setContentVariants] = useState<ContentVariant[]>([
     { id: "1", value: "" }
   ]);
@@ -53,6 +54,7 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
       setCampaignMedium("");
       setCampaignTerm("");
       setCampaignCategory("");
+      setInternalCampaignId("");
       setContentVariants([{ id: "1", value: "" }]);
     },
     onError: (error: any) => {
@@ -126,6 +128,7 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
         utm_content: null,
         fullUtmLink: utmLink,
         category: campaignCategory || null,
+        internalCampaignId: internalCampaignId || null,
       });
     } else {
       // Create multiple links for each content variant
@@ -148,6 +151,7 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
           utm_content: variant.value,
           fullUtmLink: utmLink,
           category: campaignCategory || null,
+          internalCampaignId: internalCampaignId || null,
         });
       }
     }
@@ -312,24 +316,38 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
               />
             </div>
 
-            {/* Category */}
+            {/* Internal Campaign ID */}
             <div>
-              <Label htmlFor="campaign-category">
-                Category <span className="text-xs text-gray-500">(optional)</span>
+              <Label htmlFor="internal-campaign-id">
+                Internal Campaign ID <span className="text-xs text-gray-500">(optional)</span>
               </Label>
-              <Select value={campaignCategory} onValueChange={setCampaignCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {user.categories?.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="internal-campaign-id"
+                value={internalCampaignId}
+                onChange={(e) => setInternalCampaignId(e.target.value)}
+                placeholder="CAMP-2024-001"
+              />
+              <p className="text-xs text-gray-500 mt-1">For internal tracking and organization</p>
             </div>
+          </div>
+
+          {/* Category - Full Width */}
+          <div>
+            <Label htmlFor="campaign-category">
+              Category <span className="text-xs text-gray-500">(optional)</span>
+            </Label>
+            <Select value={campaignCategory} onValueChange={setCampaignCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category..." />
+              </SelectTrigger>
+              <SelectContent>
+                {user.categories?.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button 

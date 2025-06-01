@@ -141,6 +141,11 @@ export default function GeneratedLinks() {
                     {link.category && (
                       <Badge variant="outline">{link.category}</Badge>
                     )}
+                    {link.internalCampaignId && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        ID: {link.internalCampaignId}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded border">

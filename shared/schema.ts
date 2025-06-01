@@ -25,6 +25,7 @@ export const utmLinks = pgTable("utm_links", {
   utm_term: text("utm_term"),
   fullUtmLink: text("full_utm_link").notNull(),
   category: text("category"),
+  internalCampaignId: text("internal_campaign_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
