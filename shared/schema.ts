@@ -11,6 +11,9 @@ export const users = pgTable("users", {
   defaultMediums: text("default_mediums").array().default([]),
   defaultCampaignNames: text("default_campaign_names").array().default([]),
   isSetupComplete: boolean("is_setup_complete").default(false),
+  showCampaignTerm: boolean("show_campaign_term").default(true),
+  showInternalCampaignId: boolean("show_internal_campaign_id").default(true),
+  showCategory: boolean("show_category").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

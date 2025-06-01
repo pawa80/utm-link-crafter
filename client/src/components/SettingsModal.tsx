@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Tags, Share, Layers, Plus, X } from "lucide-react";
+import { Tags, Share, Layers, Plus, X, Eye } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface SettingsModalProps {
@@ -22,6 +24,9 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const [newCategory, setNewCategory] = useState("");
   const [newSource, setNewSource] = useState("");
   const [newMedium, setNewMedium] = useState("");
+  const [showCampaignTerm, setShowCampaignTerm] = useState(true);
+  const [showInternalCampaignId, setShowInternalCampaignId] = useState(true);
+  const [showCategory, setShowCategory] = useState(true);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,6 +37,9 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
       setCategories(user.categories || []);
       setSources(user.defaultSources || []);
       setMediums(user.defaultMediums || []);
+      setShowCampaignTerm(user.showCampaignTerm ?? true);
+      setShowInternalCampaignId(user.showInternalCampaignId ?? true);
+      setShowCategory(user.showCategory ?? true);
     }
   }, [user, isOpen]);
 
@@ -93,6 +101,9 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
       categories,
       defaultSources: sources,
       defaultMediums: mediums,
+      showCampaignTerm,
+      showInternalCampaignId,
+      showCategory,
     });
   };
 
@@ -101,6 +112,9 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
     setCategories(user.categories || []);
     setSources(user.defaultSources || []);
     setMediums(user.defaultMediums || []);
+    setShowCampaignTerm(user.showCampaignTerm ?? true);
+    setShowInternalCampaignId(user.showInternalCampaignId ?? true);
+    setShowCategory(user.showCategory ?? true);
     setNewCategory("");
     setNewSource("");
     setNewMedium("");
@@ -241,6 +255,61 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Field Visibility Settings */}
+        <div className="border-t pt-6">
+          <div className="flex items-center mb-4">
+            <Eye className="text-primary mr-2" size={20} />
+            <h3 className="text-lg font-semibold">Optional Field Settings</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Control which optional fields appear in your UTM builder form
+          </p>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="show-campaign-term" className="text-sm font-medium">
+                  Campaign Term Field
+                </Label>
+                <p className="text-xs text-gray-500">For paid keywords and search terms</p>
+              </div>
+              <Switch
+                id="show-campaign-term"
+                checked={showCampaignTerm}
+                onCheckedChange={setShowCampaignTerm}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="show-internal-id" className="text-sm font-medium">
+                  Internal Campaign ID Field
+                </Label>
+                <p className="text-xs text-gray-500">For internal tracking and organization</p>
+              </div>
+              <Switch
+                id="show-internal-id"
+                checked={showInternalCampaignId}
+                onCheckedChange={setShowInternalCampaignId}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="show-category" className="text-sm font-medium">
+                  Category Field
+                </Label>
+                <p className="text-xs text-gray-500">For organizing campaigns by type</p>
+              </div>
+              <Switch
+                id="show-category"
+                checked={showCategory}
+                onCheckedChange={setShowCategory}
+              />
             </div>
           </div>
         </div>
