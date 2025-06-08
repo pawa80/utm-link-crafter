@@ -278,7 +278,7 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const removeMediumFromTemplate = (templateId: number, medium: string) => {
     const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
     if (template) {
-      const updatedMediums = (template.mediums || []).filter(m => m !== medium);
+      const updatedMediums = (template.mediums || []).filter((m: string) => m !== medium);
       updateSourceTemplateMutation.mutate({
         id: templateId,
         data: { mediums: updatedMediums },
@@ -289,7 +289,7 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const removeFormatFromTemplate = (templateId: number, format: string) => {
     const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
     if (template) {
-      const updatedFormats = (template.formats || []).filter(f => f !== format);
+      const updatedFormats = (template.formats || []).filter((f: string) => f !== format);
       updateSourceTemplateMutation.mutate({
         id: templateId,
         data: { formats: updatedFormats },
