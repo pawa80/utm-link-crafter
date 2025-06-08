@@ -28,7 +28,7 @@ export default function MainApp({ user, onLogout }: MainAppProps) {
     },
   });
 
-  // Show onboarding if user has no source templates
+  // Show onboarding if user has no source templates and hasn't dismissed it
   const shouldShowOnboarding = !isLoading && sourceTemplates.length === 0 && !showOnboarding;
 
   const handleLogout = async () => {
@@ -90,6 +90,13 @@ export default function MainApp({ user, onLogout }: MainAppProps) {
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+        user={user}
+      />
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard
+        isOpen={shouldShowOnboarding}
+        onClose={() => setShowOnboarding(true)}
         user={user}
       />
     </div>

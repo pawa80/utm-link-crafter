@@ -77,7 +77,10 @@ export class DatabaseStorage implements IStorage {
   async createSourceTemplate(insertSourceTemplate: InsertSourceTemplate): Promise<SourceTemplate> {
     const [sourceTemplate] = await db
       .insert(sourceTemplates)
-      .values(insertSourceTemplate)
+      .values({
+        ...insertSourceTemplate,
+        abTestingPreference: insertSourceTemplate.abTestingPreference || 1
+      })
       .returning();
     return sourceTemplate;
   }
