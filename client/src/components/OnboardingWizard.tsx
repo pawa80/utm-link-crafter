@@ -27,7 +27,7 @@ interface PredefinedSource {
 }
 
 interface SelectedSource {
-  name: string;
+  sourceName: string;
   mediums: string[];
   formats: string[];
   abTestingPreference: number;
@@ -137,14 +137,15 @@ export default function OnboardingWizard({ isOpen, onClose, user }: OnboardingWi
 
   const handleAbTestingPreference = (sourceName: string, preference: string) => {
     const predefinedSource = PREDEFINED_SOURCES.find(s => s.name === sourceName);
+    const config: SelectedSource = {
+      sourceName: sourceName,
+      mediums: predefinedSource?.mediums || [],
+      formats: predefinedSource?.formats || [],
+      abTestingPreference: parseInt(preference)
+    };
     setSourceConfigs({
       ...sourceConfigs,
-      [sourceName]: {
-        name: sourceName,
-        mediums: predefinedSource?.mediums || [],
-        formats: predefinedSource?.formats || [],
-        abTestingPreference: parseInt(preference)
-      }
+      [sourceName]: config
     });
   };
 
