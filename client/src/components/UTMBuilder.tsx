@@ -5,12 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl, getContentSuggestions } from "@/lib/utm";
-import { PlusCircle, Plus, Trash2, Lightbulb } from "lucide-react";
-import type { User } from "@shared/schema";
+import { PlusCircle, Plus, Trash2, Lightbulb, FileText } from "lucide-react";
+import type { User, SourceTemplate } from "@shared/schema";
 
 interface UTMBuilderProps {
   user: User;
@@ -28,6 +28,16 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
   const [campaignMedium, setCampaignMedium] = useState("");
   const [campaignTerm, setCampaignTerm] = useState("");
   const [campaignCategory, setCampaignCategory] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<SourceTemplate | null>(null);
+
+  // Fetch source templates for autocomplete
+  const { data: sourceTemplates = [] } = useQuery({
+    queryKey: ["/api/source-templates"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/source-templates");
+      return response.json();
+    },
+  });
   const [internalCampaignId, setInternalCampaignId] = useState("");
   const [customField1Value, setCustomField1Value] = useState("");
   const [customField2Value, setCustomField2Value] = useState("");
@@ -87,6 +97,19 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
     setContentVariants(contentVariants.map(variant => 
       variant.id === id ? { ...variant, value } : variant
     ));
+  };
+
+  const applySourceTemplate = (template: SourceTemplate) => {
+    setSelectedTemplate(template);
+    setCampaignSource(template.sourceName);
+    
+    // Clear medium selection to allow user to choose from template options
+    setCampaignMedium("");
+    
+    toast({
+      title: "Template Applied",
+      description: `Applied ${template.sourceName} template with ${template.mediums?.length || 0} mediums and ${template.formats?.length || 0} formats`,
+    });
   };
 
   const handleSuggestionClick = (suggestion: string) => {

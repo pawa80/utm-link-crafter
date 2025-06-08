@@ -36,43 +36,58 @@ interface SelectedSource {
 const PREDEFINED_SOURCES: PredefinedSource[] = [
   {
     name: "Facebook",
-    mediums: ["social", "cpc", "cpm"],
-    formats: ["video", "carousel", "single-image", "story"]
+    mediums: ["cpc", "display", "video", "social"],
+    formats: ["stories-1080x1920", "feed-1080x1080", "reels-1080x1920", "carousel", "collection", "lead-gen", "messenger-ads", "marketplace"]
   },
   {
     name: "Google Ads",
-    mediums: ["cpc", "display", "search"],
-    formats: ["300x250", "728x90", "160x600", "text-ad"]
+    mediums: ["search", "display", "shopping", "video", "discovery"],
+    formats: ["search-text", "display-728x90", "display-300x250", "display-320x50", "display-160x600", "display-300x600", "display-970x250", "shopping", "gmail-ads", "youtube-video"]
   },
   {
     name: "LinkedIn",
-    mediums: ["social", "cpc", "sponsored"],
-    formats: ["single-image", "carousel", "video", "text-ad"]
+    mediums: ["sponsored", "message", "text", "video", "dynamic"],
+    formats: ["sponsored-content-1200x627", "message-ads", "text-ads", "video-ads-1080x1920", "dynamic-ads", "event-ads", "lead-gen-forms"]
   },
   {
     name: "Instagram",
-    mediums: ["social", "story", "reel"],
-    formats: ["square", "story", "reel", "carousel"]
+    mediums: ["stories", "feed", "reels", "explore"],
+    formats: ["stories-1080x1920", "feed-1080x1080", "reels-1080x1920", "carousel", "shopping-tags", "explore-feed"]
   },
   {
     name: "Twitter",
-    mediums: ["social", "promoted"],
-    formats: ["single-image", "video", "carousel", "text"]
+    mediums: ["promoted", "video", "trend"],
+    formats: ["promoted-tweets", "video-1200x675", "carousel", "moments", "trend-takeover"]
+  },
+  {
+    name: "TikTok",
+    mediums: ["video", "spark", "hashtag", "effects"],
+    formats: ["video-1080x1920", "spark-ads", "branded-hashtag", "branded-effects"]
+  },
+  {
+    name: "YouTube",
+    mediums: ["video", "discovery", "shorts", "masthead"],
+    formats: ["skippable-video", "non-skippable-video", "bumper-6s", "discovery-ads", "shorts-1080x1920", "masthead"]
   },
   {
     name: "Amazon",
-    mediums: ["cpc", "display", "sponsored"],
-    formats: ["product", "brand", "video", "display"]
+    mediums: ["sponsored", "display", "dsp"],
+    formats: ["sponsored-products", "sponsored-brands", "sponsored-display", "dsp-display", "video-ads"]
   },
   {
     name: "Email Marketing",
-    mediums: ["email", "newsletter"],
-    formats: ["html", "text", "automated", "campaign"]
+    mediums: ["email", "newsletter", "automation"],
+    formats: ["newsletter", "promotional", "welcome-series", "abandoned-cart", "transactional", "re-engagement"]
   },
   {
     name: "Content Marketing",
-    mediums: ["organic", "blog", "content"],
-    formats: ["article", "whitepaper", "ebook", "infographic"]
+    mediums: ["organic", "blog", "content", "webinar"],
+    formats: ["blog-post", "whitepaper", "case-study", "webinar", "podcast", "infographic", "video-content"]
+  },
+  {
+    name: "Display Network",
+    mediums: ["display", "banner", "native"],
+    formats: ["leaderboard-728x90", "medium-rectangle-300x250", "mobile-banner-320x50", "skyscraper-160x600", "half-page-300x600", "billboard-970x250"]
   }
 ];
 
@@ -137,11 +152,29 @@ export default function OnboardingWizard({ isOpen, onClose, user }: OnboardingWi
 
   const handleAbTestingPreference = (sourceName: string, preference: string) => {
     const predefinedSource = PREDEFINED_SOURCES.find(s => s.name === sourceName);
+    const abTestingPref = parseInt(preference);
+    
+    // Add A/B testing variants based on preference
+    const baseFormats = predefinedSource?.formats || [];
+    let formats = [...baseFormats];
+    
+    // Add seasonal and campaign formats for all sources
+    const seasonalFormats = ["holiday-special", "back-to-school", "black-friday", "q1-campaign", "summer-sale", "year-end"];
+    formats.push(...seasonalFormats);
+    
+    if (abTestingPref === 2) {
+      // A/B testing
+      formats.push("variant-a", "variant-b", "control-group");
+    } else if (abTestingPref === 3) {
+      // A/B/C testing
+      formats.push("variant-a", "variant-b", "variant-c", "control-group", "test-1", "test-2");
+    }
+    
     const config: SelectedSource = {
       sourceName: sourceName,
       mediums: predefinedSource?.mediums || [],
-      formats: predefinedSource?.formats || [],
-      abTestingPreference: parseInt(preference)
+      formats: formats,
+      abTestingPreference: abTestingPref
     };
     setSourceConfigs({
       ...sourceConfigs,

@@ -190,17 +190,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/source-templates", authMiddleware, async (req: any, res) => {
     try {
-      console.log("Request body:", req.body);
       const validatedData = insertSourceTemplateSchema.parse({
         ...req.body,
         userId: req.user.id,
       });
-      console.log("Validated data:", validatedData);
 
       const template = await storage.createSourceTemplate(validatedData);
       res.json(template);
     } catch (error: any) {
-      console.log("Validation error:", error.message);
       res.status(400).json({ message: error.message });
     }
   });
