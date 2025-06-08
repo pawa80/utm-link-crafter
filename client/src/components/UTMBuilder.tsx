@@ -247,6 +247,33 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
             />
           </div>
 
+          {/* Source Template Selector */}
+          {sourceTemplates.length > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center mb-2">
+                <FileText className="text-blue-600 mr-2" size={16} />
+                <Label className="text-sm font-medium text-blue-800">Quick Apply Template</Label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {sourceTemplates.map((template: SourceTemplate) => (
+                  <Button
+                    key={template.id}
+                    type="button"
+                    variant={selectedTemplate?.id === template.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applySourceTemplate(template)}
+                    className="text-xs"
+                  >
+                    {template.sourceName}
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {template.mediums?.length || 0}
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 gap-4">
             {/* Campaign Source */}
             <div>
@@ -258,6 +285,13 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
                   <SelectValue placeholder="Select source..." />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Show template sources first if available */}
+                  {sourceTemplates.map((template: SourceTemplate) => (
+                    <SelectItem key={template.sourceName} value={template.sourceName}>
+                      {template.sourceName}
+                    </SelectItem>
+                  ))}
+                  {/* Then show user's default sources */}
                   {user.defaultSources?.map((source) => (
                     <SelectItem key={source} value={source}>
                       {source}
@@ -277,6 +311,24 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
                   <SelectValue placeholder="Select medium..." />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Show template mediums if a source is selected and matches a template */}
+                  {selectedTemplate && campaignSource === selectedTemplate.sourceName && 
+                    selectedTemplate.mediums?.map((medium) => (
+                      <SelectItem key={medium} value={medium}>
+                        {medium}
+                      </SelectItem>
+                    ))
+                  }
+                  {/* Show template mediums for manually selected source */}
+                  {!selectedTemplate && sourceTemplates
+                    .find((t: SourceTemplate) => t.sourceName === campaignSource)?.mediums
+                    ?.map((medium: string) => (
+                      <SelectItem key={medium} value={medium}>
+                        {medium}
+                      </SelectItem>
+                    ))
+                  }
+                  {/* Show user's default mediums */}
                   {user.defaultMediums?.map((medium) => (
                     <SelectItem key={medium} value={medium}>
                       {medium}
@@ -327,24 +379,59 @@ export default function UTMBuilder({ user }: UTMBuilderProps) {
             </div>
             
             {/* Smart Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                <p className="text-sm text-blue-800 mb-2 flex items-center">
-                  <Lightbulb className="mr-1" size={16} />
-                  Suggestions for {campaignSource} + {campaignMedium}:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((suggestion) => (
-                    <Badge
-                      key={suggestion}
-                      variant="outline"
-                      className="cursor-pointer hover:bg-blue-100 transition-colors"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      {suggestion}
-                    </Badge>
-                  ))}
-                </div>
+            {(suggestions.length > 0 || (campaignSource && campaignMedium)) && (
+              <div className="mt-3 space-y-3">
+                {/* Traditional suggestions */}
+                {suggestions.length > 0 && (
+                  <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <p className="text-sm text-blue-800 mb-2 flex items-center">
+                      <Lightbulb className="mr-1" size={16} />
+                      Content suggestions for {campaignSource} + {campaignMedium}:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestions.map((suggestion) => (
+                        <Badge
+                          key={suggestion}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-blue-100 transition-colors"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                        >
+                          {suggestion}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Template format suggestions */}
+                {campaignSource && (() => {
+                  const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === campaignSource);
+                  return template && template.formats && template.formats.length > 0 ? (
+                    <div className="p-3 bg-green-50 rounded-md border border-green-200">
+                      <p className="text-sm text-green-800 mb-2 flex items-center">
+                        <FileText className="mr-1" size={16} />
+                        Format options from {campaignSource} template:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {template.formats.slice(0, 8).map((format: string) => (
+                          <Badge
+                            key={format}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-green-100 transition-colors"
+                            onClick={() => handleSuggestionClick(format)}
+                          >
+                            {format}
+                          </Badge>
+                        ))}
+                        {template.formats.length > 8 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{template.formats.length - 8} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             )}
           </div>
