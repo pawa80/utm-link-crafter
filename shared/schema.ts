@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,6 +33,7 @@ export const sourceTemplates = pgTable("source_templates", {
   sourceName: text("source_name").notNull(),
   mediums: text("mediums").array().default([]),
   formats: text("formats").array().default([]),
+  abTestingPreference: integer("ab_testing_preference").default(1), // 1: No, 2: A-B, 3: A-B-C
   createdAt: timestamp("created_at").defaultNow(),
 });
 

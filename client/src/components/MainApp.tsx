@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import UTMBuilder from "./UTMBuilder";
 import GeneratedLinks from "./GeneratedLinks";
 import SettingsModal from "./SettingsModal";
+import OnboardingWizard from "./OnboardingWizard";
 import { logout } from "@/lib/auth";
 import { Link, Settings, User, LogOut } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType } from "@shared/schema";
 
 interface MainAppProps {
@@ -14,6 +17,19 @@ interface MainAppProps {
 
 export default function MainApp({ user, onLogout }: MainAppProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if user has any source templates
+  const { data: sourceTemplates = [], isLoading } = useQuery({
+    queryKey: ["/api/source-templates"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/source-templates");
+      return response.json();
+    },
+  });
+
+  // Show onboarding if user has no source templates
+  const shouldShowOnboarding = !isLoading && sourceTemplates.length === 0 && !showOnboarding;
 
   const handleLogout = async () => {
     try {
