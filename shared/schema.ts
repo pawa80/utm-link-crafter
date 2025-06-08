@@ -27,6 +27,15 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const sourceTemplates = pgTable("source_templates", {
+  id: serial("id").primaryKey(),
+  userId: serial("user_id").references(() => users.id).notNull(),
+  sourceName: text("source_name").notNull(),
+  mediums: text("mediums").array().default([]),
+  formats: text("formats").array().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
@@ -61,8 +70,15 @@ export const updateUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 }).partial();
 
+export const insertSourceTemplateSchema = createInsertSchema(sourceTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
 export type UtmLink = typeof utmLinks.$inferSelect;
+export type InsertSourceTemplate = z.infer<typeof insertSourceTemplateSchema>;
+export type SourceTemplate = typeof sourceTemplates.$inferSelect;
 export type UpdateUser = z.infer<typeof updateUserSchema>;

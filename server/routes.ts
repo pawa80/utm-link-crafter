@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, updateUserSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema } from "@shared/schema";
 import { z } from "zod";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
