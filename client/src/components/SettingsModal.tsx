@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Tags, Share, Layers, Plus, X, Eye } from "lucide-react";
-import type { User } from "@shared/schema";
+import { Tags, Share, Layers, Plus, X, Eye, FileText } from "lucide-react";
+import type { User, SourceTemplate } from "@shared/schema";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -44,9 +44,24 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const [newCustomField1Option, setNewCustomField1Option] = useState("");
   const [newCustomField2Option, setNewCustomField2Option] = useState("");
   const [newCustomField3Option, setNewCustomField3Option] = useState("");
+  
+  // Source template states
+  const [newSourceName, setNewSourceName] = useState("");
+  const [newTemplateMedium, setNewTemplateMedium] = useState("");
+  const [newTemplateFormat, setNewTemplateFormat] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch source templates
+  const { data: sourceTemplates = [] } = useQuery({
+    queryKey: ["/api/source-templates"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/source-templates");
+      return response.json();
+    },
+  });
 
   // Initialize state when modal opens or user changes
   useEffect(() => {
@@ -166,6 +181,120 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
     const setters = [setCustomField1Options, setCustomField2Options, setCustomField3Options];
     const currentOptions = [customField1Options, customField2Options, customField3Options][fieldNumber - 1];
     setters[fieldNumber - 1](currentOptions.filter(opt => opt !== option));
+  };
+
+  // Source template mutations
+  const createSourceTemplateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/source-templates", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+      setNewSourceName("");
+      setNewTemplateMedium("");
+      setNewTemplateFormat("");
+      toast({
+        title: "Source Template Created",
+        description: "Template has been created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to create source template",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSourceTemplateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await apiRequest("PATCH", `/api/source-templates/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+      toast({
+        title: "Template Updated",
+        description: "Source template has been updated successfully",
+      });
+    },
+  });
+
+  const deleteSourceTemplateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/source-templates/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+      toast({
+        title: "Template Deleted",
+        description: "Source template has been deleted successfully",
+      });
+    },
+  });
+
+  // Source template helper functions
+  const createSourceTemplate = () => {
+    if (newSourceName.trim()) {
+      createSourceTemplateMutation.mutate({
+        sourceName: newSourceName.trim(),
+        mediums: [],
+        formats: [],
+      });
+    }
+  };
+
+  const addMediumToTemplate = (templateId: number) => {
+    if (newTemplateMedium.trim()) {
+      const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
+      if (template) {
+        const updatedMediums = [...(template.mediums || []), newTemplateMedium.trim()];
+        updateSourceTemplateMutation.mutate({
+          id: templateId,
+          data: { mediums: updatedMediums },
+        });
+      }
+      setNewTemplateMedium("");
+    }
+  };
+
+  const addFormatToTemplate = (templateId: number) => {
+    if (newTemplateFormat.trim()) {
+      const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
+      if (template) {
+        const updatedFormats = [...(template.formats || []), newTemplateFormat.trim()];
+        updateSourceTemplateMutation.mutate({
+          id: templateId,
+          data: { formats: updatedFormats },
+        });
+      }
+      setNewTemplateFormat("");
+    }
+  };
+
+  const removeMediumFromTemplate = (templateId: number, medium: string) => {
+    const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
+    if (template) {
+      const updatedMediums = (template.mediums || []).filter(m => m !== medium);
+      updateSourceTemplateMutation.mutate({
+        id: templateId,
+        data: { mediums: updatedMediums },
+      });
+    }
+  };
+
+  const removeFormatFromTemplate = (templateId: number, format: string) => {
+    const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
+    if (template) {
+      const updatedFormats = (template.formats || []).filter(f => f !== format);
+      updateSourceTemplateMutation.mutate({
+        id: templateId,
+        data: { formats: updatedFormats },
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -501,6 +630,169 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
               })}
             </div>
           )}
+        </div>
+
+        {/* Source Templates Configuration */}
+        <div className="border-t pt-6">
+          <div className="flex items-center mb-4">
+            <FileText className="text-primary mr-2" size={20} />
+            <h3 className="text-lg font-semibold">Source Templates</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Create templates for common sources with their typical mediums and formats
+          </p>
+          
+          {/* Create New Source Template */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Input
+                value={newSourceName}
+                onChange={(e) => setNewSourceName(e.target.value)}
+                placeholder="Source name (e.g., Facebook, Google Ads)"
+                className="flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    createSourceTemplate();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={createSourceTemplate}
+                disabled={!newSourceName.trim() || createSourceTemplateMutation.isPending}
+              >
+                <Plus size={16} className="mr-1" />
+                Add Source
+              </Button>
+            </div>
+          </div>
+
+          {/* Source Templates List */}
+          <div className="space-y-4">
+            {sourceTemplates.map((template: SourceTemplate) => (
+              <div key={template.id} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-lg">{template.sourceName}</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteSourceTemplateMutation.mutate(template.id)}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Mediums Section */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Mediums</Label>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Input
+                        value={selectedTemplateId === template.id ? newTemplateMedium : ""}
+                        onChange={(e) => {
+                          setSelectedTemplateId(template.id);
+                          setNewTemplateMedium(e.target.value);
+                        }}
+                        placeholder="Add medium (e.g., cpc, display)"
+                        className="flex-1 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addMediumToTemplate(template.id);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addMediumToTemplate(template.id)}
+                        disabled={!newTemplateMedium.trim()}
+                      >
+                        <Plus size={14} />
+                      </Button>
+                    </div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {(template.mediums || []).map((medium) => (
+                        <div key={medium} className="flex items-center justify-between">
+                          <Badge variant="secondary" className="text-xs">
+                            {medium}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMediumFromTemplate(template.id, medium)}
+                            className="text-gray-400 hover:text-red-500 p-1"
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Formats Section */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Formats/Sizes</Label>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Input
+                        value={selectedTemplateId === template.id ? newTemplateFormat : ""}
+                        onChange={(e) => {
+                          setSelectedTemplateId(template.id);
+                          setNewTemplateFormat(e.target.value);
+                        }}
+                        placeholder="Add format (e.g., 300x250, video)"
+                        className="flex-1 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addFormatToTemplate(template.id);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addFormatToTemplate(template.id)}
+                        disabled={!newTemplateFormat.trim()}
+                      >
+                        <Plus size={14} />
+                      </Button>
+                    </div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {(template.formats || []).map((format) => (
+                        <div key={format} className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs">
+                            {format}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFormatFromTemplate(template.id, format)}
+                            className="text-gray-400 hover:text-red-500 p-1"
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {sourceTemplates.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No source templates yet. Create your first template above.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 pt-6 border-t">

@@ -178,6 +178,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Source Templates API routes
+  app.get("/api/source-templates", authMiddleware, async (req: any, res) => {
+    try {
+      const templates = await storage.getUserSourceTemplates(req.user.id);
+      res.json(templates);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/source-templates", authMiddleware, async (req: any, res) => {
+    try {
+      const validatedData = insertSourceTemplateSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+      });
+
+      const template = await storage.createSourceTemplate(validatedData);
+      res.json(template);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/source-templates/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+
+      const template = await storage.updateSourceTemplate(id, updates);
+      if (!template) {
+        return res.status(404).json({ message: "Source template not found" });
+      }
+
+      res.json(template);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/source-templates/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteSourceTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Source template not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

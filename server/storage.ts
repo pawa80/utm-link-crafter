@@ -97,7 +97,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSourceTemplate(id: number): Promise<boolean> {
     const result = await db.delete(sourceTemplates).where(eq(sourceTemplates.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
