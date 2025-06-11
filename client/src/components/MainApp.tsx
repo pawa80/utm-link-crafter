@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import UTMBuilder from "./UTMBuilder";
+import CampaignWizard from "./CampaignWizard";
 import GeneratedLinks from "./GeneratedLinks";
 import SettingsModal from "./SettingsModal";
 import OnboardingWizard from "./OnboardingWizard";
@@ -80,10 +80,7 @@ export default function MainApp({ user, onLogout }: MainAppProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <UTMBuilder user={user} />
-          <GeneratedLinks />
-        </div>
+        <CampaignWizard user={user} />
       </div>
 
       {/* Settings Modal */}
