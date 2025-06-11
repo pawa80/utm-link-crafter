@@ -21,13 +21,10 @@ interface CampaignWizardProps {
 interface SourceSelection {
   sourceName: string;
   mediums: string[];
-  enableABTesting: boolean;
-  abTestMediums: string[];
 }
 
 interface ContentVariant {
   medium: string;
-  variant: 'A' | 'B';
   content: string;
 }
 
@@ -40,6 +37,9 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const [generatedLinks, setGeneratedLinks] = useState<any[]>([]);
   const [customSource, setCustomSource] = useState("");
   const [customMedium, setCustomMedium] = useState("");
+  const [addingCustomMedium, setAddingCustomMedium] = useState<{[key: string]: boolean}>({});
+  const [newMediumInput, setNewMediumInput] = useState<{[key: string]: string}>({});
+  const [saveToTemplate, setSaveToTemplate] = useState<{[key: string]: boolean}>({});
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -76,9 +76,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     if (checked) {
       setSelectedSources([...selectedSources, {
         sourceName,
-        mediums: [],
-        enableABTesting: false,
-        abTestMediums: []
+        mediums: []
       }]);
     } else {
       setSelectedSources(selectedSources.filter(s => s.sourceName !== sourceName));
@@ -89,9 +87,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     if (customSource.trim() && !selectedSources.some(s => s.sourceName === customSource.trim())) {
       setSelectedSources([...selectedSources, {
         sourceName: customSource.trim(),
-        mediums: customMedium.trim() ? [customMedium.trim()] : [],
-        enableABTesting: false,
-        abTestMediums: []
+        mediums: customMedium.trim() ? [customMedium.trim()] : []
       }]);
       setCustomSource("");
       setCustomMedium("");
@@ -120,20 +116,41 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     ));
   };
 
-  const updateABTesting = (sourceName: string, enabled: boolean) => {
+  const addCustomMediumToSource = async (sourceName: string, newMedium: string, saveToTemplate: boolean) => {
+    // Add medium to current campaign
     setSelectedSources(selectedSources.map(source => 
       source.sourceName === sourceName 
-        ? { ...source, enableABTesting: enabled, abTestMediums: enabled ? [] : [] }
+        ? { ...source, mediums: [...source.mediums, newMedium] }
         : source
     ));
-  };
 
-  const updateABTestMediums = (sourceName: string, mediums: string[]) => {
-    setSelectedSources(selectedSources.map(source => 
-      source.sourceName === sourceName 
-        ? { ...source, abTestMediums: mediums }
-        : source
-    ));
+    // If user wants to save to template, update the source template
+    if (saveToTemplate) {
+      const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+      if (template) {
+        try {
+          await updateSourceTemplateMutation.mutateAsync({
+            id: template.id,
+            mediums: [...(template.mediums || []), newMedium]
+          });
+          toast({
+            title: "Success",
+            description: `Added "${newMedium}" to ${sourceName} template`,
+          });
+        } catch (error) {
+          toast({
+            title: "Warning",
+            description: `Added to campaign but failed to save to template`,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+
+    // Clear input states
+    setNewMediumInput(prev => ({ ...prev, [sourceName]: '' }));
+    setSaveToTemplate(prev => ({ ...prev, [sourceName]: false }));
+    setAddingCustomMedium(prev => ({ ...prev, [sourceName]: false }));
   };
 
   const isStep1Valid = () => {
@@ -182,12 +199,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       const variants: ContentVariant[] = [];
       selectedSources.forEach(source => {
         source.mediums.forEach(medium => {
-          if (source.enableABTesting && source.abTestMediums.includes(medium)) {
-            variants.push({ medium: `${source.sourceName}-${medium}`, variant: 'A', content: '' });
-            variants.push({ medium: `${source.sourceName}-${medium}`, variant: 'B', content: '' });
-          } else {
-            variants.push({ medium: `${source.sourceName}-${medium}`, variant: 'A', content: '' });
-          }
+          variants.push({ medium: `${source.sourceName}-${medium}`, content: '' });
         });
       });
       setContentVariants(variants);
@@ -203,20 +215,13 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     
     for (const variant of contentVariants) {
       const [sourceName, mediumName] = variant.medium.split('-');
-      
-      // Generate custom fields based on user settings
-      const customParams: any = {};
-      if (user.customField1InUrl && user.customField1Name) {
-        customParams.utm_custom1 = variant.variant === 'B' ? 'variant-b' : 'variant-a';
-      }
 
       const utmLink = generateUTMLink({
         targetUrl,
         utm_campaign: campaignName,
         utm_source: sourceName,
         utm_medium: mediumName,
-        utm_content: variant.content || `${variant.variant.toLowerCase()}-variant`,
-        ...customParams,
+        utm_content: variant.content,
       });
 
       const linkData = {
@@ -224,7 +229,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         utm_campaign: campaignName,
         utm_source: sourceName,
         utm_medium: mediumName,
-        utm_content: variant.content || `${variant.variant.toLowerCase()}-variant`,
+        utm_content: variant.content,
         fullUtmLink: utmLink,
       };
 
@@ -341,16 +346,6 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                             <Label htmlFor={sourceName} className="font-medium">
                               {sourceName}
                             </Label>
-                            {hasTemplate && (
-                              <Badge variant="secondary" className="text-xs">
-                                {template.mediums?.length || 0} mediums
-                              </Badge>
-                            )}
-                            {!hasTemplate && (
-                              <Badge variant="outline" className="text-xs">
-                                custom
-                              </Badge>
-                            )}
                             {needsMediums && (
                               <Badge variant="destructive" className="text-xs">
                                 select mediums
