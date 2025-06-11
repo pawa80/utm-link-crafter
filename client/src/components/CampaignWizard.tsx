@@ -38,6 +38,8 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const [selectedSources, setSelectedSources] = useState<SourceSelection[]>([]);
   const [contentVariants, setContentVariants] = useState<ContentVariant[]>([]);
   const [generatedLinks, setGeneratedLinks] = useState<any[]>([]);
+  const [customSource, setCustomSource] = useState("");
+  const [customMedium, setCustomMedium] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -72,7 +74,6 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
 
   const handleSourceToggle = (sourceName: string, checked: boolean) => {
     if (checked) {
-      const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
       setSelectedSources([...selectedSources, {
         sourceName,
         mediums: [],
@@ -82,6 +83,33 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     } else {
       setSelectedSources(selectedSources.filter(s => s.sourceName !== sourceName));
     }
+  };
+
+  const addCustomSource = () => {
+    if (customSource.trim() && !selectedSources.some(s => s.sourceName === customSource.trim())) {
+      setSelectedSources([...selectedSources, {
+        sourceName: customSource.trim(),
+        mediums: customMedium.trim() ? [customMedium.trim()] : [],
+        enableABTesting: false,
+        abTestMediums: []
+      }]);
+      setCustomSource("");
+      setCustomMedium("");
+    }
+  };
+
+  const removeCustomSource = (sourceName: string) => {
+    setSelectedSources(selectedSources.filter(s => s.sourceName !== sourceName));
+  };
+
+  const getAllAvailableSources = () => {
+    const templateSources = sourceTemplates.map((t: SourceTemplate) => t.sourceName);
+    const userSources = user.defaultSources || [];
+    const combinedSources = [...templateSources, ...userSources];
+    const uniqueSources = combinedSources.filter((source, index) => 
+      combinedSources.indexOf(source) === index
+    );
+    return uniqueSources;
   };
 
   const updateSourceMediums = (sourceName: string, mediums: string[]) => {
@@ -269,81 +297,104 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   <Label className="text-base font-medium mb-4 block">
                     Select Sources <span className="text-red-500">*</span>
                   </Label>
-                  <div className="space-y-4">
-                    {sourceTemplates.map((template: SourceTemplate) => {
-                      const isSelected = selectedSources.some(s => s.sourceName === template.sourceName);
-                      const sourceConfig = selectedSources.find(s => s.sourceName === template.sourceName);
+                  
+                  {/* Available Sources from Templates and User Settings */}
+                  <div className="space-y-4 mb-6">
+                    {getAllAvailableSources().map((sourceName) => {
+                      const isSelected = selectedSources.some(s => s.sourceName === sourceName);
+                      const sourceConfig = selectedSources.find(s => s.sourceName === sourceName);
+                      const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+                      const hasTemplate = !!template;
                       
                       return (
-                        <div key={template.id} className="border rounded-lg p-4 space-y-3">
+                        <div key={sourceName} className="border rounded-lg p-4 space-y-3">
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id={template.sourceName}
+                              id={sourceName}
                               checked={isSelected}
-                              onCheckedChange={(checked) => handleSourceToggle(template.sourceName, checked as boolean)}
+                              onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
                             />
-                            <Label htmlFor={template.sourceName} className="font-medium">
-                              {template.sourceName}
+                            <Label htmlFor={sourceName} className="font-medium">
+                              {sourceName}
                             </Label>
-                            <Badge variant="secondary" className="text-xs">
-                              {template.mediums?.length || 0} mediums
-                            </Badge>
+                            {hasTemplate && (
+                              <Badge variant="secondary" className="text-xs">
+                                {template.mediums?.length || 0} mediums
+                              </Badge>
+                            )}
+                            {!hasTemplate && (
+                              <Badge variant="outline" className="text-xs">
+                                custom
+                              </Badge>
+                            )}
                           </div>
 
                           {isSelected && (
                             <div className="space-y-3 ml-6">
                               <div>
                                 <Label className="text-sm">Select Mediums</Label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {template.mediums?.map((medium) => (
-                                    <div key={medium} className="flex items-center space-x-1">
-                                      <Checkbox
-                                        id={`${template.sourceName}-${medium}`}
-                                        checked={sourceConfig?.mediums.includes(medium) || false}
-                                        onCheckedChange={(checked) => {
-                                          const currentMediums = sourceConfig?.mediums || [];
-                                          const newMediums = checked 
-                                            ? [...currentMediums, medium]
-                                            : currentMediums.filter(m => m !== medium);
-                                          updateSourceMediums(template.sourceName, newMediums);
-                                        }}
-                                      />
-                                      <Label htmlFor={`${template.sourceName}-${medium}`} className="text-sm">
-                                        {medium}
-                                      </Label>
-                                    </div>
-                                  ))}
-                                </div>
+                                {hasTemplate && template.mediums && template.mediums.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {template.mediums.map((medium: string) => (
+                                      <div key={medium} className="flex items-center space-x-1">
+                                        <Checkbox
+                                          id={`${sourceName}-${medium}`}
+                                          checked={sourceConfig?.mediums.includes(medium) || false}
+                                          onCheckedChange={(checked) => {
+                                            const currentMediums = sourceConfig?.mediums || [];
+                                            const newMediums = checked 
+                                              ? [...currentMediums, medium]
+                                              : currentMediums.filter(m => m !== medium);
+                                            updateSourceMediums(sourceName, newMediums);
+                                          }}
+                                        />
+                                        <Label htmlFor={`${sourceName}-${medium}`} className="text-sm">
+                                          {medium}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="mt-2">
+                                    <Input
+                                      placeholder="Enter mediums separated by commas (e.g., cpc, display, social)"
+                                      onChange={(e) => {
+                                        const mediums = e.target.value.split(',').map(m => m.trim()).filter(m => m);
+                                        updateSourceMediums(sourceName, mediums);
+                                      }}
+                                    />
+                                  </div>
+                                )}
                               </div>
 
                               <div className="flex items-center space-x-2">
                                 <Checkbox
-                                  id={`${template.sourceName}-ab-test`}
+                                  id={`${sourceName}-ab-test`}
                                   checked={sourceConfig?.enableABTesting || false}
-                                  onCheckedChange={(checked) => updateABTesting(template.sourceName, checked as boolean)}
+                                  onCheckedChange={(checked) => updateABTesting(sourceName, checked as boolean)}
                                 />
-                                <Label htmlFor={`${template.sourceName}-ab-test`} className="text-sm">
+                                <Label htmlFor={`${sourceName}-ab-test`} className="text-sm">
                                   Enable A/B Testing
                                 </Label>
                               </div>
 
-                              {sourceConfig?.enableABTesting && (
+                              {sourceConfig?.enableABTesting && sourceConfig.mediums.length > 0 && (
                                 <div>
                                   <Label className="text-sm">A/B Test Mediums</Label>
                                   <div className="flex flex-wrap gap-2 mt-2">
                                     {sourceConfig.mediums.map((medium) => (
                                       <div key={medium} className="flex items-center space-x-1">
                                         <Checkbox
-                                          id={`${template.sourceName}-ab-${medium}`}
+                                          id={`${sourceName}-ab-${medium}`}
                                           checked={sourceConfig.abTestMediums.includes(medium)}
                                           onCheckedChange={(checked) => {
                                             const newAbTestMediums = checked 
                                               ? [...sourceConfig.abTestMediums, medium]
                                               : sourceConfig.abTestMediums.filter(m => m !== medium);
-                                            updateABTestMediums(template.sourceName, newAbTestMediums);
+                                            updateABTestMediums(sourceName, newAbTestMediums);
                                           }}
                                         />
-                                        <Label htmlFor={`${template.sourceName}-ab-${medium}`} className="text-sm text-blue-600">
+                                        <Label htmlFor={`${sourceName}-ab-${medium}`} className="text-sm text-blue-600">
                                           {medium}
                                         </Label>
                                       </div>
@@ -357,6 +408,60 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                       );
                     })}
                   </div>
+
+                  {/* Add Custom Source */}
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-medium mb-3 block">Add Custom Source</Label>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          value={customSource}
+                          onChange={(e) => setCustomSource(e.target.value)}
+                          placeholder="Source name (e.g., TikTok, Pinterest)"
+                        />
+                        <Input
+                          value={customMedium}
+                          onChange={(e) => setCustomMedium(e.target.value)}
+                          placeholder="Initial medium (optional)"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addCustomSource}
+                        disabled={!customSource.trim()}
+                        className="w-full"
+                      >
+                        Add Source
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Show Selected Custom Sources */}
+                  {selectedSources.some(s => !getAllAvailableSources().includes(s.sourceName)) && (
+                    <div className="mt-4">
+                      <Label className="text-sm font-medium mb-2 block">Custom Sources Added</Label>
+                      <div className="space-y-2">
+                        {selectedSources
+                          .filter(s => !getAllAvailableSources().includes(s.sourceName))
+                          .map((source) => (
+                            <div key={source.sourceName} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                              <span className="text-sm">{source.sourceName}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeCustomSource(source.sourceName)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end">
