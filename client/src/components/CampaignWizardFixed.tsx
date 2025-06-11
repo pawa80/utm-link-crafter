@@ -43,7 +43,6 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch source templates
   const { data: sourceTemplates = [] } = useQuery({
     queryKey: ["/api/source-templates"],
     queryFn: async () => {
@@ -322,6 +321,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   </Label>
                   <Input
                     id="target-url"
+                    type="url"
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
                     placeholder="https://yoursite.com/landing-page"
@@ -488,7 +488,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                           .filter(s => !getAllAvailableSources().includes(s.sourceName))
                           .map((source) => (
                             <div key={source.sourceName} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                              <span className="text-sm">{source.sourceName}</span>
+                              <span className="text-sm">{source.sourceName} - {source.mediums.join(', ')}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -529,7 +529,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                       return (
                         <div key={index} className={`border rounded-lg p-4 ${isEmpty ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}`}>
                           <Label className="text-sm font-medium mb-2 block">
-                            {variant.medium} - Variant {variant.variant}
+                            {variant.medium}
                             {isEmpty && <span className="text-red-500 ml-1">*</span>}
                           </Label>
                           <Input
@@ -603,38 +603,33 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {generatedLinks.length > 0 ? (
-              <div className="space-y-4">
-                {generatedLinks.map((link, index) => (
-                  <div key={index} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline">
-                        {link.utm_source} - {link.utm_medium}
-                      </Badge>
-                      {link.utm_content && (
-                        <Badge variant="secondary" className="text-xs">
-                          {link.utm_content}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-600 break-all">
-                      {link.generatedLink}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(link.generatedLink)}
-                      className="w-full"
-                    >
-                      Copy Link
-                    </Button>
-                  </div>
-                ))}
+            {generatedLinks.length === 0 ? (
+              <div className="text-center py-8">
+                <LinkIcon className="mx-auto text-gray-400 mb-4" size={48} />
+                <p className="text-gray-500">Generated links will appear here</p>
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
-                <LinkIcon size={48} className="mx-auto mb-4 opacity-50" />
-                <p>Generated links will appear here</p>
+              <div className="space-y-4">
+                {generatedLinks.map((link, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="space-y-1">
+                        <p className="font-medium">{link.utm_source} - {link.utm_medium}</p>
+                        <p className="text-sm text-gray-600">{link.utm_content}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(link.generatedLink)}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-sm bg-gray-50 p-2 rounded break-all">
+                      {link.generatedLink}
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
