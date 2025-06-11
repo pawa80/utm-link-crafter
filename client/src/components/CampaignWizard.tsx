@@ -202,13 +202,8 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         utm_campaign: campaignName,
         utm_source: sourceName,
         utm_medium: mediumName,
-        utm_term: null,
         utm_content: variant.content || `${variant.variant.toLowerCase()}-variant`,
-        internalCampaignId: null,
-        customField1Value: variant.variant === 'B' ? 'variant-b' : 'variant-a',
-        customField2Value: null,
-        customField3Value: null,
-        generatedLink: utmLink,
+        fullUtmLink: utmLink,
       };
 
       try {
@@ -216,6 +211,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         links.push({ ...linkData, ...result, generatedLink: utmLink });
       } catch (error) {
         console.error('Failed to create link:', error);
+        toast({
+          title: "Error",
+          description: `Failed to create link for ${sourceName}-${mediumName}`,
+          variant: "destructive",
+        });
       }
     }
     
