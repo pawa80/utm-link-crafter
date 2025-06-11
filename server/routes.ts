@@ -62,7 +62,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create UTM link
   app.post("/api/utm-links", authMiddleware, async (req: any, res) => {
     try {
-      console.log('Received UTM link data:', req.body);
       const utmLinkData = insertUtmLinkSchema.parse({
         ...req.body,
         userId: req.user.id,
@@ -71,11 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const utmLink = await storage.createUtmLink(utmLinkData);
       res.json(utmLink);
     } catch (error: any) {
-      console.error('UTM link validation error:', error);
-      res.status(400).json({ 
-        message: error.message,
-        details: error.issues || error
-      });
+      res.status(400).json({ message: error.message });
     }
   });
 

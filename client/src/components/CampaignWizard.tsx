@@ -136,12 +136,34 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     ));
   };
 
+  const isStep1Valid = () => {
+    return campaignName.trim() !== "" && 
+           targetUrl.trim() !== "" && 
+           validateUrl(targetUrl) &&
+           selectedSources.length > 0 &&
+           selectedSources.every(source => source.mediums.length > 0);
+  };
+
+  const isStep2Valid = () => {
+    return contentVariants.every(variant => variant.content.trim() !== "");
+  };
+
   const nextStep = () => {
     if (step === 1) {
       if (!campaignName.trim() || !targetUrl.trim() || selectedSources.length === 0) {
         toast({
           title: "Missing Information",
           description: "Please fill in campaign name, URL, and select at least one source",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const sourcesWithoutMediums = selectedSources.filter(source => source.mediums.length === 0);
+      if (sourcesWithoutMediums.length > 0) {
+        toast({
+          title: "Mediums Required",
+          description: `Please select mediums for: ${sourcesWithoutMediums.map(s => s.sourceName).join(', ')}`,
           variant: "destructive",
         });
         return;
@@ -306,8 +328,10 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                       const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
                       const hasTemplate = !!template;
                       
+                      const needsMediums = isSelected && sourceConfig?.mediums.length === 0;
+                      
                       return (
-                        <div key={sourceName} className="border rounded-lg p-4 space-y-3">
+                        <div key={sourceName} className={`border rounded-lg p-4 space-y-3 ${needsMediums ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}`}>
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id={sourceName}
@@ -325,6 +349,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                             {!hasTemplate && (
                               <Badge variant="outline" className="text-xs">
                                 custom
+                              </Badge>
+                            )}
+                            {needsMediums && (
+                              <Badge variant="destructive" className="text-xs">
+                                select mediums
                               </Badge>
                             )}
                           </div>
@@ -465,7 +494,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={nextStep}>
+                  <Button 
+                    onClick={nextStep}
+                    disabled={!isStep1Valid()}
+                    className={!isStep1Valid() ? "opacity-50 cursor-not-allowed" : ""}
+                  >
                     Next Step
                     <ArrowRight className="ml-2" size={16} />
                   </Button>
@@ -479,18 +512,26 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 <div>
                   <h3 className="text-lg font-medium mb-4">Define Content for Each Medium</h3>
                   <div className="space-y-4">
-                    {contentVariants.map((variant, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <Label className="text-sm font-medium mb-2 block">
-                          {variant.medium} - Variant {variant.variant}
-                        </Label>
-                        <Input
-                          value={variant.content}
-                          onChange={(e) => updateContentVariant(index, e.target.value)}
-                          placeholder="Enter content description"
-                        />
-                      </div>
-                    ))}
+                    {contentVariants.map((variant, index) => {
+                      const isEmpty = variant.content.trim() === "";
+                      return (
+                        <div key={index} className={`border rounded-lg p-4 ${isEmpty ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}`}>
+                          <Label className="text-sm font-medium mb-2 block">
+                            {variant.medium} - Variant {variant.variant}
+                            {isEmpty && <span className="text-red-500 ml-1">*</span>}
+                          </Label>
+                          <Input
+                            value={variant.content}
+                            onChange={(e) => updateContentVariant(index, e.target.value)}
+                            placeholder="Enter content description"
+                            className={isEmpty ? 'border-orange-300' : ''}
+                          />
+                          {isEmpty && (
+                            <p className="text-sm text-orange-600 mt-1">Content is required</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -499,7 +540,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                     <ArrowLeft className="mr-2" size={16} />
                     Back
                   </Button>
-                  <Button onClick={generateLinks}>
+                  <Button 
+                    onClick={generateLinks}
+                    disabled={!isStep2Valid()}
+                    className={!isStep2Valid() ? "opacity-50 cursor-not-allowed" : ""}
+                  >
                     Generate Links
                     <LinkIcon className="ml-2" size={16} />
                   </Button>
