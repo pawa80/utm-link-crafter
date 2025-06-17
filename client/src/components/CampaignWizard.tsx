@@ -104,19 +104,18 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const addCustomSource = async () => {
     if (customSource.trim() && !getAllAvailableSources().includes(customSource.trim())) {
       const newSourceName = customSource.trim();
-      const initialMediums = customMedium.trim() ? [customMedium.trim()] : [];
       
-      // Add the new custom source as selected
+      // Add the new custom source as selected (with no initial mediums)
       setSelectedSources([...selectedSources, {
         sourceName: newSourceName,
-        mediums: initialMediums
+        mediums: []
       }]);
       
       // Automatically create template for the new source
       try {
         await createSourceTemplateMutation.mutateAsync({
           sourceName: newSourceName,
-          mediums: initialMediums
+          mediums: []
         });
         toast({
           title: "Source Added",
@@ -131,7 +130,6 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       }
       
       setCustomSource("");
-      setCustomMedium("");
     }
   };
 
@@ -532,18 +530,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   <div className="border-t pt-4">
                     <Label className="text-sm font-medium mb-3 block">Add Custom Source</Label>
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input
-                          value={customSource}
-                          onChange={(e) => setCustomSource(e.target.value)}
-                          placeholder="Source name (e.g., TikTok, Pinterest)"
-                        />
-                        <Input
-                          value={customMedium}
-                          onChange={(e) => setCustomMedium(e.target.value)}
-                          placeholder="Initial medium (optional)"
-                        />
-                      </div>
+                      <Input
+                        value={customSource}
+                        onChange={(e) => setCustomSource(e.target.value)}
+                        placeholder="Source name (e.g., TikTok, Pinterest)"
+                      />
                       <Button
                         type="button"
                         variant="outline"
