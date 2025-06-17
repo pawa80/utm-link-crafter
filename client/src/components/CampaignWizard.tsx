@@ -435,22 +435,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                 </div>
                               )}
 
-                              {/* Manual input for sources with no predefined mediums */}
-                              {(!hasTemplate || !template.mediums || template.mediums.length === 0) && 
-                               (!sourceConfig?.mediums || sourceConfig.mediums.length === 0) && (
-                                <div>
-                                  <Label className="text-sm">Enter Mediums</Label>
-                                  <div className="mt-2">
-                                    <Input
-                                      placeholder="Enter mediums separated by commas (e.g., cpc, display, social)"
-                                      onChange={(e) => {
-                                        const mediums = e.target.value.split(',').map(m => m.trim()).filter(m => m);
-                                        updateSourceMediums(sourceName, mediums);
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
+                              {/* For sources with no predefined mediums and no added mediums, hide input field */}
 
                               <div>
                                 <div className="flex items-center justify-between mb-2">
