@@ -457,18 +457,16 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                       onChange={(e) => setNewMediumInput(prev => ({ ...prev, [sourceName]: e.target.value }))}
                                       placeholder="Enter new medium (e.g., stories, reels, organic)"
                                     />
-                                    {hasTemplate && (
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`${sourceName}-save-template`}
-                                          checked={saveToTemplate[sourceName] || false}
-                                          onCheckedChange={(checked) => setSaveToTemplate(prev => ({ ...prev, [sourceName]: checked as boolean }))}
-                                        />
-                                        <Label htmlFor={`${sourceName}-save-template`} className="text-sm">
-                                          Save to {sourceName} template for future campaigns
-                                        </Label>
-                                      </div>
-                                    )}
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`${sourceName}-save-template`}
+                                        checked={saveToTemplate[sourceName] || false}
+                                        onCheckedChange={(checked) => setSaveToTemplate(prev => ({ ...prev, [sourceName]: checked as boolean }))}
+                                      />
+                                      <Label htmlFor={`${sourceName}-save-template`} className="text-sm">
+                                        Save to {sourceName} template for future campaigns
+                                      </Label>
+                                    </div>
                                     <Button
                                       type="button"
                                       size="sm"
