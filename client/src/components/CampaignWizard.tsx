@@ -78,6 +78,16 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     },
   });
 
+  const createSourceTemplateMutation = useMutation({
+    mutationFn: async (templateData: { sourceName: string; mediums: string[] }) => {
+      const response = await apiRequest("POST", "/api/source-templates", templateData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/source-templates'] });
+    },
+  });
+
   const totalSteps = 3;
 
   const handleSourceToggle = (sourceName: string, checked: boolean) => {
@@ -132,29 +142,36 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         : source
     ));
 
-    // If user wants to save to template and template exists, update it
+    // If user wants to save to template
     if (saveToTemplate) {
       const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
-      if (template) {
-        try {
+      try {
+        if (template) {
+          // Update existing template
           await updateSourceTemplateMutation.mutateAsync({
             id: template.id,
             mediums: [...(template.mediums || []), newMedium]
           });
           toast({
             title: "Success",
-            description: `Added "${newMedium}" to ${sourceName}`,
+            description: `Added "${newMedium}" to ${sourceName} template`,
           });
-        } catch (error) {
+        } else {
+          // Create new template
+          await createSourceTemplateMutation.mutateAsync({
+            sourceName,
+            mediums: [newMedium]
+          });
           toast({
-            title: "Added to Campaign",
-            description: `"${newMedium}" added to current campaign`,
+            title: "Success",
+            description: `Created ${sourceName} template with "${newMedium}"`,
           });
         }
-      } else {
+      } catch (error) {
         toast({
           title: "Added to Campaign",
-          description: `"${newMedium}" added to current campaign`,
+          description: `"${newMedium}" added to current campaign only`,
+          variant: "destructive",
         });
       }
     } else {
@@ -409,7 +426,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                 return customMediums.length > 0;
                               })() && (
                                 <div>
-                                  <Label className="text-sm">Added Mediums</Label>
+                                  <Label className="text-sm">Custom Mediums</Label>
                                   <div className="flex flex-wrap gap-2 mt-2">
                                     {sourceConfig.mediums.filter(medium => 
                                       !hasTemplate || !template?.mediums || !template.mediums.includes(medium)
@@ -427,7 +444,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                           }}
                                         />
                                         <Label htmlFor={`${sourceName}-custom-${medium}`} className="text-sm">
-                                          {medium} <Badge variant="secondary" className="text-xs ml-1">added</Badge>
+                                          {medium} <Badge variant="secondary" className="text-xs ml-1">custom</Badge>
                                         </Label>
                                       </div>
                                     ))}
