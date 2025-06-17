@@ -377,6 +377,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                 <Label className="text-sm">Select Mediums</Label>
                                 {hasTemplate && template.mediums && template.mediums.length > 0 ? (
                                   <div className="flex flex-wrap gap-2 mt-2">
+                                    {/* Show template mediums */}
                                     {template.mediums.map((medium: string) => (
                                       <div key={medium} className="flex items-center space-x-1">
                                         <Checkbox
@@ -395,9 +396,48 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                         </Label>
                                       </div>
                                     ))}
+                                    {/* Show session-added custom mediums */}
+                                    {sourceConfig?.mediums.filter(medium => !template.mediums.includes(medium)).map((medium: string) => (
+                                      <div key={medium} className="flex items-center space-x-1">
+                                        <Checkbox
+                                          id={`${sourceName}-${medium}`}
+                                          checked={true}
+                                          onCheckedChange={(checked) => {
+                                            const currentMediums = sourceConfig?.mediums || [];
+                                            const newMediums = checked 
+                                              ? [...currentMediums, medium]
+                                              : currentMediums.filter(m => m !== medium);
+                                            updateSourceMediums(sourceName, newMediums);
+                                          }}
+                                        />
+                                        <Label htmlFor={`${sourceName}-${medium}`} className="text-sm">
+                                          {medium} <Badge variant="secondary" className="text-xs ml-1">custom</Badge>
+                                        </Label>
+                                      </div>
+                                    ))}
                                   </div>
                                 ) : (
                                   <div className="mt-2">
+                                    {/* Show currently selected mediums for sources without templates */}
+                                    {sourceConfig?.mediums.length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mb-2">
+                                        {sourceConfig.mediums.map((medium: string) => (
+                                          <Badge key={medium} variant="secondary" className="text-xs">
+                                            {medium}
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const newMediums = sourceConfig.mediums.filter(m => m !== medium);
+                                                updateSourceMediums(sourceName, newMediums);
+                                              }}
+                                              className="ml-1 hover:text-red-500"
+                                            >
+                                              ×
+                                            </button>
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
                                     <Input
                                       placeholder="Enter mediums separated by commas (e.g., cpc, display, social)"
                                       onChange={(e) => {
