@@ -124,7 +124,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     ));
   };
 
-  const addCustomMediumToSource = async (sourceName: string, newMedium: string, saveToTemplate: boolean) => {
+  const addCustomMediumToSource = async (sourceName: string, newMedium: string, saveToTemplate: boolean = false) => {
     // Add medium to current campaign
     setSelectedSources(selectedSources.map(source => 
       source.sourceName === sourceName 
@@ -132,7 +132,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         : source
     ));
 
-    // If user wants to save to template, update the source template
+    // If user wants to save to template and template exists, update it
     if (saveToTemplate) {
       const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
       if (template) {
@@ -143,16 +143,25 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
           });
           toast({
             title: "Success",
-            description: `Added "${newMedium}" to ${sourceName} template`,
+            description: `Added "${newMedium}" to ${sourceName}`,
           });
         } catch (error) {
           toast({
-            title: "Warning",
-            description: `Added to campaign but failed to save to template`,
-            variant: "destructive",
+            title: "Added to Campaign",
+            description: `"${newMedium}" added to current campaign`,
           });
         }
+      } else {
+        toast({
+          title: "Added to Campaign",
+          description: `"${newMedium}" added to current campaign`,
+        });
       }
+    } else {
+      toast({
+        title: "Added to Campaign",
+        description: `"${newMedium}" added to current campaign`,
+      });
     }
 
     // Clear input states
@@ -400,27 +409,27 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                 )}
                               </div>
 
-                              {hasTemplate && (
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Add Custom Medium</Label>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setAddingCustomMedium(prev => ({ ...prev, [sourceName]: !prev[sourceName] }))}
-                                    >
-                                      {addingCustomMedium[sourceName] ? 'Cancel' : 'Add Medium'}
-                                    </Button>
-                                  </div>
-                                  
-                                  {addingCustomMedium[sourceName] && (
-                                    <div className="space-y-3 p-3 bg-gray-50 rounded">
-                                      <Input
-                                        value={newMediumInput[sourceName] || ''}
-                                        onChange={(e) => setNewMediumInput(prev => ({ ...prev, [sourceName]: e.target.value }))}
-                                        placeholder="Enter new medium (e.g., stories, reels)"
-                                      />
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <Label className="text-sm">Add Custom Medium</Label>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setAddingCustomMedium(prev => ({ ...prev, [sourceName]: !prev[sourceName] }))}
+                                  >
+                                    {addingCustomMedium[sourceName] ? 'Cancel' : 'Add Medium'}
+                                  </Button>
+                                </div>
+                                
+                                {addingCustomMedium[sourceName] && (
+                                  <div className="space-y-3 p-3 bg-gray-50 rounded">
+                                    <Input
+                                      value={newMediumInput[sourceName] || ''}
+                                      onChange={(e) => setNewMediumInput(prev => ({ ...prev, [sourceName]: e.target.value }))}
+                                      placeholder="Enter new medium (e.g., stories, reels, organic)"
+                                    />
+                                    {hasTemplate && (
                                       <div className="flex items-center space-x-2">
                                         <Checkbox
                                           id={`${sourceName}-save-template`}
@@ -428,21 +437,21 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                           onCheckedChange={(checked) => setSaveToTemplate(prev => ({ ...prev, [sourceName]: checked as boolean }))}
                                         />
                                         <Label htmlFor={`${sourceName}-save-template`} className="text-sm">
-                                          Add to {sourceName} template for future campaigns
+                                          Save to {sourceName} template for future campaigns
                                         </Label>
                                       </div>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => addCustomMediumToSource(sourceName, newMediumInput[sourceName] || '', saveToTemplate[sourceName] || false)}
-                                        disabled={!newMediumInput[sourceName]?.trim()}
-                                      >
-                                        Confirm
-                                      </Button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                                    )}
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => addCustomMediumToSource(sourceName, newMediumInput[sourceName] || '', saveToTemplate[sourceName] || false)}
+                                      disabled={!newMediumInput[sourceName]?.trim()}
+                                    >
+                                      Add Medium
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
