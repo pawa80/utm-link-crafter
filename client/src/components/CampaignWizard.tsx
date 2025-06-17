@@ -102,7 +102,8 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   };
 
   const addCustomSource = () => {
-    if (customSource.trim() && !selectedSources.some(s => s.sourceName === customSource.trim())) {
+    if (customSource.trim() && !getAllAvailableSources().includes(customSource.trim())) {
+      // Add the new custom source as selected
       setSelectedSources([...selectedSources, {
         sourceName: customSource.trim(),
         mediums: customMedium.trim() ? [customMedium.trim()] : []
@@ -119,7 +120,10 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const getAllAvailableSources = () => {
     const templateSources = sourceTemplates.map((t: SourceTemplate) => t.sourceName);
     const userSources = user.defaultSources || [];
-    const combinedSources = [...templateSources, ...userSources];
+    const customSources = selectedSources
+      .filter(s => !templateSources.includes(s.sourceName) && !userSources.includes(s.sourceName))
+      .map(s => s.sourceName);
+    const combinedSources = [...templateSources, ...userSources, ...customSources];
     const uniqueSources = combinedSources.filter((source, index) => 
       combinedSources.indexOf(source) === index
     );
@@ -531,30 +535,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                     </div>
                   </div>
 
-                  {/* Show Selected Custom Sources */}
-                  {selectedSources.some(s => !getAllAvailableSources().includes(s.sourceName)) && (
-                    <div className="mt-4">
-                      <Label className="text-sm font-medium mb-2 block">Custom Sources Added</Label>
-                      <div className="space-y-2">
-                        {selectedSources
-                          .filter(s => !getAllAvailableSources().includes(s.sourceName))
-                          .map((source) => (
-                            <div key={source.sourceName} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                              <span className="text-sm">{source.sourceName} - {source.mediums.join(', ')}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeCustomSource(source.sourceName)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+
                 </div>
 
                 <div className="flex justify-end">
