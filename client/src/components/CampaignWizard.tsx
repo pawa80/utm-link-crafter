@@ -567,25 +567,77 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             {/* Step 2: Content Definition */}
             {step === 2 && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Define Content for Each Medium</h3>
+                {/* Purple gradient header */}
+                <div className="bg-gradient-to-r from-purple-600 to-purple-400 text-white p-6 rounded-lg">
+                  <div className="flex items-center">
+                    <Target className="mr-3" size={24} />
+                    <h3 className="text-xl font-semibold">New Campaign</h3>
+                  </div>
+                  <div className="mt-4">
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <div className="bg-white h-2 rounded-full" style={{ width: '66%' }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content section */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <div className="flex items-center mb-6">
+                    <Target className="text-gray-600 mr-3" size={24} />
+                    <h3 className="text-lg font-medium text-gray-800">Define Content for Each Medium</h3>
+                  </div>
+                  
                   <div className="space-y-4">
                     {contentVariants.map((variant, index) => {
                       const isEmpty = variant.content.trim() === "";
+                      const [sourceName, mediumName] = variant.medium.split('-');
+                      
+                      // Get source icon/color based on source name
+                      const getSourceIcon = (source: string) => {
+                        const lowerSource = source.toLowerCase();
+                        if (lowerSource.includes('på') || lowerSource.includes('pal')) return '🎯';
+                        if (lowerSource.includes('tiktok')) return '📱';
+                        if (lowerSource.includes('facebook')) return '📘';
+                        if (lowerSource.includes('linkedin')) return '💼';
+                        if (lowerSource.includes('google')) return '🔍';
+                        return '📊';
+                      };
+
+                      const getSourceColor = (source: string) => {
+                        const lowerSource = source.toLowerCase();
+                        if (lowerSource.includes('på') || lowerSource.includes('pal')) return 'bg-blue-500';
+                        if (lowerSource.includes('tiktok')) return 'bg-teal-500';
+                        if (lowerSource.includes('facebook')) return 'bg-blue-600';
+                        if (lowerSource.includes('linkedin')) return 'bg-blue-700';
+                        if (lowerSource.includes('google')) return 'bg-red-500';
+                        return 'bg-gray-500';
+                      };
+
                       return (
-                        <div key={index} className={`border rounded-lg p-4 ${isEmpty ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}`}>
-                          <Label className="text-sm font-medium mb-2 block">
-                            {variant.medium}
-                            {isEmpty && <span className="text-red-500 ml-1">*</span>}
-                          </Label>
-                          <Input
+                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className={`w-8 h-8 ${getSourceColor(sourceName)} rounded flex items-center justify-center text-white text-sm font-medium mr-3`}>
+                                {getSourceIcon(sourceName)}
+                              </div>
+                              <span className="font-medium text-gray-800">{sourceName}-{mediumName}</span>
+                            </div>
+                            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                              {mediumName}
+                            </span>
+                          </div>
+                          
+                          <textarea
                             value={variant.content}
                             onChange={(e) => updateContentVariant(index, e.target.value)}
                             placeholder="Enter content description"
-                            className={isEmpty ? 'border-orange-300' : ''}
+                            className={`w-full h-20 p-3 border rounded-md resize-none ${isEmpty ? 'border-orange-300 bg-orange-50' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
                           />
+                          
                           {isEmpty && (
-                            <p className="text-sm text-orange-600 mt-1">Content is required</p>
+                            <div className="flex items-center mt-2 text-red-500">
+                              <span className="text-sm">⚠️ Content is required</span>
+                            </div>
                           )}
                         </div>
                       );
@@ -594,14 +646,14 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 </div>
 
                 <div className="flex justify-between">
-                  <Button variant="outline" onClick={prevStep}>
+                  <Button variant="outline" onClick={prevStep} className="flex items-center">
                     <ArrowLeft className="mr-2" size={16} />
                     Back
                   </Button>
                   <Button 
                     onClick={generateLinks}
                     disabled={!isStep2Valid()}
-                    className={!isStep2Valid() ? "opacity-50 cursor-not-allowed" : ""}
+                    className={`bg-purple-600 hover:bg-purple-700 text-white flex items-center ${!isStep2Valid() ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     Generate Links
                     <LinkIcon className="ml-2" size={16} />
