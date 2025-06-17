@@ -101,13 +101,35 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     }
   };
 
-  const addCustomSource = () => {
+  const addCustomSource = async () => {
     if (customSource.trim() && !getAllAvailableSources().includes(customSource.trim())) {
+      const newSourceName = customSource.trim();
+      const initialMediums = customMedium.trim() ? [customMedium.trim()] : [];
+      
       // Add the new custom source as selected
       setSelectedSources([...selectedSources, {
-        sourceName: customSource.trim(),
-        mediums: customMedium.trim() ? [customMedium.trim()] : []
+        sourceName: newSourceName,
+        mediums: initialMediums
       }]);
+      
+      // Automatically create template for the new source
+      try {
+        await createSourceTemplateMutation.mutateAsync({
+          sourceName: newSourceName,
+          mediums: initialMediums
+        });
+        toast({
+          title: "Source Added",
+          description: `${newSourceName} added to your library`,
+        });
+      } catch (error) {
+        toast({
+          title: "Source Added",
+          description: `${newSourceName} added to campaign (library save failed)`,
+          variant: "destructive",
+        });
+      }
+      
       setCustomSource("");
       setCustomMedium("");
     }
