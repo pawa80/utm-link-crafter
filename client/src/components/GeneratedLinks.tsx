@@ -86,13 +86,43 @@ export default function GeneratedLinks() {
     );
   }
 
+  // Group links by campaign
+  const groupedByCampaign = links.reduce((acc, link) => {
+    const campaignName = link.utm_campaign;
+    if (!acc[campaignName]) {
+      acc[campaignName] = [];
+    }
+    acc[campaignName].push(link);
+    return acc;
+  }, {} as Record<string, typeof links>);
+
+  // Group links within each campaign by source
+  const campaignGroups = Object.entries(groupedByCampaign).map(([campaignName, campaignLinks]) => {
+    const groupedBySource = campaignLinks.reduce((acc, link) => {
+      const sourceName = link.utm_source;
+      if (!acc[sourceName]) {
+        acc[sourceName] = [];
+      }
+      acc[sourceName].push(link);
+      return acc;
+    }, {} as Record<string, typeof campaignLinks>);
+
+    return {
+      campaignName,
+      sources: Object.entries(groupedBySource).map(([sourceName, sourceLinks]) => ({
+        sourceName,
+        links: sourceLinks
+      }))
+    };
+  });
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <List className="text-primary mr-2" size={20} />
-            Generated Links
+            My Campaigns
           </div>
           {links.length > 0 && (
             <Button
@@ -117,67 +147,134 @@ export default function GeneratedLinks() {
             <p className="text-gray-600">Generate your first UTM link to get started</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {links.map((link) => (
-              <div 
-                key={link.id} 
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">
-                      {link.utm_campaign}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {link.createdAt && formatDistanceToNow(new Date(link.createdAt), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <Badge variant="secondary">{link.utm_source}</Badge>
-                    <Badge variant="secondary">{link.utm_medium}</Badge>
-                    {link.utm_content && (
-                      <Badge variant="secondary">{link.utm_content}</Badge>
-                    )}
-                    {link.category && (
-                      <Badge variant="outline">{link.category}</Badge>
-                    )}
-                    {link.internalCampaignId && (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        ID: {link.internalCampaignId}
-                      </Badge>
-                    )}
-                    {link.customField1Value && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {link.customField1Value}
-                      </Badge>
-                    )}
-                    {link.customField2Value && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {link.customField2Value}
-                      </Badge>
-                    )}
-                    {link.customField3Value && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {link.customField3Value}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-gray-50 p-3 rounded border">
-                  <div className="flex items-start justify-between gap-2">
-                    <code className="text-xs text-gray-700 break-all flex-1">
-                      {link.fullUtmLink}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                      className="flex-shrink-0 text-primary hover:text-primary/80"
-                    >
-                      <Copy size={16} />
-                    </Button>
-                  </div>
-                </div>
+          <div className="space-y-8">
+            {campaignGroups.map(({ campaignName, sources }) => (
+              <div key={campaignName} className="space-y-6">
+                {/* Campaign header - only shown once per campaign */}
+                <h2 className="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">
+                  {campaignName}
+                </h2>
+                
+                {/* Sources for this campaign */}
+                {sources.map(({ sourceName, links: sourceLinks }) => (
+                  <Card key={`${campaignName}-${sourceName}`} className="border-l-4 border-l-blue-500">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
+                      
+                      {/* Desktop: Headers */}
+                      <div className="hidden md:grid md:grid-cols-4 gap-4 mb-2">
+                        <span className="text-sm font-medium">Medium</span>
+                        <span className="text-sm font-medium">Content</span>
+                        <span className="text-sm font-medium">Link name</span>
+                        <span className="text-sm font-medium">UTM Link</span>
+                      </div>
+                      
+                      {/* Desktop: Grid rows */}
+                      <div className="hidden md:block space-y-2">
+                        {sourceLinks.map((link) => {
+                          const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                          
+                          return (
+                            <div key={link.id} className="grid grid-cols-4 gap-4 items-center">
+                              <input 
+                                value={link.utm_medium} 
+                                readOnly 
+                                className="bg-gray-50 border rounded px-3 py-2 text-sm" 
+                              />
+                              <input
+                                value={link.utm_content || ''}
+                                readOnly
+                                className="bg-gray-50 border rounded px-3 py-2 text-sm"
+                              />
+                              <input
+                                value={linkName}
+                                readOnly
+                                className="bg-gray-50 border rounded px-3 py-2 text-sm"
+                              />
+                              <div className="flex">
+                                <input
+                                  value={link.fullUtmLink}
+                                  readOnly
+                                  className="flex-1 bg-gray-50 border rounded px-3 py-2 text-xs"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                  className="ml-2"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Mobile: Stacked layout */}
+                      <div className="md:hidden space-y-4">
+                        {sourceLinks.map((link) => {
+                          const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                          
+                          return (
+                            <div key={link.id} className="border rounded-lg p-3 space-y-3">
+                              {/* Medium and Content on same line */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <span className="text-xs text-gray-600 mb-1 block">Medium</span>
+                                  <input 
+                                    value={link.utm_medium} 
+                                    readOnly 
+                                    className="bg-gray-50 border rounded px-2 py-1 text-sm w-full" 
+                                  />
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-600 mb-1 block">Content</span>
+                                  <input
+                                    value={link.utm_content || ''}
+                                    readOnly
+                                    className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Link name below */}
+                              <div>
+                                <span className="text-xs text-gray-600 mb-1 block">Link name</span>
+                                <input
+                                  value={linkName}
+                                  readOnly
+                                  className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                />
+                              </div>
+                              
+                              {/* UTM Link below - with line breaks if needed */}
+                              <div>
+                                <span className="text-xs text-gray-600 mb-1 block">UTM Link</span>
+                                <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
+                                  {link.fullUtmLink}
+                                </div>
+                              </div>
+                              
+                              {/* Copy button below UTM link */}
+                              <div className="pt-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                  className="w-full"
+                                >
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copy Link
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ))}
           </div>
