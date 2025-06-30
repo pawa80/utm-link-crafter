@@ -877,7 +877,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
           >
-            Generate All Links ({getCheckedSourcesWithContent().length})
+            Save Campaign Links ({getCheckedSourcesWithContent().length})
           </Button>
         </div>
       )}
