@@ -146,18 +146,14 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     const currentIndex = sourceState.selectedMediums.indexOf(medium);
     if (currentIndex === -1) return;
 
-    // Create a unique medium name for the duplicate
-    let duplicateCount = 1;
-    let duplicateMedium = `${medium}_copy`;
-    while (sourceState.selectedMediums.includes(duplicateMedium)) {
-      duplicateCount++;
-      duplicateMedium = `${medium}_copy${duplicateCount}`;
-    }
+    // Create a unique key for the duplicate row using the same medium name
+    // We'll use an internal ID system to track multiple rows with same medium
+    const duplicateKey = `${medium}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     setSourceStates(prev => {
       const currentState = prev[sourceName];
       const newSelectedMediums = [...currentState.selectedMediums];
-      newSelectedMediums.splice(currentIndex + 1, 0, duplicateMedium);
+      newSelectedMediums.splice(currentIndex + 1, 0, duplicateKey);
       
       return {
         ...prev,
@@ -166,7 +162,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
           selectedMediums: newSelectedMediums,
           contentInputs: {
             ...currentState.contentInputs,
-            [duplicateMedium]: "" // Always blank for new row
+            [duplicateKey]: "" // Always blank for new row
           }
         }
       };
@@ -690,28 +686,30 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 
                 {/* Rows - no individual headers */}
                 <div className="space-y-2">
-                  {state.selectedMediums.map((medium) => {
-                    const content = state.contentInputs[medium] || "";
+                  {state.selectedMediums.map((mediumKey) => {
+                    const content = state.contentInputs[mediumKey] || "";
+                    // Extract the actual medium name from the key (everything before the first underscore and timestamp)
+                    const actualMedium = mediumKey.includes('_') && mediumKey.match(/_\d+_/) ? mediumKey.split('_')[0] : mediumKey;
                     const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
                     const utmLink = canGenerateLink ? generateUTMLink({
                       targetUrl,
                       utm_campaign: campaignName,
                       utm_source: sourceName.toLowerCase(),
-                      utm_medium: medium,
+                      utm_medium: actualMedium,
                       utm_content: content
                     }) : "";
-                    const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
+                    const linkName = canGenerateLink ? `${sourceName} ${actualMedium.charAt(0).toUpperCase() + actualMedium.slice(1)} ${content}` : "";
 
                     return (
-                      <div key={medium} className="grid grid-cols-4 gap-4 items-center">
+                      <div key={mediumKey} className="grid grid-cols-4 gap-4 items-center">
                         <Input 
-                          value={medium} 
+                          value={actualMedium} 
                           readOnly 
                           className="bg-gray-50" 
                         />
                         <Input
                           value={content}
-                          onChange={(e) => handleContentChange(sourceName, medium, e.target.value)}
+                          onChange={(e) => handleContentChange(sourceName, mediumKey, e.target.value)}
                           placeholder="fill in content..."
                         />
                         <Input
@@ -738,7 +736,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => duplicateRow(sourceName, medium)}
+                            onClick={() => duplicateRow(sourceName, mediumKey)}
                             className="ml-2"
                             title="Duplicate this row"
                           >
