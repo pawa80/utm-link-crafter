@@ -219,7 +219,7 @@ export default function GeneratedLinks() {
                           </div>
                       
                           {/* Desktop: Headers */}
-                          <div className="hidden md:grid gap-4 mb-2" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
+                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
                             <span className="text-sm font-medium">Medium</span>
                             <span className="text-sm font-medium">Content</span>
                             <span className="text-sm font-medium">Link name</span>
@@ -233,31 +233,32 @@ export default function GeneratedLinks() {
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                               
                               return (
-                                <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
+                                <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
                                   <input 
                                     value={link.utm_medium} 
                                     readOnly 
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm" 
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full" 
                                   />
                                   <input
                                     value={link.utm_content || ''}
                                     readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm"
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
                                   />
                                   <input
                                     value={linkName}
                                     readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm"
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
                                   />
                                   <input
                                     value={link.fullUtmLink}
                                     readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-xs"
+                                    className="bg-gray-50 border rounded px-3 py-2 text-xs w-full"
                                   />
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                    className="w-full"
                                   >
                                     <Copy className="w-4 h-4" />
                                   </Button>
