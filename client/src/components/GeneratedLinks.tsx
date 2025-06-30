@@ -233,7 +233,7 @@ export default function GeneratedLinks() {
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                               
                               return (
-                                <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
+                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
                                   <input 
                                     value={link.utm_medium} 
                                     readOnly 
@@ -249,16 +249,14 @@ export default function GeneratedLinks() {
                                     readOnly
                                     className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
                                   />
-                                  <input
-                                    value={link.fullUtmLink}
-                                    readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-xs w-full"
-                                  />
+                                  <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
+                                    {link.fullUtmLink}
+                                  </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                                    className="w-full"
+                                    className="w-full mt-1"
                                   >
                                     <Copy className="w-4 h-4" />
                                   </Button>
