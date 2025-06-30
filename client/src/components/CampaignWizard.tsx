@@ -138,35 +138,40 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     }));
   };
 
-  const duplicateRow = (sourceName: string, medium: string) => {
+  // Track duplicated rows separately from regular medium selection
+  const [duplicatedRows, setDuplicatedRows] = useState<{[sourceName: string]: Array<{id: string, medium: string, insertAfterIndex: number}>}>({});
+
+  const duplicateRow = (sourceName: string, rowKey: string) => {
     const sourceState = sourceStates[sourceName];
     if (!sourceState) return;
 
-    // Find the index of the current medium to insert after it
-    const currentIndex = sourceState.selectedMediums.indexOf(medium);
-    if (currentIndex === -1) return;
+    // Determine the actual medium name and find the base medium index
+    const actualMedium = rowKey.includes('_') && rowKey.match(/_\d+_/) ? rowKey.split('_')[0] : rowKey;
+    const baseMediumIndex = sourceState.selectedMediums.indexOf(actualMedium);
+    if (baseMediumIndex === -1) return;
 
-    // Create a unique key for the duplicate row using the same medium name
-    // We'll use an internal ID system to track multiple rows with same medium
-    const duplicateKey = `${medium}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Create a unique ID for the duplicate row
+    const duplicateId = `${actualMedium}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    setDuplicatedRows(prev => ({
+      ...prev,
+      [sourceName]: [
+        ...(prev[sourceName] || []),
+        { id: duplicateId, medium: actualMedium, insertAfterIndex: baseMediumIndex }
+      ]
+    }));
 
-    setSourceStates(prev => {
-      const currentState = prev[sourceName];
-      const newSelectedMediums = [...currentState.selectedMediums];
-      newSelectedMediums.splice(currentIndex + 1, 0, duplicateKey);
-      
-      return {
-        ...prev,
-        [sourceName]: {
-          ...currentState,
-          selectedMediums: newSelectedMediums,
-          contentInputs: {
-            ...currentState.contentInputs,
-            [duplicateKey]: "" // Always blank for new row
-          }
+    // Add content input for the duplicated row
+    setSourceStates(prev => ({
+      ...prev,
+      [sourceName]: {
+        ...prev[sourceName],
+        contentInputs: {
+          ...prev[sourceName]?.contentInputs,
+          [duplicateId]: "" // Always blank for new row
         }
-      };
-    });
+      }
+    }));
   };
 
   const addCustomSource = async () => {
@@ -686,66 +691,82 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 
                 {/* Rows - no individual headers */}
                 <div className="space-y-2">
-                  {state.selectedMediums.map((mediumKey) => {
-                    const content = state.contentInputs[mediumKey] || "";
-                    // Extract the actual medium name from the key (everything before the first underscore and timestamp)
-                    const actualMedium = mediumKey.includes('_') && mediumKey.match(/_\d+_/) ? mediumKey.split('_')[0] : mediumKey;
-                    const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
-                    const utmLink = canGenerateLink ? generateUTMLink({
-                      targetUrl,
-                      utm_campaign: campaignName,
-                      utm_source: sourceName.toLowerCase(),
-                      utm_medium: actualMedium,
-                      utm_content: content
-                    }) : "";
-                    const linkName = canGenerateLink ? `${sourceName} ${actualMedium.charAt(0).toUpperCase() + actualMedium.slice(1)} ${content}` : "";
+                  {(() => {
+                    // Create combined list of regular mediums and duplicated rows
+                    const allRows: Array<{key: string, medium: string, isDuplicated: boolean}> = [];
+                    
+                    // Add regular medium rows
+                    state.selectedMediums.forEach((medium, index) => {
+                      allRows.push({ key: medium, medium, isDuplicated: false });
+                      
+                      // Add any duplicated rows that should appear after this medium
+                      const duplicates = duplicatedRows[sourceName] || [];
+                      duplicates
+                        .filter(dup => dup.insertAfterIndex === index)
+                        .forEach(dup => {
+                          allRows.push({ key: dup.id, medium: dup.medium, isDuplicated: true });
+                        });
+                    });
+                    
+                    return allRows.map(({ key, medium, isDuplicated }) => {
+                      const content = state.contentInputs[key] || "";
+                      const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
+                      const utmLink = canGenerateLink ? generateUTMLink({
+                        targetUrl,
+                        utm_campaign: campaignName,
+                        utm_source: sourceName.toLowerCase(),
+                        utm_medium: medium,
+                        utm_content: content
+                      }) : "";
+                      const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
 
-                    return (
-                      <div key={mediumKey} className="grid grid-cols-4 gap-4 items-center">
-                        <Input 
-                          value={actualMedium} 
-                          readOnly 
-                          className="bg-gray-50" 
-                        />
-                        <Input
-                          value={content}
-                          onChange={(e) => handleContentChange(sourceName, mediumKey, e.target.value)}
-                          placeholder="fill in content..."
-                        />
-                        <Input
-                          value={linkName}
-                          readOnly
-                          className="bg-gray-50"
-                        />
-                        <div className="flex">
-                          <Input
-                            value={utmLink}
-                            readOnly
-                            className="flex-1 bg-gray-50 text-xs"
+                      return (
+                        <div key={key} className="grid grid-cols-4 gap-4 items-center">
+                          <Input 
+                            value={medium} 
+                            readOnly 
+                            className="bg-gray-50" 
                           />
-                          {utmLink && (
+                          <Input
+                            value={content}
+                            onChange={(e) => handleContentChange(sourceName, key, e.target.value)}
+                            placeholder="fill in content..."
+                          />
+                          <Input
+                            value={linkName}
+                            readOnly
+                            className="bg-gray-50"
+                          />
+                          <div className="flex">
+                            <Input
+                              value={utmLink}
+                              readOnly
+                              className="flex-1 bg-gray-50 text-xs"
+                            />
+                            {utmLink && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
+                                className="ml-2"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
+                              onClick={() => duplicateRow(sourceName, key)}
                               className="ml-2"
+                              title="Duplicate this row"
                             >
-                              <Copy className="w-4 h-4" />
+                              <Plus className="w-4 h-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => duplicateRow(sourceName, mediumKey)}
-                            className="ml-2"
-                            title="Duplicate this row"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
                 
                 <div className="mt-4">
