@@ -323,7 +323,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             id="campaignName"
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
-            placeholder="Summertime 2025"
+            placeholder="Fill in campaign name..."
             className="mt-1"
           />
         </div>
@@ -335,7 +335,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             id="targetUrl"
             value={targetUrl}
             onChange={(e) => setTargetUrl(e.target.value)}
-            placeholder="https://playmops.io/lp1"
+            placeholder="Fill in landing page URL..."
             className="mt-1"
           />
         </div>
