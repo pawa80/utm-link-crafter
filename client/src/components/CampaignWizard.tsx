@@ -373,106 +373,223 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       {/* Sources and Mediums Section */}
       <div className="space-y-4">
         <Label className="text-sm font-medium">Select Sources and Mediums *</Label>
-        <div className="space-y-3">
-          {getAllSources().map((sourceName) => {
-            const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
-            const availableMediums = getAvailableMediums(sourceName);
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const allSources = getAllSources();
+            const midPoint = Math.ceil(allSources.length / 2);
+            const leftColumnSources = allSources.slice(0, midPoint);
+            const rightColumnSources = allSources.slice(midPoint);
 
             return (
-              <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
-                <div className="w-24 pt-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={state.checked}
-                      onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
-                    />
-                    <span className="text-sm font-medium">{sourceName}</span>
-                  </div>
-                </div>
-                
-                <div className="flex-1 space-y-2">
-                  {/* Existing selected mediums */}
-                  <div className="flex flex-wrap gap-2">
-                    {state.selectedMediums.map((medium) => (
-                      <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
-                        <span className="text-sm">{medium}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMedium(sourceName, medium)}
-                          className="h-4 w-4 p-0 hover:bg-gray-200"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Add new medium dropdown */}
-                  {state.checked && (
-                    <div className="flex items-center space-x-2">
-                      <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="Choose..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableMediums
-                            .filter((medium: string) => !state.selectedMediums.includes(medium))
-                            .map((medium: string) => (
-                              <SelectItem key={medium} value={medium}>
-                                {medium}
-                              </SelectItem>
+              <>
+                {/* Left Column */}
+                <div className="space-y-3">
+                  {leftColumnSources.map((sourceName) => {
+                    const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
+                    const availableMediums = getAvailableMediums(sourceName);
+
+                    return (
+                      <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
+                        <div className="w-24 pt-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={state.checked}
+                              onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
+                            />
+                            <span className="text-sm font-medium">{sourceName}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-2">
+                          {/* Existing selected mediums */}
+                          <div className="flex flex-wrap gap-2">
+                            {state.selectedMediums.map((medium) => (
+                              <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
+                                <span className="text-sm">{medium}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMedium(sourceName, medium)}
+                                  className="h-4 w-4 p-0 hover:bg-gray-200"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </div>
+                          
+                          {/* Add new medium dropdown */}
+                          {state.checked && (
+                            <div className="flex items-center space-x-2">
+                              <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue placeholder="Choose..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableMediums
+                                    .filter((medium: string) => !state.selectedMediums.includes(medium))
+                                    .map((medium: string) => (
+                                      <SelectItem key={medium} value={medium}>
+                                        {medium}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => showCustomMediumInput(sourceName)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => showCustomMediumInput(sourceName)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
 
-                  {/* Custom medium input */}
-                  {state.checked && customMediumInputs[sourceName]?.show && (
-                    <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
-                      <Input
-                        value={customMediumInputs[sourceName]?.value || ""}
-                        onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
-                        placeholder="Enter custom medium"
-                        className="w-40"
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={customMediumInputs[sourceName]?.addToLibrary || false}
-                          onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
-                        />
-                        <span className="text-sm">Add to library</span>
+                          {/* Custom medium input */}
+                          {state.checked && customMediumInputs[sourceName]?.show && (
+                            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                              <Input
+                                value={customMediumInputs[sourceName]?.value || ""}
+                                onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
+                                placeholder="Enter custom medium"
+                                className="w-40"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  checked={customMediumInputs[sourceName]?.addToLibrary || false}
+                                  onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
+                                />
+                                <span className="text-sm">Add to library</span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addCustomMedium(sourceName)}
+                                disabled={!customMediumInputs[sourceName]?.value?.trim()}
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => hideCustomMediumInput(sourceName)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addCustomMedium(sourceName)}
-                        disabled={!customMediumInputs[sourceName]?.value?.trim()}
-                      >
-                        Add
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => hideCustomMediumInput(sourceName)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              </div>
+
+                {/* Right Column */}
+                <div className="space-y-3">
+                  {rightColumnSources.map((sourceName) => {
+                    const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
+                    const availableMediums = getAvailableMediums(sourceName);
+
+                    return (
+                      <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
+                        <div className="w-24 pt-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={state.checked}
+                              onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
+                            />
+                            <span className="text-sm font-medium">{sourceName}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-2">
+                          {/* Existing selected mediums */}
+                          <div className="flex flex-wrap gap-2">
+                            {state.selectedMediums.map((medium) => (
+                              <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
+                                <span className="text-sm">{medium}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMedium(sourceName, medium)}
+                                  className="h-4 w-4 p-0 hover:bg-gray-200"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Add new medium dropdown */}
+                          {state.checked && (
+                            <div className="flex items-center space-x-2">
+                              <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue placeholder="Choose..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableMediums
+                                    .filter((medium: string) => !state.selectedMediums.includes(medium))
+                                    .map((medium: string) => (
+                                      <SelectItem key={medium} value={medium}>
+                                        {medium}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => showCustomMediumInput(sourceName)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Custom medium input */}
+                          {state.checked && customMediumInputs[sourceName]?.show && (
+                            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                              <Input
+                                value={customMediumInputs[sourceName]?.value || ""}
+                                onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
+                                placeholder="Enter custom medium"
+                                className="w-40"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  checked={customMediumInputs[sourceName]?.addToLibrary || false}
+                                  onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
+                                />
+                                <span className="text-sm">Add to library</span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addCustomMedium(sourceName)}
+                                disabled={!customMediumInputs[sourceName]?.value?.trim()}
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => hideCustomMediumInput(sourceName)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             );
-          })}
+          })()}
         </div>
 
         {/* Add Custom Source */}
