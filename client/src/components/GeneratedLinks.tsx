@@ -119,22 +119,9 @@ export default function GeneratedLinks() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <List className="text-primary mr-2" size={20} />
-            My Campaigns
-          </div>
-          {links.length > 0 && (
-            <Button
-              onClick={handleExportCSV}
-              variant="outline"
-              size="sm"
-              className="text-primary hover:text-primary/80"
-            >
-              <Download className="mr-2" size={16} />
-              Export CSV
-            </Button>
-          )}
+        <CardTitle className="flex items-center">
+          <List className="text-primary mr-2" size={20} />
+          My Campaigns
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -148,25 +135,66 @@ export default function GeneratedLinks() {
           </div>
         ) : (
           <div className="space-y-8">
-            {campaignGroups.map(({ campaignName, sources }) => (
-              <div key={campaignName} className="space-y-6">
-                {/* Campaign header - only shown once per campaign */}
-                <h2 className="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">
-                  {campaignName}
-                </h2>
-                
-                {/* Sources for this campaign */}
-                {sources.map(({ sourceName, links: sourceLinks }) => (
+            {campaignGroups.map(({ campaignName, sources }) => {
+              // Get target URL from first link in campaign (they should all be the same)
+              const targetUrl = sources[0]?.links[0]?.targetUrl || '';
+              // Get all links for this campaign for copying
+              const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
+              
+              const handleCopyAllCampaignLinks = async () => {
+                const linkText = allCampaignLinks.join('\n');
+                try {
+                  await navigator.clipboard.writeText(linkText);
+                  toast({
+                    title: "Links copied!",
+                    description: `Copied ${allCampaignLinks.length} links for ${campaignName}`,
+                  });
+                } catch (err) {
+                  console.error('Failed to copy links:', err);
+                  toast({
+                    title: "Copy failed",
+                    description: "Could not copy links to clipboard",
+                    variant: "destructive",
+                  });
+                }
+              };
+              
+              return (
+                <div key={campaignName} className="space-y-6">
+                  {/* Campaign header with copy all button */}
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">
+                        {campaignName}
+                      </h2>
+                      {targetUrl && (
+                        <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleCopyAllCampaignLinks}
+                      variant="outline"
+                      size="sm"
+                      className="text-primary hover:text-primary/80"
+                    >
+                      <Copy className="mr-2" size={16} />
+                      Copy All Links
+                    </Button>
+                  </div>
+                  
+                  {/* Sources for this campaign */}
+                  {sources.map(({ sourceName, links: sourceLinks }) => (
                   <Card key={`${campaignName}-${sourceName}`} className="border-l-4 border-l-blue-500">
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
                       
                       {/* Desktop: Headers */}
-                      <div className="hidden md:grid md:grid-cols-4 gap-4 mb-2">
+                      <div className="hidden md:grid gap-4 mb-2" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
                         <span className="text-sm font-medium">Medium</span>
                         <span className="text-sm font-medium">Content</span>
                         <span className="text-sm font-medium">Link name</span>
                         <span className="text-sm font-medium">UTM Link</span>
+                        <span className="text-sm font-medium"></span>
                       </div>
                       
                       {/* Desktop: Grid rows */}
@@ -175,7 +203,7 @@ export default function GeneratedLinks() {
                           const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                           
                           return (
-                            <div key={link.id} className="grid grid-cols-4 gap-4 items-center">
+                            <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
                               <input 
                                 value={link.utm_medium} 
                                 readOnly 
@@ -191,21 +219,18 @@ export default function GeneratedLinks() {
                                 readOnly
                                 className="bg-gray-50 border rounded px-3 py-2 text-sm"
                               />
-                              <div className="flex">
-                                <input
-                                  value={link.fullUtmLink}
-                                  readOnly
-                                  className="flex-1 bg-gray-50 border rounded px-3 py-2 text-xs"
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                                  className="ml-2"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                              </div>
+                              <input
+                                value={link.fullUtmLink}
+                                readOnly
+                                className="bg-gray-50 border rounded px-3 py-2 text-xs"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
                             </div>
                           );
                         })}
@@ -274,9 +299,10 @@ export default function GeneratedLinks() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            ))}
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
