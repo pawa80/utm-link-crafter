@@ -679,7 +679,17 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
             <Card key={sourceName} className="border-l-4 border-l-blue-500">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
-                <div className="space-y-4">
+                
+                {/* Headers - shown once per source */}
+                <div className="grid grid-cols-4 gap-4 mb-2">
+                  <Label className="text-sm font-medium">Medium</Label>
+                  <Label className="text-sm font-medium">Content</Label>
+                  <Label className="text-sm font-medium">Link name</Label>
+                  <Label className="text-sm font-medium">UTM Link</Label>
+                </div>
+                
+                {/* Rows - no individual headers */}
+                <div className="space-y-2">
                   {state.selectedMediums.map((medium) => {
                     const content = state.contentInputs[medium] || "";
                     const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
@@ -693,60 +703,47 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                     const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
 
                     return (
-                      <div key={medium} className="grid grid-cols-4 gap-4 items-end">
-                        <div>
-                          <Label className="text-sm font-medium">Medium</Label>
-                          <Input 
-                            value={medium} 
-                            readOnly 
-                            className="mt-1 bg-gray-50" 
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Content</Label>
+                      <div key={medium} className="grid grid-cols-4 gap-4 items-center">
+                        <Input 
+                          value={medium} 
+                          readOnly 
+                          className="bg-gray-50" 
+                        />
+                        <Input
+                          value={content}
+                          onChange={(e) => handleContentChange(sourceName, medium, e.target.value)}
+                          placeholder="fill in content..."
+                        />
+                        <Input
+                          value={linkName}
+                          readOnly
+                          className="bg-gray-50"
+                        />
+                        <div className="flex">
                           <Input
-                            value={content}
-                            onChange={(e) => handleContentChange(sourceName, medium, e.target.value)}
-                            placeholder="fill in content..."
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Link name</Label>
-                          <Input
-                            value={linkName}
+                            value={utmLink}
                             readOnly
-                            className="mt-1 bg-gray-50"
+                            className="flex-1 bg-gray-50 text-xs"
                           />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">UTM Link</Label>
-                          <div className="flex mt-1">
-                            <Input
-                              value={utmLink}
-                              readOnly
-                              className="flex-1 bg-gray-50 text-xs"
-                            />
-                            {utmLink && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
-                                className="ml-2"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            )}
+                          {utmLink && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => duplicateRow(sourceName, medium)}
+                              onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
                               className="ml-2"
-                              title="Duplicate this row"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Copy className="w-4 h-4" />
                             </Button>
-                          </div>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateRow(sourceName, medium)}
+                            className="ml-2"
+                            title="Duplicate this row"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     );
