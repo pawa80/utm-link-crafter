@@ -14,6 +14,7 @@ import type { User, SourceTemplate } from "@shared/schema";
 
 interface CampaignWizardProps {
   user: User;
+  onSaveSuccess?: () => void;
 }
 
 interface SourceState {
@@ -22,7 +23,7 @@ interface SourceState {
   contentInputs: { [medium: string]: string };
 }
 
-export default function CampaignWizard({ user }: CampaignWizardProps) {
+export default function CampaignWizard({ user, onSaveSuccess }: CampaignWizardProps) {
   const [campaignName, setCampaignName] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [sourceStates, setSourceStates] = useState<{ [sourceName: string]: SourceState }>({});
@@ -968,6 +969,10 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   title: "Success",
                   description: `Generated ${successCount} UTM links successfully`,
                 });
+                // Navigate back to management page after successful save
+                if (onSaveSuccess) {
+                  onSaveSuccess();
+                }
               } else {
                 toast({
                   title: "Error",

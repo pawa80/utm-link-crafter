@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import CampaignWizard from "./CampaignWizard";
-import GeneratedLinks from "./GeneratedLinks";
+import CampaignManagement from "@/pages/CampaignManagement";
+import NewCampaign from "@/pages/NewCampaign";
 import SettingsModal from "./SettingsModal";
 import OnboardingWizard from "./OnboardingWizard";
 import { logout } from "@/lib/auth";
@@ -18,6 +18,7 @@ interface MainAppProps {
 export default function MainApp({ user, onLogout }: MainAppProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'management' | 'new-campaign'>('management');
 
   // Check if user has any source templates
   const { data: sourceTemplates = [], isLoading } = useQuery({
@@ -80,10 +81,17 @@ export default function MainApp({ user, onLogout }: MainAppProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          <CampaignWizard user={user} />
-          <GeneratedLinks />
-        </div>
+        {currentPage === 'management' ? (
+          <CampaignManagement
+            user={user}
+            onNewCampaign={() => setCurrentPage('new-campaign')}
+          />
+        ) : (
+          <NewCampaign
+            user={user}
+            onBackToManagement={() => setCurrentPage('management')}
+          />
+        )}
       </div>
 
       {/* Settings Modal */}
