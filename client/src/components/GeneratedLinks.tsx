@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,11 +6,38 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy, Download } from "lucide-react";
+import { List, Copy, Download, ChevronDown, ChevronUp } from "lucide-react";
 import type { UtmLink } from "@shared/schema";
 
 export default function GeneratedLinks() {
   const { toast } = useToast();
+  const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set());
+  const [initializedCollapse, setInitializedCollapse] = useState(false);
+
+  const toggleCampaignCollapse = (campaignName: string) => {
+    if (!initializedCollapse) {
+      // First time toggling - initialize state and show this campaign
+      setInitializedCollapse(true);
+      setCollapsedCampaigns(new Set()); // Start with empty set (all expanded)
+      return;
+    }
+    
+    const newCollapsed = new Set(collapsedCampaigns);
+    if (newCollapsed.has(campaignName)) {
+      newCollapsed.delete(campaignName);
+    } else {
+      newCollapsed.add(campaignName);
+    }
+    setCollapsedCampaigns(newCollapsed);
+  };
+
+  const isCampaignCollapsed = (campaignName: string) => {
+    // Default to collapsed (true) unless explicitly expanded
+    if (!initializedCollapse) {
+      return true; // All campaigns start collapsed
+    }
+    return collapsedCampaigns.has(campaignName);
+  };
 
   const { data: links = [], isLoading } = useQuery<UtmLink[]>({
     queryKey: ["/api/utm-links"],
@@ -107,6 +135,8 @@ export default function GeneratedLinks() {
       return acc;
     }, {} as Record<string, typeof campaignLinks>);
 
+
+
     return {
       campaignName,
       sources: Object.entries(groupedBySource).map(([sourceName, sourceLinks]) => ({
@@ -159,9 +189,11 @@ export default function GeneratedLinks() {
                 }
               };
               
+              const isCollapsed = isCampaignCollapsed(campaignName);
+              
               return (
                 <div key={campaignName} className="space-y-6">
-                  {/* Campaign header with copy all button */}
+                  {/* Campaign header with toggle and copy buttons */}
                   <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">
@@ -171,19 +203,39 @@ export default function GeneratedLinks() {
                         <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
                       )}
                     </div>
-                    <Button
-                      onClick={handleCopyAllCampaignLinks}
-                      variant="outline"
-                      size="sm"
-                      className="text-primary hover:text-primary/80"
-                    >
-                      <Copy className="mr-2" size={16} />
-                      Copy Campaign Links
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => toggleCampaignCollapse(campaignName)}
+                        variant="outline"
+                        size="sm"
+                        className="text-primary hover:text-primary/80"
+                      >
+                        {isCollapsed ? (
+                          <>
+                            <ChevronDown className="mr-2" size={16} />
+                            Show Links
+                          </>
+                        ) : (
+                          <>
+                            <ChevronUp className="mr-2" size={16} />
+                            Hide Links
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={handleCopyAllCampaignLinks}
+                        variant="outline"
+                        size="sm"
+                        className="text-primary hover:text-primary/80"
+                      >
+                        <Copy className="mr-2" size={16} />
+                        Copy Campaign Links
+                      </Button>
+                    </div>
                   </div>
                   
-                  {/* Sources for this campaign */}
-                  {sources.map(({ sourceName, links: sourceLinks }) => {
+                  {/* Sources for this campaign - only show when not collapsed */}
+                  {!isCollapsed && sources.map(({ sourceName, links: sourceLinks }) => {
                     const handleCopySourceLinks = async () => {
                       const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
                       try {
