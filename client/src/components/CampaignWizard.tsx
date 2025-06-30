@@ -714,16 +714,16 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
                 
-                {/* Headers - shown once per source */}
-                <div className="grid grid-cols-4 gap-4 mb-2">
+                {/* Desktop: Headers - shown once per source */}
+                <div className="hidden md:grid md:grid-cols-4 gap-4 mb-2">
                   <Label className="text-sm font-medium">Medium</Label>
                   <Label className="text-sm font-medium">Content</Label>
                   <Label className="text-sm font-medium">Link name</Label>
                   <Label className="text-sm font-medium">UTM Link</Label>
                 </div>
                 
-                {/* Rows - no individual headers */}
-                <div className="space-y-2">
+                {/* Desktop: Grid rows */}
+                <div className="hidden md:block space-y-2">
                   {(() => {
                     // Create combined list of regular mediums and duplicated rows
                     const allRows: Array<{key: string, medium: string, isDuplicated: boolean}> = [];
@@ -794,6 +794,108 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                               title="Duplicate this row"
                             >
                               <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Mobile: Stacked layout */}
+                <div className="md:hidden space-y-4">
+                  {(() => {
+                    // Create combined list of regular mediums and duplicated rows
+                    const allRows: Array<{key: string, medium: string, isDuplicated: boolean}> = [];
+                    
+                    // Add regular medium rows
+                    state.selectedMediums.forEach((medium, index) => {
+                      allRows.push({ key: medium, medium, isDuplicated: false });
+                      
+                      // Add any duplicated rows that should appear after this medium
+                      const duplicates = duplicatedRows[sourceName] || [];
+                      duplicates
+                        .filter(dup => dup.insertAfterIndex === index)
+                        .forEach(dup => {
+                          allRows.push({ key: dup.id, medium: dup.medium, isDuplicated: true });
+                        });
+                    });
+                    
+                    return allRows.map(({ key, medium, isDuplicated }) => {
+                      const content = state.contentInputs[key] || "";
+                      const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
+                      const utmLink = canGenerateLink ? generateUTMLink({
+                        targetUrl,
+                        utm_campaign: campaignName,
+                        utm_source: sourceName.toLowerCase(),
+                        utm_medium: medium,
+                        utm_content: content
+                      }) : "";
+                      const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
+
+                      return (
+                        <div key={key} className="border rounded-lg p-3 space-y-3">
+                          {/* Medium and Content on same line */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
+                              <Input 
+                                value={medium} 
+                                readOnly 
+                                className="bg-gray-50 text-sm" 
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
+                              <Input
+                                value={content}
+                                onChange={(e) => handleContentChange(sourceName, key, e.target.value)}
+                                placeholder="fill in content..."
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Link name below */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Link name</Label>
+                            <Input
+                              value={linkName}
+                              readOnly
+                              className="bg-gray-50 text-sm"
+                            />
+                          </div>
+                          
+                          {/* UTM Link below - with line breaks if needed */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
+                            <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
+                              {utmLink || "Fill in content to generate UTM link"}
+                            </div>
+                          </div>
+                          
+                          {/* Buttons below UTM link */}
+                          <div className="flex gap-2 pt-2">
+                            {utmLink && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
+                                className="flex-1"
+                              >
+                                <Copy className="w-4 h-4 mr-2" />
+                                Copy
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateRow(sourceName, key)}
+                              className="flex-1"
+                              title="Duplicate this row"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Duplicate
                             </Button>
                           </div>
                         </div>
