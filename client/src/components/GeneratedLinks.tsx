@@ -245,31 +245,31 @@ export default function GeneratedLinks() {
                     {targetUrl && (
                       <p className="text-sm text-gray-600 mt-1 mb-3">{targetUrl}</p>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full">
                       <Button
                         onClick={() => toggleCampaignCollapse(campaignName)}
                         variant="outline"
-                        className="text-primary hover:text-primary/80 flex-1 h-10"
+                        className="text-primary hover:text-primary/80 flex-1 h-10 min-w-0"
                       >
                         {isCollapsed ? (
                           <>
-                            <ChevronDown className="mr-2" size={16} />
-                            Show Links
+                            <ChevronDown className="mr-1 flex-shrink-0" size={16} />
+                            <span className="truncate">Show Links</span>
                           </>
                         ) : (
                           <>
-                            <ChevronUp className="mr-2" size={16} />
-                            Hide Links
+                            <ChevronUp className="mr-1 flex-shrink-0" size={16} />
+                            <span className="truncate">Hide Links</span>
                           </>
                         )}
                       </Button>
                       <Button
                         onClick={handleCopyAllCampaignLinks}
                         variant="outline"
-                        className="text-primary hover:text-primary/80 flex-1 h-10"
+                        className="text-primary hover:text-primary/80 flex-1 h-10 min-w-0"
                       >
-                        <Copy className="mr-2" size={16} />
-                        Copy Campaign Links
+                        <Copy className="mr-1 flex-shrink-0" size={16} />
+                        <span className="truncate">Copy Links</span>
                       </Button>
                     </div>
                   </div>
