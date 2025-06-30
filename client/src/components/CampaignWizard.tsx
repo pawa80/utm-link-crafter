@@ -299,8 +299,25 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     Object.entries(sourceStates).forEach(([sourceName, state]) => {
       if (!state.checked) return;
       
-      state.selectedMediums.forEach(medium => {
-        const content = state.contentInputs[medium] || "";
+      // Create combined list of regular mediums and duplicated rows (same logic as in render)
+      const allRows: Array<{key: string, medium: string}> = [];
+      
+      // Add regular medium rows
+      state.selectedMediums.forEach((medium, index) => {
+        allRows.push({ key: medium, medium });
+        
+        // Add any duplicated rows that should appear after this medium
+        const duplicates = duplicatedRows[sourceName] || [];
+        duplicates
+          .filter(dup => dup.insertAfterIndex === index)
+          .forEach(dup => {
+            allRows.push({ key: dup.id, medium: dup.medium });
+          });
+      });
+      
+      // Process all rows (original + duplicated)
+      allRows.forEach(({ key, medium }) => {
+        const content = state.contentInputs[key] || "";
         if (!content.trim()) return;
         
         const utmLink = generateUTMLink({
@@ -328,9 +345,25 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     const sourceState = sourceStates[sourceName];
     if (!sourceState || !campaignName.trim() || !targetUrl.trim()) return;
     
-    const links = sourceState.selectedMediums
-      .map(medium => {
-        const content = sourceState.contentInputs[medium];
+    // Create combined list of regular mediums and duplicated rows (same logic as in render)
+    const allRows: Array<{key: string, medium: string}> = [];
+    
+    // Add regular medium rows
+    sourceState.selectedMediums.forEach((medium, index) => {
+      allRows.push({ key: medium, medium });
+      
+      // Add any duplicated rows that should appear after this medium
+      const duplicates = duplicatedRows[sourceName] || [];
+      duplicates
+        .filter(dup => dup.insertAfterIndex === index)
+        .forEach(dup => {
+          allRows.push({ key: dup.id, medium: dup.medium });
+        });
+    });
+    
+    const links = allRows
+      .map(({ key, medium }) => {
+        const content = sourceState.contentInputs[key];
         if (!content || !content.trim()) return null;
         
         const utmLink = generateUTMLink({
@@ -773,7 +806,25 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   <Button
                     onClick={() => copyAllLinks(sourceName)}
                     className="w-full"
-                    disabled={!state.selectedMediums.some(medium => state.contentInputs[medium]?.trim())}
+                    disabled={(() => {
+                      // Check if any row (original or duplicated) has content
+                      const allRows: Array<{key: string}> = [];
+                      
+                      // Add regular medium rows
+                      state.selectedMediums.forEach((medium, index) => {
+                        allRows.push({ key: medium });
+                        
+                        // Add any duplicated rows that should appear after this medium
+                        const duplicates = duplicatedRows[sourceName] || [];
+                        duplicates
+                          .filter(dup => dup.insertAfterIndex === index)
+                          .forEach(dup => {
+                            allRows.push({ key: dup.id });
+                          });
+                      });
+                      
+                      return !allRows.some(row => state.contentInputs[row.key]?.trim());
+                    })()}
                   >
                     COPY LINKS
                   </Button>
@@ -791,26 +842,37 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
               // Save all valid combinations to database
               const validSources = getCheckedSourcesWithContent();
               
+              let successCount = 0;
+              
               for (const source of validSources) {
                 try {
                   await createUtmLinkMutation.mutateAsync({
+                    userId: user.id,
                     targetUrl,
-                    campaignName,
-                    source: source.sourceName,
-                    medium: source.medium,
-                    content: source.content,
-                    utmLink: source.utmLink,
-                    linkName: source.linkName
+                    utm_campaign: campaignName,
+                    utm_source: source.sourceName.toLowerCase(),
+                    utm_medium: source.medium,
+                    utm_content: source.content,
+                    fullUtmLink: source.utmLink
                   });
+                  successCount++;
                 } catch (error) {
                   console.error("Failed to save link:", error);
                 }
               }
               
-              toast({
-                title: "Success",
-                description: `Generated ${validSources.length} UTM links`,
-              });
+              if (successCount > 0) {
+                toast({
+                  title: "Success",
+                  description: `Generated ${successCount} UTM links successfully`,
+                });
+              } else {
+                toast({
+                  title: "Error",
+                  description: "Failed to generate UTM links. Please check your inputs.",
+                  variant: "destructive",
+                });
+              }
             }}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
