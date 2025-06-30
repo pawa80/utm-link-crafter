@@ -245,12 +245,11 @@ export default function GeneratedLinks() {
                     {targetUrl && (
                       <p className="text-sm text-gray-600 mt-1 mb-3">{targetUrl}</p>
                     )}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+                    <div className="flex gap-2">
                       <Button
                         onClick={() => toggleCampaignCollapse(campaignName)}
                         variant="outline"
-                        size="sm"
-                        className="text-primary hover:text-primary/80 flex-1"
+                        className="text-primary hover:text-primary/80 flex-1 h-10"
                       >
                         {isCollapsed ? (
                           <>
@@ -267,8 +266,7 @@ export default function GeneratedLinks() {
                       <Button
                         onClick={handleCopyAllCampaignLinks}
                         variant="outline"
-                        size="sm"
-                        className="text-primary hover:text-primary/80 flex-1"
+                        className="text-primary hover:text-primary/80 flex-1 h-10"
                       >
                         <Copy className="mr-2" size={16} />
                         Copy Campaign Links
