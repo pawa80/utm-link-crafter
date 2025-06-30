@@ -28,6 +28,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const [sourceStates, setSourceStates] = useState<{ [sourceName: string]: SourceState }>({});
   const [customSource, setCustomSource] = useState("");
   const [showAddSource, setShowAddSource] = useState(false);
+  const [customMediumInputs, setCustomMediumInputs] = useState<{ [sourceName: string]: { value: string; addToLibrary: boolean; show: boolean } }>({});
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -170,9 +171,63 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     setShowAddSource(false);
   };
 
-  const addCustomMedium = (sourceName: string, customMedium: string) => {
-    if (!customMedium.trim()) return;
-    handleMediumSelect(sourceName, customMedium.trim());
+  const showCustomMediumInput = (sourceName: string) => {
+    setCustomMediumInputs(prev => ({
+      ...prev,
+      [sourceName]: { value: "", addToLibrary: false, show: true }
+    }));
+  };
+
+  const hideCustomMediumInput = (sourceName: string) => {
+    setCustomMediumInputs(prev => ({
+      ...prev,
+      [sourceName]: { value: "", addToLibrary: false, show: false }
+    }));
+  };
+
+  const updateCustomMediumInput = (sourceName: string, value: string, addToLibrary: boolean) => {
+    setCustomMediumInputs(prev => ({
+      ...prev,
+      [sourceName]: { ...prev[sourceName], value, addToLibrary }
+    }));
+  };
+
+  const addCustomMedium = async (sourceName: string) => {
+    const input = customMediumInputs[sourceName];
+    if (!input?.value.trim()) return;
+
+    const customMedium = input.value.trim();
+    
+    // Add medium to current source
+    handleMediumSelect(sourceName, customMedium);
+
+    // Add to library if requested
+    if (input.addToLibrary) {
+      try {
+        const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+        if (template) {
+          const updatedMediums = [...(template.mediums || []), customMedium];
+          await createSourceTemplateMutation.mutateAsync({
+            sourceName,
+            mediums: updatedMediums
+          });
+        } else {
+          await createSourceTemplateMutation.mutateAsync({
+            sourceName,
+            mediums: [customMedium]
+          });
+        }
+        toast({
+          title: "Added to Library",
+          description: `${customMedium} added to ${sourceName} template`,
+        });
+      } catch (error) {
+        console.error("Failed to update template:", error);
+      }
+    }
+
+    // Reset input
+    hideCustomMediumInput(sourceName);
   };
 
   const copyToClipboard = async (text: string) => {
@@ -237,13 +292,16 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         const content = sourceState.contentInputs[medium];
         if (!content || !content.trim()) return null;
         
-        return generateUTMLink({
+        const utmLink = generateUTMLink({
           targetUrl,
           utm_campaign: campaignName,
           utm_source: sourceName.toLowerCase(),
           utm_medium: medium,
           utm_content: content
         });
+
+        const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}`;
+        return `${linkName} - ${utmLink}`;
       })
       .filter(Boolean)
       .join('\n');
@@ -342,14 +400,43 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const newMedium = prompt("Enter custom medium:");
-                          if (newMedium && newMedium.trim()) {
-                            handleMediumSelect(sourceName, newMedium.trim());
-                          }
-                        }}
+                        onClick={() => showCustomMediumInput(sourceName)}
                       >
                         <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Custom medium input */}
+                  {state.checked && customMediumInputs[sourceName]?.show && (
+                    <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                      <Input
+                        value={customMediumInputs[sourceName]?.value || ""}
+                        onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
+                        placeholder="Enter custom medium"
+                        className="w-40"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={customMediumInputs[sourceName]?.addToLibrary || false}
+                          onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
+                        />
+                        <span className="text-sm">Add to library</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addCustomMedium(sourceName)}
+                        disabled={!customMediumInputs[sourceName]?.value?.trim()}
+                      >
+                        Add
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => hideCustomMediumInput(sourceName)}
+                      >
+                        Cancel
                       </Button>
                     </div>
                   )}
@@ -438,7 +525,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                           <Input
                             value={content}
                             onChange={(e) => handleContentChange(sourceName, medium, e.target.value)}
-                            placeholder="summertime"
+                            placeholder="fill in content..."
                             className="mt-1"
                           />
                         </div>
@@ -462,7 +549,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => copyToClipboard(utmLink)}
+                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
                                 className="ml-2"
                               >
                                 <Copy className="w-4 h-4" />
