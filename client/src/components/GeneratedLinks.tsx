@@ -178,128 +178,159 @@ export default function GeneratedLinks() {
                       className="text-primary hover:text-primary/80"
                     >
                       <Copy className="mr-2" size={16} />
-                      Copy All Links
+                      Copy Campaign Links
                     </Button>
                   </div>
                   
                   {/* Sources for this campaign */}
-                  {sources.map(({ sourceName, links: sourceLinks }) => (
-                  <Card key={`${campaignName}-${sourceName}`} className="border-l-4 border-l-blue-500">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
-                      
-                      {/* Desktop: Headers */}
-                      <div className="hidden md:grid gap-4 mb-2" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
-                        <span className="text-sm font-medium">Medium</span>
-                        <span className="text-sm font-medium">Content</span>
-                        <span className="text-sm font-medium">Link name</span>
-                        <span className="text-sm font-medium">UTM Link</span>
-                        <span className="text-sm font-medium"></span>
-                      </div>
-                      
-                      {/* Desktop: Grid rows */}
-                      <div className="hidden md:block space-y-2">
-                        {sourceLinks.map((link) => {
-                          const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
-                          
-                          return (
-                            <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
-                              <input 
-                                value={link.utm_medium} 
-                                readOnly 
-                                className="bg-gray-50 border rounded px-3 py-2 text-sm" 
-                              />
-                              <input
-                                value={link.utm_content || ''}
-                                readOnly
-                                className="bg-gray-50 border rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                value={linkName}
-                                readOnly
-                                className="bg-gray-50 border rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                value={link.fullUtmLink}
-                                readOnly
-                                className="bg-gray-50 border rounded px-3 py-2 text-xs"
-                              />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  {sources.map(({ sourceName, links: sourceLinks }) => {
+                    const handleCopySourceLinks = async () => {
+                      const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
+                      try {
+                        await navigator.clipboard.writeText(sourceLinksText);
+                        toast({
+                          title: "Source links copied!",
+                          description: `Copied ${sourceLinks.length} links for ${sourceName}`,
+                        });
+                      } catch (err) {
+                        console.error('Failed to copy source links:', err);
+                        toast({
+                          title: "Copy failed",
+                          description: "Could not copy links to clipboard",
+                          variant: "destructive",
+                        });
+                      }
+                    };
 
-                      {/* Mobile: Stacked layout */}
-                      <div className="md:hidden space-y-4">
-                        {sourceLinks.map((link) => {
-                          const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                    return (
+                      <Card key={`${campaignName}-${sourceName}`} className="border-l-4 border-l-blue-500">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold">{sourceName}</h3>
+                            <Button
+                              onClick={handleCopySourceLinks}
+                              variant="outline"
+                              size="sm"
+                              className="text-primary hover:text-primary/80"
+                            >
+                              <Copy className="mr-2" size={14} />
+                              Copy Source Links
+                            </Button>
+                          </div>
+                      
+                          {/* Desktop: Headers */}
+                          <div className="hidden md:grid gap-4 mb-2" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
+                            <span className="text-sm font-medium">Medium</span>
+                            <span className="text-sm font-medium">Content</span>
+                            <span className="text-sm font-medium">Link name</span>
+                            <span className="text-sm font-medium">UTM Link</span>
+                            <span className="text-sm font-medium"></span>
+                          </div>
                           
-                          return (
-                            <div key={link.id} className="border rounded-lg p-3 space-y-3">
-                              {/* Medium and Content on same line */}
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <span className="text-xs text-gray-600 mb-1 block">Medium</span>
+                          {/* Desktop: Grid rows */}
+                          <div className="hidden md:block space-y-2">
+                            {sourceLinks.map((link) => {
+                              const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                              
+                              return (
+                                <div key={link.id} className="grid gap-4 items-center" style={{ gridTemplateColumns: '1fr 1fr 2fr 3fr 80px' }}>
                                   <input 
                                     value={link.utm_medium} 
                                     readOnly 
-                                    className="bg-gray-50 border rounded px-2 py-1 text-sm w-full" 
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm" 
                                   />
-                                </div>
-                                <div>
-                                  <span className="text-xs text-gray-600 mb-1 block">Content</span>
                                   <input
                                     value={link.utm_content || ''}
                                     readOnly
-                                    className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm"
                                   />
+                                  <input
+                                    value={linkName}
+                                    readOnly
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm"
+                                  />
+                                  <input
+                                    value={link.fullUtmLink}
+                                    readOnly
+                                    className="bg-gray-50 border rounded px-3 py-2 text-xs"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
                                 </div>
-                              </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Mobile: Stacked layout */}
+                          <div className="md:hidden space-y-4">
+                            {sourceLinks.map((link) => {
+                              const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                               
-                              {/* Link name below */}
-                              <div>
-                                <span className="text-xs text-gray-600 mb-1 block">Link name</span>
-                                <input
-                                  value={linkName}
-                                  readOnly
-                                  className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
-                                />
-                              </div>
-                              
-                              {/* UTM Link below - with line breaks if needed */}
-                              <div>
-                                <span className="text-xs text-gray-600 mb-1 block">UTM Link</span>
-                                <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
-                                  {link.fullUtmLink}
+                              return (
+                                <div key={link.id} className="border rounded-lg p-3 space-y-3">
+                                  {/* Medium and Content on same line */}
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <span className="text-xs text-gray-600 mb-1 block">Medium</span>
+                                      <input 
+                                        value={link.utm_medium} 
+                                        readOnly 
+                                        className="bg-gray-50 border rounded px-2 py-1 text-sm w-full" 
+                                      />
+                                    </div>
+                                    <div>
+                                      <span className="text-xs text-gray-600 mb-1 block">Content</span>
+                                      <input
+                                        value={link.utm_content || ''}
+                                        readOnly
+                                        className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Link name below */}
+                                  <div>
+                                    <span className="text-xs text-gray-600 mb-1 block">Link name</span>
+                                    <input
+                                      value={linkName}
+                                      readOnly
+                                      className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                    />
+                                  </div>
+                                  
+                                  {/* UTM Link below - with line breaks if needed */}
+                                  <div>
+                                    <span className="text-xs text-gray-600 mb-1 block">UTM Link</span>
+                                    <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
+                                      {link.fullUtmLink}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Copy button below UTM link */}
+                                  <div className="pt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                      className="w-full"
+                                    >
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Copy Link
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                              
-                              {/* Copy button below UTM link */}
-                              <div className="pt-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                                  className="w-full"
-                                >
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy Link
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  ))}
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               );
             })}
