@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
-import { Plus, Copy } from "lucide-react";
+import { Plus, Copy, X } from "lucide-react";
 import type { User, SourceTemplate } from "@shared/schema";
 
 interface CampaignWizardProps {
@@ -18,8 +18,8 @@ interface CampaignWizardProps {
 
 interface SourceState {
   checked: boolean;
-  selectedMedium: string;
-  contentInput: string;
+  selectedMediums: string[];
+  contentInputs: { [medium: string]: string };
 }
 
 export default function CampaignWizard({ user }: CampaignWizardProps) {
@@ -27,6 +27,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
   const [targetUrl, setTargetUrl] = useState("");
   const [sourceStates, setSourceStates] = useState<{ [sourceName: string]: SourceState }>({});
   const [customSource, setCustomSource] = useState("");
+  const [showAddSource, setShowAddSource] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,7 +68,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     return combined.filter((source, index) => combined.indexOf(source) === index);
   };
 
-  const getAvailableMediums = (sourceName: string) => {
+  const getAvailableMediums = (sourceName: string): string[] => {
     const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
     if (template?.mediums && template.mediums.length > 0) {
       return template.mediums;
@@ -81,29 +82,57 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       ...prev,
       [sourceName]: {
         checked,
-        selectedMedium: checked ? (prev[sourceName]?.selectedMedium || "") : "",
-        contentInput: checked ? (prev[sourceName]?.contentInput || "") : ""
+        selectedMediums: checked ? (prev[sourceName]?.selectedMediums || []) : [],
+        contentInputs: checked ? (prev[sourceName]?.contentInputs || {}) : {}
       }
     }));
   };
 
   const handleMediumSelect = (sourceName: string, medium: string) => {
-    setSourceStates(prev => ({
-      ...prev,
-      [sourceName]: {
-        ...prev[sourceName],
-        selectedMedium: medium,
-        contentInput: prev[sourceName]?.contentInput || ""
-      }
-    }));
+    setSourceStates(prev => {
+      const currentState = prev[sourceName] || { checked: true, selectedMediums: [], contentInputs: {} };
+      const isAlreadySelected = currentState.selectedMediums.includes(medium);
+      
+      if (isAlreadySelected) return prev;
+      
+      return {
+        ...prev,
+        [sourceName]: {
+          ...currentState,
+          selectedMediums: [...currentState.selectedMediums, medium],
+          contentInputs: { ...currentState.contentInputs, [medium]: "" }
+        }
+      };
+    });
   };
 
-  const handleContentChange = (sourceName: string, content: string) => {
+  const removeMedium = (sourceName: string, medium: string) => {
+    setSourceStates(prev => {
+      const currentState = prev[sourceName];
+      if (!currentState) return prev;
+      
+      const { [medium]: removed, ...remainingInputs } = currentState.contentInputs;
+      
+      return {
+        ...prev,
+        [sourceName]: {
+          ...currentState,
+          selectedMediums: currentState.selectedMediums.filter(m => m !== medium),
+          contentInputs: remainingInputs
+        }
+      };
+    });
+  };
+
+  const handleContentChange = (sourceName: string, medium: string, content: string) => {
     setSourceStates(prev => ({
       ...prev,
       [sourceName]: {
         ...prev[sourceName],
-        contentInput: content
+        contentInputs: {
+          ...prev[sourceName]?.contentInputs,
+          [medium]: content
+        }
       }
     }));
   };
@@ -118,8 +147,8 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       ...prev,
       [newSourceName]: {
         checked: true,
-        selectedMedium: "",
-        contentInput: ""
+        selectedMediums: [],
+        contentInputs: {}
       }
     }));
 
@@ -138,6 +167,12 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     }
 
     setCustomSource("");
+    setShowAddSource(false);
+  };
+
+  const addCustomMedium = (sourceName: string, customMedium: string) => {
+    if (!customMedium.trim()) return;
+    handleMediumSelect(sourceName, customMedium.trim());
   };
 
   const copyToClipboard = async (text: string) => {
@@ -156,35 +191,65 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     }
   };
 
-  const getCheckedSources = () => {
-    return Object.entries(sourceStates)
-      .filter(([_, state]) => state.checked && state.selectedMedium && state.contentInput.trim())
-      .map(([sourceName, state]) => ({
-        sourceName,
-        medium: state.selectedMedium,
-        content: state.contentInput,
-        utmLink: generateUTMLink({
+  const getCheckedSourcesWithContent = () => {
+    const results: Array<{
+      sourceName: string;
+      medium: string;
+      content: string;
+      utmLink: string;
+      linkName: string;
+    }> = [];
+
+    Object.entries(sourceStates).forEach(([sourceName, state]) => {
+      if (!state.checked) return;
+      
+      state.selectedMediums.forEach(medium => {
+        const content = state.contentInputs[medium] || "";
+        if (!content.trim()) return;
+        
+        const utmLink = generateUTMLink({
           targetUrl,
           utm_campaign: campaignName,
           utm_source: sourceName.toLowerCase(),
-          utm_medium: state.selectedMedium,
-          utm_content: state.contentInput
-        }),
-        linkName: `${sourceName} ${state.selectedMedium.charAt(0).toUpperCase() + state.selectedMedium.slice(1)} ${state.contentInput}`
-      }));
+          utm_medium: medium,
+          utm_content: content
+        });
+
+        results.push({
+          sourceName,
+          medium,
+          content,
+          utmLink,
+          linkName: `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}`
+        });
+      });
+    });
+
+    return results;
   };
 
   const copyAllLinks = (sourceName: string) => {
-    const sourceData = sourceStates[sourceName];
-    if (sourceData && sourceData.contentInput.trim()) {
-      const utmLink = generateUTMLink({
-        targetUrl,
-        utm_campaign: campaignName,
-        utm_source: sourceName.toLowerCase(),
-        utm_medium: sourceData.selectedMedium,
-        utm_content: sourceData.contentInput
-      });
-      copyToClipboard(utmLink);
+    const sourceState = sourceStates[sourceName];
+    if (!sourceState) return;
+    
+    const links = sourceState.selectedMediums
+      .map(medium => {
+        const content = sourceState.contentInputs[medium];
+        if (!content || !content.trim()) return null;
+        
+        return generateUTMLink({
+          targetUrl,
+          utm_campaign: campaignName,
+          utm_source: sourceName.toLowerCase(),
+          utm_medium: medium,
+          utm_content: content
+        });
+      })
+      .filter(Boolean)
+      .join('\n');
+    
+    if (links) {
+      copyToClipboard(links);
     }
   };
 
@@ -223,12 +288,12 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
         <Label className="text-sm font-medium">Select Sources and Mediums *</Label>
         <div className="space-y-3">
           {getAllSources().map((sourceName) => {
-            const state = sourceStates[sourceName] || { checked: false, selectedMedium: "", contentInput: "" };
+            const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
             const availableMediums = getAvailableMediums(sourceName);
 
             return (
-              <div key={sourceName} className="flex items-center space-x-4 p-3 border rounded-lg">
-                <div className="w-24">
+              <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
+                <div className="w-24 pt-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       checked={state.checked}
@@ -238,138 +303,199 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                   </div>
                 </div>
                 
-                <div className="w-32">
-                  <Select 
-                    value={state.selectedMedium}
-                    onValueChange={(medium) => handleMediumSelect(sourceName, medium)}
-                    disabled={!state.checked}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableMediums.map((medium: string) => (
-                        <SelectItem key={medium} value={medium}>
-                          {medium}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="flex-1 space-y-2">
+                  {/* Existing selected mediums */}
+                  <div className="flex flex-wrap gap-2">
+                    {state.selectedMediums.map((medium) => (
+                      <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
+                        <span className="text-sm">{medium}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMedium(sourceName, medium)}
+                          className="h-4 w-4 p-0 hover:bg-gray-200"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Add new medium dropdown */}
+                  {state.checked && (
+                    <div className="flex items-center space-x-2">
+                      <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="Choose..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableMediums
+                            .filter((medium: string) => !state.selectedMediums.includes(medium))
+                            .map((medium: string) => (
+                              <SelectItem key={medium} value={medium}>
+                                {medium}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
 
-                <div className="w-20">
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                    {state.selectedMedium || "Paid"}
-                  </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newMedium = prompt("Enter custom medium:");
+                          if (newMedium && newMedium.trim()) {
+                            handleMediumSelect(sourceName, newMedium.trim());
+                          }
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!state.checked}
-                  onClick={() => {
-                    // Add custom medium functionality
-                    const newMedium = prompt("Enter custom medium:");
-                    if (newMedium) {
-                      handleMediumSelect(sourceName, newMedium);
-                    }
-                  }}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
               </div>
             );
           })}
         </div>
 
         {/* Add Custom Source */}
-        <div className="flex items-center space-x-2 pt-4 border-t">
-          <span className="text-sm font-medium">Add Source</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const newSource = prompt("Enter source name:");
-              if (newSource) {
-                setCustomSource(newSource);
-                addCustomSource();
-              }
-            }}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
+        <div className="pt-4 border-t">
+          {!showAddSource ? (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Add Source</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddSource(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Input
+                value={customSource}
+                onChange={(e) => setCustomSource(e.target.value)}
+                placeholder="Enter source name"
+                className="w-48"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addCustomSource}
+                disabled={!customSource.trim()}
+              >
+                Add
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowAddSource(false);
+                  setCustomSource("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Generated Content Sections */}
       <div className="space-y-6">
-        {getCheckedSources().map(({ sourceName, medium, content, utmLink, linkName }) => {
-          const state = sourceStates[sourceName];
-          
-          return (
-            <Card key={`${sourceName}-${medium}`} className="border-l-4 border-l-blue-500">
+        {Object.entries(sourceStates)
+          .filter(([_, state]) => state.checked && state.selectedMediums.length > 0)
+          .map(([sourceName, state]) => (
+            <Card key={sourceName} className="border-l-4 border-l-blue-500">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
-                <div className="grid grid-cols-4 gap-4 items-end">
-                  <div>
-                    <Label className="text-sm font-medium">Medium</Label>
-                    <Input 
-                      value={medium} 
-                      readOnly 
-                      className="mt-1 bg-gray-50" 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Content</Label>
-                    <Input
-                      value={content}
-                      onChange={(e) => handleContentChange(sourceName, e.target.value)}
-                      placeholder="summertime"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Link name</Label>
-                    <Input
-                      value={linkName}
-                      readOnly
-                      className="mt-1 bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">UTM Link</Label>
-                    <div className="flex mt-1">
-                      <Input
-                        value={utmLink}
-                        readOnly
-                        className="flex-1 bg-gray-50 text-xs"
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-4">
+                  {state.selectedMediums.map((medium) => {
+                    const content = state.contentInputs[medium] || "";
+                    const utmLink = content.trim() ? generateUTMLink({
+                      targetUrl,
+                      utm_campaign: campaignName,
+                      utm_source: sourceName.toLowerCase(),
+                      utm_medium: medium,
+                      utm_content: content
+                    }) : "";
+                    const linkName = content.trim() ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
+
+                    return (
+                      <div key={medium} className="grid grid-cols-4 gap-4 items-end">
+                        <div>
+                          <Label className="text-sm font-medium">Medium</Label>
+                          <Input 
+                            value={medium} 
+                            readOnly 
+                            className="mt-1 bg-gray-50" 
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Content</Label>
+                          <Input
+                            value={content}
+                            onChange={(e) => handleContentChange(sourceName, medium, e.target.value)}
+                            placeholder="summertime"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Link name</Label>
+                          <Input
+                            value={linkName}
+                            readOnly
+                            className="mt-1 bg-gray-50"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">UTM Link</Label>
+                          <div className="flex mt-1">
+                            <Input
+                              value={utmLink}
+                              readOnly
+                              className="flex-1 bg-gray-50 text-xs"
+                            />
+                            {utmLink && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyToClipboard(utmLink)}
+                                className="ml-2"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 <div className="mt-4">
                   <Button
                     onClick={() => copyAllLinks(sourceName)}
                     className="w-full"
-                    disabled={!content.trim()}
+                    disabled={!state.selectedMediums.some(medium => state.contentInputs[medium]?.trim())}
                   >
                     COPY LINKS
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
+          ))}
       </div>
 
       {/* Generate All Links Button - Only show if we have valid combinations */}
-      {getCheckedSources().length > 0 && (
+      {getCheckedSourcesWithContent().length > 0 && (
         <div className="pt-8 border-t">
           <Button
             onClick={async () => {
               // Save all valid combinations to database
-              const validSources = getCheckedSources();
+              const validSources = getCheckedSourcesWithContent();
               
               for (const source of validSources) {
                 try {
@@ -393,9 +519,9 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
               });
             }}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSources().length === 0}
+            disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
           >
-            Generate All Links ({getCheckedSources().length})
+            Generate All Links ({getCheckedSourcesWithContent().length})
           </Button>
         </div>
       )}
