@@ -138,6 +138,41 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     }));
   };
 
+  const duplicateRow = (sourceName: string, medium: string) => {
+    const sourceState = sourceStates[sourceName];
+    if (!sourceState) return;
+
+    // Find the index of the current medium to insert after it
+    const currentIndex = sourceState.selectedMediums.indexOf(medium);
+    if (currentIndex === -1) return;
+
+    // Create a unique medium name for the duplicate
+    let duplicateCount = 1;
+    let duplicateMedium = `${medium}_copy`;
+    while (sourceState.selectedMediums.includes(duplicateMedium)) {
+      duplicateCount++;
+      duplicateMedium = `${medium}_copy${duplicateCount}`;
+    }
+
+    setSourceStates(prev => {
+      const currentState = prev[sourceName];
+      const newSelectedMediums = [...currentState.selectedMediums];
+      newSelectedMediums.splice(currentIndex + 1, 0, duplicateMedium);
+      
+      return {
+        ...prev,
+        [sourceName]: {
+          ...currentState,
+          selectedMediums: newSelectedMediums,
+          contentInputs: {
+            ...currentState.contentInputs,
+            [duplicateMedium]: "" // Always blank for new row
+          }
+        }
+      };
+    });
+  };
+
   const addCustomSource = async () => {
     if (!customSource.trim()) return;
 
@@ -702,6 +737,15 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                                 <Copy className="w-4 h-4" />
                               </Button>
                             )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateRow(sourceName, medium)}
+                              className="ml-2"
+                              title="Duplicate this row"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
