@@ -255,6 +255,11 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
       linkName: string;
     }> = [];
 
+    // Only proceed if we have required fields
+    if (!campaignName.trim() || !targetUrl.trim()) {
+      return results;
+    }
+
     Object.entries(sourceStates).forEach(([sourceName, state]) => {
       if (!state.checked) return;
       
@@ -285,7 +290,7 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
 
   const copyAllLinks = (sourceName: string) => {
     const sourceState = sourceStates[sourceName];
-    if (!sourceState) return;
+    if (!sourceState || !campaignName.trim() || !targetUrl.trim()) return;
     
     const links = sourceState.selectedMediums
       .map(medium => {
@@ -308,6 +313,12 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
     
     if (links) {
       copyToClipboard(links);
+    } else {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in Campaign Name and Landing Page URL first",
+        variant: "destructive",
+      });
     }
   };
 
@@ -340,6 +351,24 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
           />
         </div>
       </div>
+
+      {/* Validation Message */}
+      {(!campaignName.trim() || !targetUrl.trim()) && Object.values(sourceStates).some(state => state.checked && state.selectedMediums.length > 0) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="text-yellow-800">
+              <h3 className="text-sm font-medium">Required fields missing</h3>
+              <div className="mt-2 text-sm">
+                <p>Please fill in the following required fields to generate UTM links:</p>
+                <ul className="mt-1 ml-4 list-disc">
+                  {!campaignName.trim() && <li>Campaign Name</li>}
+                  {!targetUrl.trim() && <li>Landing Page URL</li>}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sources and Mediums Section */}
       <div className="space-y-4">
@@ -501,14 +530,15 @@ export default function CampaignWizard({ user }: CampaignWizardProps) {
                 <div className="space-y-4">
                   {state.selectedMediums.map((medium) => {
                     const content = state.contentInputs[medium] || "";
-                    const utmLink = content.trim() ? generateUTMLink({
+                    const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
+                    const utmLink = canGenerateLink ? generateUTMLink({
                       targetUrl,
                       utm_campaign: campaignName,
                       utm_source: sourceName.toLowerCase(),
                       utm_medium: medium,
                       utm_content: content
                     }) : "";
-                    const linkName = content.trim() ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
+                    const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
 
                     return (
                       <div key={medium} className="grid grid-cols-4 gap-4 items-end">
