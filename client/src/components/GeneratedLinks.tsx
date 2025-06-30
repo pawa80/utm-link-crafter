@@ -196,8 +196,8 @@ export default function GeneratedLinks() {
               
               return (
                 <div key={campaignName} className="space-y-6">
-                  {/* Campaign header with toggle and copy buttons */}
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                  {/* Campaign header - desktop layout */}
+                  <div className="hidden md:flex items-center justify-between border-b border-gray-200 pb-2">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">
                         {campaignName}
@@ -230,6 +230,45 @@ export default function GeneratedLinks() {
                         variant="outline"
                         size="sm"
                         className="text-primary hover:text-primary/80"
+                      >
+                        <Copy className="mr-2" size={16} />
+                        Copy Campaign Links
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Campaign header - mobile layout */}
+                  <div className="md:hidden border-b border-gray-200 pb-3">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {campaignName}
+                    </h2>
+                    {targetUrl && (
+                      <p className="text-sm text-gray-600 mt-1 mb-3">{targetUrl}</p>
+                    )}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+                      <Button
+                        onClick={() => toggleCampaignCollapse(campaignName)}
+                        variant="outline"
+                        size="sm"
+                        className="text-primary hover:text-primary/80 flex-1"
+                      >
+                        {isCollapsed ? (
+                          <>
+                            <ChevronDown className="mr-2" size={16} />
+                            Show Links
+                          </>
+                        ) : (
+                          <>
+                            <ChevronUp className="mr-2" size={16} />
+                            Hide Links
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={handleCopyAllCampaignLinks}
+                        variant="outline"
+                        size="sm"
+                        className="text-primary hover:text-primary/80 flex-1"
                       >
                         <Copy className="mr-2" size={16} />
                         Copy Campaign Links
