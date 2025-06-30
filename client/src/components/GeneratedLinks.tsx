@@ -16,9 +16,12 @@ export default function GeneratedLinks() {
 
   const toggleCampaignCollapse = (campaignName: string) => {
     if (!initializedCollapse) {
-      // First time toggling - initialize state and show this campaign
+      // First time toggling - initialize with all campaigns except the clicked one as collapsed
       setInitializedCollapse(true);
-      setCollapsedCampaigns(new Set()); // Start with empty set (all expanded)
+      // Get all campaign names from links data
+      const allCampaignNames = [...new Set(links.map(link => link.utm_campaign))];
+      const otherCampaigns = allCampaignNames.filter(name => name !== campaignName);
+      setCollapsedCampaigns(new Set(otherCampaigns));
       return;
     }
     
