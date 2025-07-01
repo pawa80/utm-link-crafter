@@ -173,9 +173,11 @@ export default function GeneratedLinks() {
   if (filterByTag !== "all") {
     campaignGroups = campaignGroups.filter(({ sources }) => {
       const allLinksInCampaign = sources.flatMap(source => source.links);
-      const mostRecentLink = allLinksInCampaign.sort((a, b) => 
-        new Date(b.createdAt || new Date()).getTime() - new Date(a.createdAt || new Date()).getTime()
-      )[0];
+      const mostRecentLink = allLinksInCampaign.sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })[0];
       const tags = mostRecentLink?.tags || [];
       
       if (filterByTag === "untagged") {
@@ -190,29 +192,45 @@ export default function GeneratedLinks() {
     const aAllLinks = a.sources.flatMap(source => source.links);
     const bAllLinks = b.sources.flatMap(source => source.links);
     
-    const aMostRecent = aAllLinks.sort((x, y) => 
-      new Date(y.createdAt || new Date()).getTime() - new Date(x.createdAt || new Date()).getTime()
-    )[0];
-    const bMostRecent = bAllLinks.sort((x, y) => 
-      new Date(y.createdAt || new Date()).getTime() - new Date(x.createdAt || new Date()).getTime()
-    )[0];
+    const aMostRecent = aAllLinks.sort((x, y) => {
+      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
+      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
+      return yDate - xDate;
+    })[0];
+    const bMostRecent = bAllLinks.sort((x, y) => {
+      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
+      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
+      return yDate - xDate;
+    })[0];
     
-    const aOldest = aAllLinks.sort((x, y) => 
-      new Date(x.createdAt || new Date()).getTime() - new Date(y.createdAt || new Date()).getTime()
-    )[0];
-    const bOldest = bAllLinks.sort((x, y) => 
-      new Date(x.createdAt || new Date()).getTime() - new Date(y.createdAt || new Date()).getTime()
-    )[0];
+    const aOldest = aAllLinks.sort((x, y) => {
+      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
+      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
+      return xDate - yDate;
+    })[0];
+    const bOldest = bAllLinks.sort((x, y) => {
+      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
+      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
+      return xDate - yDate;
+    })[0];
 
     switch (sortBy) {
       case "created-newest":
-        return new Date(aOldest?.createdAt || new Date()).getTime() > new Date(bOldest?.createdAt || new Date()).getTime() ? -1 : 1;
+        const aOldestDate = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
+        const bOldestDate = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
+        return bOldestDate - aOldestDate;
       case "created-oldest":
-        return new Date(aOldest?.createdAt || new Date()).getTime() < new Date(bOldest?.createdAt || new Date()).getTime() ? -1 : 1;
+        const aOldestDate2 = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
+        const bOldestDate2 = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
+        return aOldestDate2 - bOldestDate2;
       case "updated-newest":
-        return new Date(aMostRecent?.createdAt || new Date()).getTime() > new Date(bMostRecent?.createdAt || new Date()).getTime() ? -1 : 1;
+        const aMostRecentDate = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentDate = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return bMostRecentDate - aMostRecentDate;
       case "updated-oldest":
-        return new Date(aMostRecent?.createdAt || new Date()).getTime() < new Date(bMostRecent?.createdAt || new Date()).getTime() ? -1 : 1;
+        const aMostRecentDate2 = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentDate2 = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return aMostRecentDate2 - bMostRecentDate2;
       case "tag-alphabetical":
         const aTags = aMostRecent?.tags?.[0] || "zzz"; // Put untagged at end
         const bTags = bMostRecent?.tags?.[0] || "zzz";
@@ -289,7 +307,11 @@ export default function GeneratedLinks() {
               const targetUrl = sources[0]?.links[0]?.targetUrl || '';
               // Get tags from the most recent link in campaign (in case older links don't have tags)
               const allLinksInCampaign = sources.flatMap(source => source.links);
-              const mostRecentLink = allLinksInCampaign.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+              const mostRecentLink = allLinksInCampaign.sort((a, b) => {
+                const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return bDate - aDate;
+              })[0];
               const tags = mostRecentLink?.tags || [];
               // Get all links for this campaign for copying
               const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
