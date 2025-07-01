@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, abTestSuggestions, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type AbTestSuggestion, type InsertAbTestSuggestion } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -25,13 +25,6 @@ export interface IStorage {
   createTag(tag: InsertTag): Promise<Tag>;
   getUserTags(userId: number): Promise<Tag[]>;
   getTagByName(userId: number, name: string): Promise<Tag | undefined>;
-  
-  // A/B Test Suggestion operations
-  createAbTestSuggestion(suggestion: InsertAbTestSuggestion): Promise<AbTestSuggestion>;
-  getUserAbTestSuggestions(userId: number): Promise<AbTestSuggestion[]>;
-  getCampaignAbTestSuggestions(userId: number, campaignName: string): Promise<AbTestSuggestion[]>;
-  updateAbTestSuggestionStatus(id: number, status: string): Promise<AbTestSuggestion | undefined>;
-  deleteAbTestSuggestion(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,37 +141,6 @@ export class DatabaseStorage implements IStorage {
   async getTagByName(userId: number, name: string): Promise<Tag | undefined> {
     const [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name)));
     return tag || undefined;
-  }
-
-  async createAbTestSuggestion(insertAbTestSuggestion: InsertAbTestSuggestion): Promise<AbTestSuggestion> {
-    const [suggestion] = await db
-      .insert(abTestSuggestions)
-      .values(insertAbTestSuggestion)
-      .returning();
-    return suggestion;
-  }
-
-  async getUserAbTestSuggestions(userId: number): Promise<AbTestSuggestion[]> {
-    return await db.select().from(abTestSuggestions).where(eq(abTestSuggestions.userId, userId));
-  }
-
-  async getCampaignAbTestSuggestions(userId: number, campaignName: string): Promise<AbTestSuggestion[]> {
-    return await db.select().from(abTestSuggestions)
-      .where(and(eq(abTestSuggestions.userId, userId), eq(abTestSuggestions.campaignName, campaignName)));
-  }
-
-  async updateAbTestSuggestionStatus(id: number, status: string): Promise<AbTestSuggestion | undefined> {
-    const [suggestion] = await db
-      .update(abTestSuggestions)
-      .set({ status })
-      .where(eq(abTestSuggestions.id, id))
-      .returning();
-    return suggestion || undefined;
-  }
-
-  async deleteAbTestSuggestion(id: number): Promise<boolean> {
-    const result = await db.delete(abTestSuggestions).where(eq(abTestSuggestions.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
   }
 }
 

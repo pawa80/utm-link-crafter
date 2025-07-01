@@ -65,21 +65,6 @@ export const utmLinks = pgTable("utm_links", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const abTestSuggestions = pgTable("ab_test_suggestions", {
-  id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
-  campaignName: text("campaign_name").notNull(),
-  sourceName: text("source_name").notNull(),
-  medium: text("medium").notNull(),
-  originalContent: text("original_content").notNull(),
-  suggestedVariants: text("suggested_variants").array().default([]), // Array of suggested content variants
-  suggestionReason: text("suggestion_reason").notNull(), // Why this A/B test is suggested
-  confidence: integer("confidence").notNull(), // 1-5 confidence level
-  testType: text("test_type").notNull(), // "content", "cta", "messaging", "format"
-  status: text("status").default("pending"), // "pending", "accepted", "rejected", "implemented"
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -106,11 +91,6 @@ export const insertTagSchema = createInsertSchema(tags).omit({
   createdAt: true,
 });
 
-export const insertAbTestSuggestionSchema = createInsertSchema(abTestSuggestions).omit({
-  id: true,
-  createdAt: true,
-});
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
@@ -120,5 +100,3 @@ export type SourceTemplate = typeof sourceTemplates.$inferSelect;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Tag = typeof tags.$inferSelect;
-export type InsertAbTestSuggestion = z.infer<typeof insertAbTestSuggestionSchema>;
-export type AbTestSuggestion = typeof abTestSuggestions.$inferSelect;

@@ -9,9 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
-import { Plus, Copy, X, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
+import { Plus, Copy, X, ChevronDown, ChevronUp } from "lucide-react";
 import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
-import ABTestSuggestions from "./ABTestSuggestions";
 
 interface CampaignWizardProps {
   user: User;
@@ -43,8 +42,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     campaign: true,
     tags: editMode,
     sources: editMode,
-    output: editMode,
-    abtest: false
+    output: editMode
   });
   const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
 
@@ -866,37 +864,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         // Invalidate the utm-links cache to refresh campaign management page
                         queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
                         
-                        // Generate A/B testing suggestions for the campaign
-                        if (!editMode) {
-                          const suggestions = getCheckedSourcesWithContent();
-                          suggestions.forEach(async (suggestion) => {
-                            try {
-                              await apiRequest("/api/ab-test-suggestions/generate", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  campaignName,
-                                  sourceName: suggestion.sourceName,
-                                  medium: suggestion.medium,
-                                  content: suggestion.content
-                                })
-                              });
-                            } catch (error) {
-                              console.error("Failed to generate A/B suggestions:", error);
-                            }
-                          });
-                          
-                          // Auto-expand the A/B testing section if suggestions were generated
-                          if (suggestions.length > 0) {
-                            setExpandedSections(prev => ({ ...prev, abtest: true }));
-                          }
-                        }
-                        
                         toast({
                           title: "Success",
                           description: editMode 
                             ? `Updated ${successCount} UTM links successfully`
-                            : `Generated ${successCount} UTM links successfully${!editMode ? ". A/B testing suggestions created!" : ""}`,
+                            : `Generated ${successCount} UTM links successfully`,
                         });
                         // Navigate back to management page after successful save
                         if (onSaveSuccess) {
@@ -928,22 +900,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </Card>
-
-      {/* A/B Testing Suggestions Section */}
-      <Card>
-        <SectionHeader 
-          title="A/B Testing Suggestions" 
-          sectionKey="abtest"
-        />
-        {expandedSections.abtest && (
-          <div className="p-6">
-            <ABTestSuggestions 
-              campaignName={campaignName}
-              userId={user.id}
-            />
           </div>
         )}
       </Card>
