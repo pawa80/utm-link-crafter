@@ -137,6 +137,8 @@ export default function GeneratedLinks() {
     acc[campaignName].push(link);
     return acc;
   }, {} as Record<string, typeof links>);
+  
+  console.log("GeneratedLinks - Grouped by campaign:", groupedByCampaign);
 
   // Get all unique tags for filtering
   const allTags = Array.from(
@@ -156,8 +158,6 @@ export default function GeneratedLinks() {
       return acc;
     }, {} as Record<string, typeof campaignLinks>);
 
-
-
     return {
       campaignName,
       sources: Object.entries(groupedBySource).map(([sourceName, sourceLinks]) => ({
@@ -166,6 +166,8 @@ export default function GeneratedLinks() {
       }))
     };
   });
+  
+  console.log("GeneratedLinks - Campaign groups before filtering:", campaignGroups);
 
   // Apply filtering by tag
   if (filterByTag !== "all") {
@@ -219,6 +221,9 @@ export default function GeneratedLinks() {
         return 0;
     }
   });
+  
+  console.log("GeneratedLinks - Final campaign groups:", campaignGroups);
+  console.log("GeneratedLinks - Campaign groups length:", campaignGroups.length);
 
   return (
     <Card>
