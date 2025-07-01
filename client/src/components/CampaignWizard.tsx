@@ -213,33 +213,15 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Helper component for section headers
   const SectionHeader = ({ 
     title, 
-    sectionKey, 
-    showNextButton = false, 
-    nextSection = '', 
-    onNext 
+    sectionKey
   }: { 
     title: string; 
-    sectionKey: string; 
-    showNextButton?: boolean; 
-    nextSection?: string; 
-    onNext?: () => void;
+    sectionKey: string;
   }) => (
     <div className="flex items-center justify-between p-4 bg-gray-50 border-b cursor-pointer" 
          onClick={() => toggleSection(sectionKey)}>
       <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       <div className="flex items-center gap-3">
-        {showNextButton && !editMode && (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNext?.();
-            }}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Next
-          </Button>
-        )}
         {expandedSections[sectionKey as keyof typeof expandedSections] ? (
           <ChevronUp className="w-5 h-5 text-gray-500" />
         ) : (
@@ -294,9 +276,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         <SectionHeader 
           title="Campaign and Landing Pages" 
           sectionKey="campaign"
-          showNextButton={true}
-          nextSection="tags"
-          onNext={() => handleNext('campaign', 'tags')}
         />
         {expandedSections.campaign && (
           <div className="p-6">
@@ -326,6 +305,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 />
               </div>
             </div>
+            
+            {/* Next Button at bottom of section */}
+            {!editMode && (
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => handleNext('campaign', 'tags')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -335,9 +326,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         <SectionHeader 
           title="Tags" 
           sectionKey="tags"
-          showNextButton={true}
-          nextSection="sources"
-          onNext={() => handleNext('tags', 'sources')}
         />
         {expandedSections.tags && (
           <div className="p-6">
@@ -419,6 +407,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 </div>
               )}
             </div>
+            
+            {/* Next Button at bottom of section */}
+            {!editMode && (
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => handleNext('tags', 'sources')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -428,9 +428,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         <SectionHeader 
           title="Sources and Mediums" 
           sectionKey="sources"
-          showNextButton={true}
-          nextSection="output"
-          onNext={() => handleNext('sources', 'output')}
         />
         {expandedSections.sources && (
           <div className="p-6">
@@ -496,38 +493,161 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                     {medium}
                                   </Button>
                                 ))}
-                              </div>
-                            </div>
-
-                            {state.selectedMediums.length > 0 && (
-                              <div>
-                                <Label className="text-sm font-medium mb-2 block">Content for Selected Mediums</Label>
-                                <div className="space-y-3">
-                                  {state.selectedMediums.map((medium: string) => (
-                                    <div key={medium} className="flex items-center gap-3">
-                                      <Label className="w-20 text-sm">{medium}:</Label>
-                                      <Input
-                                        value={state.contentInputs[medium] || ''}
-                                        onChange={(e) => {
+                                
+                                {/* Add Medium Button */}
+                                {customMediumInputs[template.sourceName]?.show ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      value={customMediumInputs[template.sourceName]?.value || ''}
+                                      onChange={(e) => {
+                                        setCustomMediumInputs(prev => ({
+                                          ...prev,
+                                          [template.sourceName]: {
+                                            ...prev[template.sourceName],
+                                            value: e.target.value
+                                          }
+                                        }));
+                                      }}
+                                      placeholder="New medium name..."
+                                      className="w-32"
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const mediumValue = customMediumInputs[template.sourceName]?.value?.trim();
+                                          if (mediumValue && !template.mediums?.includes(mediumValue)) {
+                                            const shouldAddToLibrary = customMediumInputs[template.sourceName]?.addToLibrary || false;
+                                            
+                                            if (shouldAddToLibrary) {
+                                              // Add to template in database
+                                              updateSourceTemplateMutation.mutate({
+                                                templateId: template.id,
+                                                updates: {
+                                                  mediums: [...(template.mediums || []), mediumValue]
+                                                }
+                                              });
+                                            }
+                                            
+                                            // Add to current selection
+                                            setSourceStates(prev => ({
+                                              ...prev,
+                                              [template.sourceName]: {
+                                                ...state,
+                                                selectedMediums: [...state.selectedMediums, mediumValue]
+                                              }
+                                            }));
+                                            
+                                            // Reset input
+                                            setCustomMediumInputs(prev => ({
+                                              ...prev,
+                                              [template.sourceName]: {
+                                                value: '',
+                                                addToLibrary: false,
+                                                show: false
+                                              }
+                                            }));
+                                          }
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const mediumValue = customMediumInputs[template.sourceName]?.value?.trim();
+                                        if (mediumValue && !template.mediums?.includes(mediumValue)) {
+                                          const shouldAddToLibrary = customMediumInputs[template.sourceName]?.addToLibrary || false;
+                                          
+                                          if (shouldAddToLibrary) {
+                                            // Add to template in database
+                                            updateSourceTemplateMutation.mutate({
+                                              templateId: template.id,
+                                              updates: {
+                                                mediums: [...(template.mediums || []), mediumValue]
+                                              }
+                                            });
+                                          }
+                                          
+                                          // Add to current selection
                                           setSourceStates(prev => ({
                                             ...prev,
                                             [template.sourceName]: {
                                               ...state,
-                                              contentInputs: {
-                                                ...state.contentInputs,
-                                                [medium]: e.target.value
-                                              }
+                                              selectedMediums: [...state.selectedMediums, mediumValue]
                                             }
                                           }));
-                                        }}
-                                        placeholder={`Content for ${medium}...`}
-                                        className="flex-1"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
+                                          
+                                          // Reset input
+                                          setCustomMediumInputs(prev => ({
+                                            ...prev,
+                                            [template.sourceName]: {
+                                              value: '',
+                                              addToLibrary: false,
+                                              show: false
+                                            }
+                                          }));
+                                        }
+                                      }}
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setCustomMediumInputs(prev => ({
+                                          ...prev,
+                                          [template.sourceName]: {
+                                            value: '',
+                                            addToLibrary: false,
+                                            show: false
+                                          }
+                                        }));
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setCustomMediumInputs(prev => ({
+                                        ...prev,
+                                        [template.sourceName]: {
+                                          value: '',
+                                          addToLibrary: false,
+                                          show: true
+                                        }
+                                      }));
+                                    }}
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Add Medium
+                                  </Button>
+                                )}
                               </div>
-                            )}
+                              
+                              {/* Checkbox for adding to library */}
+                              {customMediumInputs[template.sourceName]?.show && (
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Checkbox
+                                    id={`add-to-library-${template.sourceName}`}
+                                    checked={customMediumInputs[template.sourceName]?.addToLibrary || false}
+                                    onCheckedChange={(checked) => {
+                                      setCustomMediumInputs(prev => ({
+                                        ...prev,
+                                        [template.sourceName]: {
+                                          ...prev[template.sourceName],
+                                          addToLibrary: !!checked
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                  <Label htmlFor={`add-to-library-${template.sourceName}`} className="text-sm">
+                                    Add to source library
+                                  </Label>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </CardContent>
@@ -535,6 +655,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   );
                 })}
             </div>
+            
+            {/* Next Button at bottom of section */}
+            {!editMode && (
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => handleNext('sources', 'output')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -547,88 +679,161 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         />
         {expandedSections.output && (
           <div className="p-6">
-            {getCheckedSourcesWithContent().length > 0 ? (
-              <div className="space-y-4">
-                <div className="text-sm text-gray-600">
-                  Preview of {getCheckedSourcesWithContent().length} UTM links:
+            <div className="space-y-6">
+              {/* Content Input Section */}
+              <div>
+                <Label className="text-lg font-medium mb-4 block">Content for Selected Sources & Mediums</Label>
+                <div className="space-y-4">
+                  {Object.entries(sourceStates)
+                    .filter(([, state]) => state.checked && state.selectedMediums.length > 0)
+                    .map(([sourceName, state]) => (
+                      <Card key={sourceName}>
+                        <CardContent className="p-4">
+                          <h4 className="font-medium text-lg mb-3">{sourceName}</h4>
+                          <div className="space-y-3">
+                            {state.selectedMediums.map((medium: string) => (
+                              <div key={medium} className="flex items-center gap-3">
+                                <Label className="w-20 text-sm font-medium">{medium}:</Label>
+                                <Input
+                                  value={state.contentInputs[medium] || ''}
+                                  onChange={(e) => {
+                                    setSourceStates(prev => ({
+                                      ...prev,
+                                      [sourceName]: {
+                                        ...state,
+                                        contentInputs: {
+                                          ...state.contentInputs,
+                                          [medium]: e.target.value
+                                        }
+                                      }
+                                    }));
+                                  }}
+                                  placeholder={`Content for ${medium}...`}
+                                  className="flex-1"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                 </div>
-                <div className="space-y-2">
-                  {getCheckedSourcesWithContent().map((link, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded text-sm font-mono break-all">
-                      {link.utmLink}
-                    </div>
-                  ))}
+              </div>
+
+              {/* UTM Links Preview Section */}
+              {getCheckedSourcesWithContent().length > 0 && (
+                <div>
+                  <Label className="text-lg font-medium mb-4 block">Generated UTM Links</Label>
+                  <div className="space-y-2">
+                    {getCheckedSourcesWithContent().map((link, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-700 mb-1">
+                            {link.sourceName} • {link.medium} • {link.content}
+                          </div>
+                          <div className="text-xs font-mono text-gray-600 break-all">
+                            {link.utmLink}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(link.utmLink);
+                            toast({
+                              title: "Copied!",
+                              description: "UTM link copied to clipboard",
+                            });
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <Button
-                  onClick={async () => {
-                    // In edit mode, first delete existing campaign links
-                    if (editMode && existingCampaignData.length > 0) {
-                      try {
-                        await deleteCampaignLinksMutation.mutateAsync(campaignName);
-                      } catch (error) {
-                        console.error("Failed to delete existing campaign links:", error);
+              )}
+
+              {/* Save Button */}
+              {getCheckedSourcesWithContent().length > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={async () => {
+                      // In edit mode, first delete existing campaign links
+                      if (editMode && existingCampaignData.length > 0) {
+                        try {
+                          await deleteCampaignLinksMutation.mutateAsync(campaignName);
+                        } catch (error) {
+                          console.error("Failed to delete existing campaign links:", error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to update campaign. Please try again.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                      }
+                      
+                      // Save all valid combinations to database
+                      const validSources = getCheckedSourcesWithContent();
+                      
+                      let successCount = 0;
+                      
+                      for (const source of validSources) {
+                        try {
+                          await createUtmLinkMutation.mutateAsync({
+                            userId: user.id,
+                            targetUrl,
+                            utm_campaign: campaignName,
+                            utm_source: source.sourceName.toLowerCase(),
+                            utm_medium: source.medium,
+                            utm_content: source.content,
+                            fullUtmLink: source.utmLink,
+                            tags: selectedTags
+                          });
+                          successCount++;
+                        } catch (error) {
+                          console.error("Failed to save link:", error);
+                        }
+                      }
+                      
+                      if (successCount > 0) {
+                        toast({
+                          title: "Success",
+                          description: editMode 
+                            ? `Updated ${successCount} UTM links successfully`
+                            : `Generated ${successCount} UTM links successfully`,
+                        });
+                        // Navigate back to management page after successful save
+                        if (onSaveSuccess) {
+                          onSaveSuccess();
+                        }
+                      } else {
                         toast({
                           title: "Error",
-                          description: "Failed to update campaign. Please try again.",
+                          description: "Failed to generate UTM links. Please check your inputs.",
                           variant: "destructive",
                         });
-                        return;
                       }
-                    }
-                    
-                    // Save all valid combinations to database
-                    const validSources = getCheckedSourcesWithContent();
-                    
-                    let successCount = 0;
-                    
-                    for (const source of validSources) {
-                      try {
-                        await createUtmLinkMutation.mutateAsync({
-                          userId: user.id,
-                          targetUrl,
-                          utm_campaign: campaignName,
-                          utm_source: source.sourceName.toLowerCase(),
-                          utm_medium: source.medium,
-                          utm_content: source.content,
-                          fullUtmLink: source.utmLink,
-                          tags: selectedTags
-                        });
-                        successCount++;
-                      } catch (error) {
-                        console.error("Failed to save link:", error);
-                      }
-                    }
-                    
-                    if (successCount > 0) {
-                      toast({
-                        title: "Success",
-                        description: editMode 
-                          ? `Updated ${successCount} UTM links successfully`
-                          : `Generated ${successCount} UTM links successfully`,
-                      });
-                      // Navigate back to management page after successful save
-                      if (onSaveSuccess) {
-                        onSaveSuccess();
-                      }
-                    } else {
-                      toast({
-                        title: "Error",
-                        description: "Failed to generate UTM links. Please check your inputs.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
-                >
-                  {editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
-                </Button>
-              </div>
-            ) : (
-              <div className="text-gray-500 text-center py-8">
-                Complete the previous sections to see your campaign links here.
-              </div>
-            )}
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
+                  >
+                    {editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
+                  </Button>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {getCheckedSourcesWithContent().length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-500 mb-2">No UTM links to generate</div>
+                  <div className="text-sm text-gray-400">
+                    Please select sources, mediums, and add content in the previous sections.
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Card>
