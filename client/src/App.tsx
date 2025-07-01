@@ -7,6 +7,7 @@ import HomePage from "@/pages/HomePage";
 import Dashboard from "@/pages/Dashboard";
 import CampaignManagement from "@/pages/CampaignManagement";
 import NewCampaign from "@/pages/NewCampaign";
+import SourceManagement from "@/pages/SourceManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/campaigns" component={CampaignManagement} />
       <Route path="/new-campaign" component={NewCampaign} />
+      <Route path="/sources" component={SourceManagement} />
       <Route component={NotFound} />
     </Switch>
   );

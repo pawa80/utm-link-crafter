@@ -34,6 +34,8 @@ export const sourceTemplates = pgTable("source_templates", {
   mediums: text("mediums").array().default([]),
   formats: text("formats").array().default([]),
   abTestingPreference: integer("ab_testing_preference").default(1), // 1: No, 2: A-B, 3: A-B-C
+  isArchived: boolean("is_archived").default(false),
+  archivedMediums: text("archived_mediums").array().default([]), // List of archived mediums for this source
   createdAt: timestamp("created_at").defaultNow(),
 });
 

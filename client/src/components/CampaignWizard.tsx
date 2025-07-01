@@ -108,21 +108,46 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     }
   }, [editMode, existingCampaignData]);
 
-  // Get all available sources (predefined + user templates)
+  // Get all available sources (predefined + user templates, filtering archived ones)
   const getAllSources = () => {
-    const templateSources = sourceTemplates.map((t: SourceTemplate) => t.sourceName);
+    // Filter out archived templates for new campaigns, include all for edit mode
+    const templateSources = editMode 
+      ? sourceTemplates.map((t: SourceTemplate) => t.sourceName)
+      : sourceTemplates.filter((t: SourceTemplate) => !t.isArchived).map((t: SourceTemplate) => t.sourceName);
+    
     const predefinedSources = ["Facebook", "LinkedIn", "Twitter", "Google Ads", "Sales Event", "Google", "Pinterest", "TikTok", "Pål Erik"];
     const combined = [...predefinedSources, ...templateSources];
     return combined.filter((source, index) => combined.indexOf(source) === index);
   };
 
+  // Check if a source is archived for styling purposes
+  const isSourceArchived = (sourceName: string): boolean => {
+    const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+    return template?.isArchived || false;
+  };
+
   const getAvailableMediums = (sourceName: string): string[] => {
     const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
     if (template?.mediums && template.mediums.length > 0) {
-      return template.mediums;
+      const archivedMediums = template.archivedMediums || [];
+      // In edit mode, include archived mediums but mark them
+      if (editMode) {
+        return template.mediums;
+      }
+      // In create mode, exclude archived mediums
+      return template.mediums.filter(medium => !archivedMediums.includes(medium));
     }
     // Default mediums for common sources
     return ["organic", "paid", "email", "social", "referral"];
+  };
+
+  // Check if a medium is archived for styling purposes
+  const isMediumArchived = (sourceName: string, mediumName: string): boolean => {
+    const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+    if (template?.archivedMediums) {
+      return template.archivedMediums.includes(mediumName);
+    }
+    return false;
   };
 
   const handleSourceToggle = (sourceName: string, checked: boolean) => {
