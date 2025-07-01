@@ -100,6 +100,7 @@ Changelog:
   - Fixed database query ordering to show newest campaigns first (was showing oldest)
   - Increased record limit to 100 to display more campaigns
   - Added manual refresh button to bypass browser cache issues
+  - RESOLVED: Fixed API route default limit (was 20, now 100) - all campaigns now display correctly
 
 ## User Preferences
 
