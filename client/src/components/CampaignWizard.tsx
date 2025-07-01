@@ -1341,8 +1341,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       }
                       
                       if (successCount > 0) {
-                        // Force complete cache invalidation and refresh
-                        queryClient.clear(); // Clear all cached data
+                        // Invalidate specific cache to refresh campaign data
                         await queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
                         
                         toast({
@@ -1352,7 +1351,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             : `Generated ${successCount} UTM links successfully`,
                         });
                         
-                        // Force immediate navigation with cache cleared
+                        // Navigate after cache invalidation
                         if (onSaveSuccess) {
                           onSaveSuccess();
                         }

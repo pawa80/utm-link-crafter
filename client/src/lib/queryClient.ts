@@ -60,12 +60,7 @@ export const getQueryFn: <T>(options: {
     const authHeaders = await getAuthHeaders();
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
-      headers: {
-        ...authHeaders,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
+      headers: authHeaders,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -82,7 +77,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 0, // Always consider data stale to ensure fresh fetches
+      staleTime: 30000, // 30 seconds - reasonable balance between freshness and performance
       retry: false,
     },
     mutations: {
