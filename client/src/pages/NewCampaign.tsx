@@ -30,7 +30,7 @@ export default function NewCampaign() {
   });
   
   // Fetch campaign landing pages for editing
-  const { data: campaignLandingPages = [] } = useQuery({
+  const { data: campaignLandingPages = [] } = useQuery<any[]>({
     queryKey: [`/api/campaign-landing-pages/${editCampaignName}`],
     enabled: isEditMode && !!user && !!editCampaignName, // Only fetch when in edit mode
   });
@@ -118,7 +118,7 @@ export default function NewCampaign() {
             onSaveSuccess={handleSaveSuccess}
             editMode={isEditMode}
             existingCampaignData={editingCampaignLinks}
-            existingLandingPages={campaignLandingPages}
+            existingLandingPages={campaignLandingPages as any[]}
           />
         </div>
       </div>

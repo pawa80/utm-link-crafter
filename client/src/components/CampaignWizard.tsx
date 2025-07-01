@@ -343,7 +343,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   // Initialize form with existing campaign data when in edit mode
   useEffect(() => {
-    if (editMode && existingCampaignData.length > 0) {
+    if (editMode && existingCampaignData.length > 0 && sourceTemplates.length > 0) {
       console.log('Initializing edit mode with data:', existingCampaignData);
       
       const firstLink = existingCampaignData[0];
@@ -359,7 +359,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       const linksBySourceMedium: { [key: string]: typeof existingCampaignData } = {};
       
       existingCampaignData.forEach(link => {
-        const sourceName = link.utm_source;
+        // Find matching source template (case-insensitive)
+        const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+          template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
+        );
+        
+        const sourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
         const medium = link.utm_medium;
         const key = `${sourceName}-${medium}`;
         
@@ -412,7 +417,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         output: true
       });
     }
-  }, [editMode, existingCampaignData, existingLandingPages]);
+  }, [editMode, existingCampaignData, existingLandingPages, sourceTemplates]);
 
   // Helper component for section headers
   const SectionHeader = ({ 
