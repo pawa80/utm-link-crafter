@@ -63,6 +63,8 @@ export default function GeneratedLinks() {
   console.log("GeneratedLinks - Links count:", links.length);
   if (links.length > 0) {
     console.log("GeneratedLinks - Sample link:", links[0]);
+    console.log("GeneratedLinks - All campaign names:", links.map(l => l.utm_campaign));
+    console.log("GeneratedLinks - Unique campaigns:", [...new Set(links.map(l => l.utm_campaign))]);
   }
 
   const handleCopyToClipboard = async (link: string) => {
