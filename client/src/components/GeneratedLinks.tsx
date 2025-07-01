@@ -47,13 +47,15 @@ export default function GeneratedLinks() {
     return collapsedCampaigns.has(campaignName);
   };
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { data: links = [], isLoading, refetch } = useQuery<UtmLink[]>({
-    queryKey: ["/api/utm-links"],
+    queryKey: ["/api/utm-links", refreshKey],
   });
 
-  // Refresh data with a simple refetch
+  // Force fresh data by changing the query key
   const handleRefresh = () => {
-    refetch();
+    setRefreshKey(prev => prev + 1);
   };
   
   // Debug logging
