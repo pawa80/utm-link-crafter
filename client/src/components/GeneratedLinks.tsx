@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy, Download, ChevronDown, ChevronUp, Edit } from "lucide-react";
+import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc } from "lucide-react";
 import { Link } from "wouter";
 import type { UtmLink } from "@shared/schema";
 
@@ -14,6 +15,8 @@ export default function GeneratedLinks() {
   const { toast } = useToast();
   const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set());
   const [initializedCollapse, setInitializedCollapse] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("created-newest");
+  const [filterByTag, setFilterByTag] = useState<string>("all");
 
   const toggleCampaignCollapse = (campaignName: string) => {
     if (!initializedCollapse) {
@@ -128,8 +131,15 @@ export default function GeneratedLinks() {
     return acc;
   }, {} as Record<string, typeof links>);
 
+  // Get all unique tags for filtering
+  const allTags = Array.from(
+    new Set(
+      links.flatMap(link => link.tags || [])
+    )
+  ).sort();
+
   // Group links within each campaign by source
-  const campaignGroups = Object.entries(groupedByCampaign).map(([campaignName, campaignLinks]) => {
+  let campaignGroups = Object.entries(groupedByCampaign).map(([campaignName, campaignLinks]) => {
     const groupedBySource = campaignLinks.reduce((acc, link) => {
       const sourceName = link.utm_source;
       if (!acc[sourceName]) {
@@ -150,13 +160,106 @@ export default function GeneratedLinks() {
     };
   });
 
+  // Apply filtering by tag
+  if (filterByTag !== "all") {
+    campaignGroups = campaignGroups.filter(({ sources }) => {
+      const allLinksInCampaign = sources.flatMap(source => source.links);
+      const mostRecentLink = allLinksInCampaign.sort((a, b) => 
+        new Date(b.createdAt || new Date()).getTime() - new Date(a.createdAt || new Date()).getTime()
+      )[0];
+      const tags = mostRecentLink?.tags || [];
+      
+      if (filterByTag === "untagged") {
+        return tags.length === 0;
+      }
+      return tags.includes(filterByTag);
+    });
+  }
+
+  // Apply sorting
+  campaignGroups = campaignGroups.sort((a, b) => {
+    const aAllLinks = a.sources.flatMap(source => source.links);
+    const bAllLinks = b.sources.flatMap(source => source.links);
+    
+    const aMostRecent = aAllLinks.sort((x, y) => 
+      new Date(y.createdAt || new Date()).getTime() - new Date(x.createdAt || new Date()).getTime()
+    )[0];
+    const bMostRecent = bAllLinks.sort((x, y) => 
+      new Date(y.createdAt || new Date()).getTime() - new Date(x.createdAt || new Date()).getTime()
+    )[0];
+    
+    const aOldest = aAllLinks.sort((x, y) => 
+      new Date(x.createdAt || new Date()).getTime() - new Date(y.createdAt || new Date()).getTime()
+    )[0];
+    const bOldest = bAllLinks.sort((x, y) => 
+      new Date(x.createdAt || new Date()).getTime() - new Date(y.createdAt || new Date()).getTime()
+    )[0];
+
+    switch (sortBy) {
+      case "created-newest":
+        return new Date(aOldest?.createdAt || new Date()).getTime() > new Date(bOldest?.createdAt || new Date()).getTime() ? -1 : 1;
+      case "created-oldest":
+        return new Date(aOldest?.createdAt || new Date()).getTime() < new Date(bOldest?.createdAt || new Date()).getTime() ? -1 : 1;
+      case "updated-newest":
+        return new Date(aMostRecent?.createdAt || new Date()).getTime() > new Date(bMostRecent?.createdAt || new Date()).getTime() ? -1 : 1;
+      case "updated-oldest":
+        return new Date(aMostRecent?.createdAt || new Date()).getTime() < new Date(bMostRecent?.createdAt || new Date()).getTime() ? -1 : 1;
+      case "tag-alphabetical":
+        const aTags = aMostRecent?.tags?.[0] || "zzz"; // Put untagged at end
+        const bTags = bMostRecent?.tags?.[0] || "zzz";
+        return aTags.localeCompare(bTags);
+      default:
+        return 0;
+    }
+  });
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <List className="text-primary mr-2" size={20} />
-          My Campaigns
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center">
+            <List className="text-primary mr-2" size={20} />
+            My Campaigns
+          </CardTitle>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <SortAsc className="text-gray-500" size={16} />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created-newest">Created (Newest)</SelectItem>
+                  <SelectItem value="created-oldest">Created (Oldest)</SelectItem>
+                  <SelectItem value="updated-newest">Updated (Newest)</SelectItem>
+                  <SelectItem value="updated-oldest">Updated (Oldest)</SelectItem>
+                  <SelectItem value="tag-alphabetical">Tag (A-Z)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="flex items-center gap-2">
+              <Filter className="text-gray-500" size={16} />
+              <Select value={filterByTag} onValueChange={setFilterByTag}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Filter by tag..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Campaigns</SelectItem>
+                  <SelectItem value="untagged">Untagged</SelectItem>
+                  {allTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (
