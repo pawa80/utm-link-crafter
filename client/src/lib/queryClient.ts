@@ -58,7 +58,13 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const authHeaders = await getAuthHeaders();
-    const res = await fetch(queryKey[0] as string, {
+    const baseUrl = queryKey[0] as string;
+    // Add timestamp to URL to bypass browser cache when refreshKey changes
+    const refreshKey = queryKey[1] || 0;
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const url = `${baseUrl}${separator}_t=${Date.now()}&_r=${refreshKey}`;
+    
+    const res = await fetch(url, {
       credentials: "include",
       headers: authHeaders,
     });
