@@ -345,10 +345,33 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   useEffect(() => {
     if (editMode && existingCampaignData.length > 0 && sourceTemplates.length > 0) {
       console.log('Initializing edit mode with data:', existingCampaignData);
+      console.log('Existing landing pages:', existingLandingPages);
       
       const firstLink = existingCampaignData[0];
       setCampaignName(firstLink.utm_campaign);
-      setTargetUrl(firstLink.targetUrl);
+      
+      // Check if campaign uses single URL or multiple landing pages
+      const hasSingleUrl = firstLink.targetUrl && firstLink.targetUrl.trim() !== '';
+      if (hasSingleUrl) {
+        setTargetUrl(firstLink.targetUrl);
+      } else {
+        // Campaign likely uses multiple landing pages, but if no landing pages are found,
+        // we'll try to reconstruct the base URL from the UTM link
+        if (firstLink.utmLink) {
+          try {
+            const url = new URL(firstLink.utmLink);
+            // Remove all UTM parameters to get the base URL
+            const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
+            setTargetUrl(baseUrl);
+          } catch (error) {
+            console.warn('Could not parse UTM link:', firstLink.utmLink);
+            setTargetUrl('');
+          }
+        } else {
+          setTargetUrl('');
+        }
+      }
+      
       setSelectedTags(firstLink.tags || []);
       
       // Group existing links by source and medium to populate form
