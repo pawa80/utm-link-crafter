@@ -17,6 +17,7 @@ interface CampaignWizardProps {
   onSaveSuccess?: () => void;
   editMode?: boolean;
   existingCampaignData?: UtmLink[];
+  existingLandingPages?: any[];
 }
 
 interface SourceState {
@@ -26,7 +27,12 @@ interface SourceState {
   landingPageSelections: { [medium: string]: string }; // medium -> landing page ID
 }
 
-export default function CampaignWizard({ user, onSaveSuccess, editMode = false, existingCampaignData = [] }: CampaignWizardProps) {
+interface ContentVariant {
+  id: string;
+  content: string;
+}
+
+export default function CampaignWizard({ user, onSaveSuccess, editMode = false, existingCampaignData = [], existingLandingPages = [] }: CampaignWizardProps) {
   const [campaignName, setCampaignName] = useState("");
   const [targetUrl, setTargetUrl] = useState(""); // Keep for backward compatibility
   const [landingPages, setLandingPages] = useState<Array<{ id: string; url: string; label: string }>>([]);
@@ -338,6 +344,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Initialize form with existing campaign data when in edit mode
   useEffect(() => {
     if (editMode && existingCampaignData.length > 0) {
+      console.log('Initializing edit mode with data:', existingCampaignData);
+      
       const firstLink = existingCampaignData[0];
       setCampaignName(firstLink.utm_campaign);
       setTargetUrl(firstLink.targetUrl);
@@ -345,11 +353,20 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       
       // Group existing links by source and medium to populate form
       const newSourceStates: { [sourceName: string]: SourceState } = {};
+      const newContentVariants: { [key: string]: ContentVariant[] } = {};
+      
+      // Group links by source and medium
+      const linksBySourceMedium: { [key: string]: typeof existingCampaignData } = {};
       
       existingCampaignData.forEach(link => {
         const sourceName = link.utm_source;
         const medium = link.utm_medium;
-        const content = link.utm_content || '';
+        const key = `${sourceName}-${medium}`;
+        
+        if (!linksBySourceMedium[key]) {
+          linksBySourceMedium[key] = [];
+        }
+        linksBySourceMedium[key].push(link);
         
         if (!newSourceStates[sourceName]) {
           newSourceStates[sourceName] = {
@@ -363,13 +380,39 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         if (!newSourceStates[sourceName].selectedMediums.includes(medium)) {
           newSourceStates[sourceName].selectedMediums.push(medium);
         }
-        
-        newSourceStates[sourceName].contentInputs[medium] = content;
+      });
+      
+      // Create content variants for each source-medium combination
+      Object.entries(linksBySourceMedium).forEach(([key, links]) => {
+        const variants = links.map((link, index) => ({
+          id: `${key}-${index}`,
+          content: link.utm_content || ''
+        }));
+        newContentVariants[key] = variants;
       });
       
       setSourceStates(newSourceStates);
+      setContentVariants(newContentVariants);
+      
+      // Initialize landing pages if they exist
+      if (existingLandingPages.length > 0) {
+        const formattedLandingPages = existingLandingPages.map(lp => ({
+          id: lp.id.toString(),
+          url: lp.url,
+          label: lp.label
+        }));
+        setLandingPages(formattedLandingPages);
+      }
+      
+      // Expand all sections when in edit mode
+      setExpandedSections({
+        campaign: true,
+        tags: true,
+        sources: true,
+        output: true
+      });
     }
-  }, [editMode, existingCampaignData]);
+  }, [editMode, existingCampaignData, existingLandingPages]);
 
   // Helper component for section headers
   const SectionHeader = ({ 

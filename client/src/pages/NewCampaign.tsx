@@ -29,6 +29,12 @@ export default function NewCampaign() {
     enabled: isEditMode && !!user, // Only fetch when in edit mode and user is loaded
   });
   
+  // Fetch campaign landing pages for editing
+  const { data: campaignLandingPages = [] } = useQuery({
+    queryKey: [`/api/campaign-landing-pages/${editCampaignName}`],
+    enabled: isEditMode && !!user && !!editCampaignName, // Only fetch when in edit mode
+  });
+  
   // Filter links for the campaign being edited
   const editingCampaignLinks = isEditMode && editCampaignName 
     ? campaignLinks.filter(link => link.utm_campaign === editCampaignName)
@@ -112,6 +118,7 @@ export default function NewCampaign() {
             onSaveSuccess={handleSaveSuccess}
             editMode={isEditMode}
             existingCampaignData={editingCampaignLinks}
+            existingLandingPages={campaignLandingPages}
           />
         </div>
       </div>
