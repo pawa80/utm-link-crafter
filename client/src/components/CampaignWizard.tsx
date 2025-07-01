@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
-import { Plus, Copy, X } from "lucide-react";
+import { Plus, Copy, X, ChevronDown, ChevronUp } from "lucide-react";
 import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
 
 interface CampaignWizardProps {
@@ -35,9 +35,72 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
+  
+  // Section collapse states
+  const [expandedSections, setExpandedSections] = useState({
+    campaign: true,
+    tags: editMode,
+    sources: editMode,
+    output: editMode
+  });
+  const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Section management functions
+  const toggleSection = (section: string) => {
+    setManuallyExpanded(prev => new Set([...prev, section]));
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section as keyof typeof prev]
+    }));
+  };
+
+  const validateSection = (section: string): boolean => {
+    switch (section) {
+      case 'campaign':
+        return campaignName.trim() !== '' && targetUrl.trim() !== '' && validateUrl(targetUrl);
+      case 'tags':
+        return true; // Tags are optional
+      case 'sources':
+        return getCheckedSourcesWithContent().length > 0;
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = (currentSection: string, nextSection: string) => {
+    if (!validateSection(currentSection)) {
+      let errorMessage = '';
+      switch (currentSection) {
+        case 'campaign':
+          if (!campaignName.trim()) errorMessage = 'Campaign name is required';
+          else if (!targetUrl.trim()) errorMessage = 'Landing page URL is required';
+          else if (!validateUrl(targetUrl)) errorMessage = 'Please enter a valid URL';
+          break;
+        case 'sources':
+          errorMessage = 'Please select at least one source and medium with content';
+          break;
+      }
+      
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Only auto-collapse/expand if sections weren't manually expanded
+    if (!manuallyExpanded.has(currentSection) && !manuallyExpanded.has(nextSection)) {
+      setExpandedSections(prev => ({
+        ...prev,
+        [currentSection]: false,
+        [nextSection]: true
+      }));
+    }
+  };
 
   const { data: sourceTemplates = [] } = useQuery({
     queryKey: ["/api/source-templates"],
@@ -55,33 +118,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  // Rest of the existing mutations and functions...
   const createUtmLinkMutation = useMutation({
     mutationFn: async (linkData: any) => {
       const response = await apiRequest("POST", "/api/utm-links", linkData);
       return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
-    },
-  });
-
-  const createSourceTemplateMutation = useMutation({
-    mutationFn: async (templateData: { sourceName: string; mediums: string[] }) => {
-      const response = await apiRequest("POST", "/api/source-templates", templateData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/source-templates'] });
-    },
-  });
-
-  const createTagMutation = useMutation({
-    mutationFn: async (tagData: { name: string }) => {
-      const response = await apiRequest("POST", "/api/tags", tagData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tags'] });
     },
   });
 
@@ -90,10 +131,49 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       const response = await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+  });
+
+  const createSourceTemplateMutation = useMutation({
+    mutationFn: async (templateData: any) => {
+      const response = await apiRequest("POST", "/api/source-templates", templateData);
+      return response.json();
     },
   });
+
+  const updateSourceTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, updates }: { templateId: number; updates: any }) => {
+      const response = await apiRequest("PATCH", `/api/source-templates/${templateId}`, updates);
+      return response.json();
+    },
+  });
+
+  const createTagMutation = useMutation({
+    mutationFn: async (tagData: any) => {
+      const response = await apiRequest("POST", "/api/tags", tagData);
+      return response.json();
+    },
+  });
+
+  // Existing helper functions
+  const getCheckedSourcesWithContent = () => {
+    return Object.entries(sourceStates)
+      .filter(([, state]) => state.checked)
+      .flatMap(([sourceName, state]) =>
+        state.selectedMediums.map(medium => ({
+          sourceName,
+          medium,
+          content: state.contentInputs[medium] || '',
+          utmLink: generateUTMLink({
+            targetUrl,
+            utm_campaign: campaignName,
+            utm_source: sourceName.toLowerCase(),
+            utm_medium: medium,
+            utm_content: state.contentInputs[medium] || ''
+          })
+        }))
+      )
+      .filter(link => link.content.trim() !== '');
+  };
 
   // Initialize form with existing campaign data when in edit mode
   useEffect(() => {
@@ -130,237 +210,46 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     }
   }, [editMode, existingCampaignData]);
 
-  // Get all available sources (predefined + user templates, filtering archived ones)
-  const getAllSources = () => {
-    // Filter out archived templates for new campaigns, include all for edit mode
-    const templateSources = editMode 
-      ? sourceTemplates.map((t: SourceTemplate) => t.sourceName)
-      : sourceTemplates.filter((t: SourceTemplate) => !t.isArchived).map((t: SourceTemplate) => t.sourceName);
-    
-    const predefinedSources = ["Facebook", "LinkedIn", "Twitter", "Google Ads", "Sales Event", "Google", "Pinterest", "TikTok", "Pål Erik"];
-    const combined = [...predefinedSources, ...templateSources];
-    return combined.filter((source, index) => combined.indexOf(source) === index);
-  };
+  // Helper component for section headers
+  const SectionHeader = ({ 
+    title, 
+    sectionKey, 
+    showNextButton = false, 
+    nextSection = '', 
+    onNext 
+  }: { 
+    title: string; 
+    sectionKey: string; 
+    showNextButton?: boolean; 
+    nextSection?: string; 
+    onNext?: () => void;
+  }) => (
+    <div className="flex items-center justify-between p-4 bg-gray-50 border-b cursor-pointer" 
+         onClick={() => toggleSection(sectionKey)}>
+      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex items-center gap-3">
+        {showNextButton && !editMode && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext?.();
+            }}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Next
+          </Button>
+        )}
+        {expandedSections[sectionKey as keyof typeof expandedSections] ? (
+          <ChevronUp className="w-5 h-5 text-gray-500" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-gray-500" />
+        )}
+      </div>
+    </div>
+  );
 
-  // Check if a source is archived for styling purposes
-  const isSourceArchived = (sourceName: string): boolean => {
-    const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
-    return template?.isArchived || false;
-  };
-
-  const getAvailableMediums = (sourceName: string): string[] => {
-    const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
-    if (template?.mediums && template.mediums.length > 0) {
-      const archivedMediums = template.archivedMediums || [];
-      // In edit mode, include archived mediums but mark them
-      if (editMode) {
-        return template.mediums;
-      }
-      // In create mode, exclude archived mediums
-      return template.mediums.filter(medium => !archivedMediums.includes(medium));
-    }
-    // Default mediums for common sources
-    return ["organic", "paid", "email", "social", "referral"];
-  };
-
-  // Check if a medium is archived for styling purposes
-  const isMediumArchived = (sourceName: string, mediumName: string): boolean => {
-    const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
-    if (template?.archivedMediums) {
-      return template.archivedMediums.includes(mediumName);
-    }
-    return false;
-  };
-
-  const handleSourceToggle = (sourceName: string, checked: boolean) => {
-    setSourceStates(prev => ({
-      ...prev,
-      [sourceName]: {
-        checked,
-        selectedMediums: checked ? (prev[sourceName]?.selectedMediums || []) : [],
-        contentInputs: checked ? (prev[sourceName]?.contentInputs || {}) : {}
-      }
-    }));
-  };
-
-  const handleMediumSelect = (sourceName: string, medium: string) => {
-    setSourceStates(prev => {
-      const currentState = prev[sourceName] || { checked: true, selectedMediums: [], contentInputs: {} };
-      const isAlreadySelected = currentState.selectedMediums.includes(medium);
-      
-      if (isAlreadySelected) return prev;
-      
-      return {
-        ...prev,
-        [sourceName]: {
-          ...currentState,
-          selectedMediums: [...currentState.selectedMediums, medium],
-          contentInputs: { ...currentState.contentInputs, [medium]: "" }
-        }
-      };
-    });
-  };
-
-  const removeMedium = (sourceName: string, medium: string) => {
-    setSourceStates(prev => {
-      const currentState = prev[sourceName];
-      if (!currentState) return prev;
-      
-      const { [medium]: removed, ...remainingInputs } = currentState.contentInputs;
-      
-      return {
-        ...prev,
-        [sourceName]: {
-          ...currentState,
-          selectedMediums: currentState.selectedMediums.filter(m => m !== medium),
-          contentInputs: remainingInputs
-        }
-      };
-    });
-  };
-
-  const handleContentChange = (sourceName: string, medium: string, content: string) => {
-    setSourceStates(prev => ({
-      ...prev,
-      [sourceName]: {
-        ...prev[sourceName],
-        contentInputs: {
-          ...prev[sourceName]?.contentInputs,
-          [medium]: content
-        }
-      }
-    }));
-  };
-
-  // Track duplicated rows separately from regular medium selection
-  const [duplicatedRows, setDuplicatedRows] = useState<{[sourceName: string]: Array<{id: string, medium: string, insertAfterIndex: number}>}>({});
-
-  const duplicateRow = (sourceName: string, rowKey: string) => {
-    const sourceState = sourceStates[sourceName];
-    if (!sourceState) return;
-
-    // Determine the actual medium name and find the base medium index
-    const actualMedium = rowKey.includes('_') && rowKey.match(/_\d+_/) ? rowKey.split('_')[0] : rowKey;
-    const baseMediumIndex = sourceState.selectedMediums.indexOf(actualMedium);
-    if (baseMediumIndex === -1) return;
-
-    // Create a unique ID for the duplicate row
-    const duplicateId = `${actualMedium}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    setDuplicatedRows(prev => ({
-      ...prev,
-      [sourceName]: [
-        ...(prev[sourceName] || []),
-        { id: duplicateId, medium: actualMedium, insertAfterIndex: baseMediumIndex }
-      ]
-    }));
-
-    // Add content input for the duplicated row
-    setSourceStates(prev => ({
-      ...prev,
-      [sourceName]: {
-        ...prev[sourceName],
-        contentInputs: {
-          ...prev[sourceName]?.contentInputs,
-          [duplicateId]: "" // Always blank for new row
-        }
-      }
-    }));
-  };
-
-  const addCustomSource = async () => {
-    if (!customSource.trim()) return;
-
-    const newSourceName = customSource.trim();
-    
-    // Initialize the source state
-    setSourceStates(prev => ({
-      ...prev,
-      [newSourceName]: {
-        checked: true,
-        selectedMediums: [],
-        contentInputs: {}
-      }
-    }));
-
-    // Save to templates
-    try {
-      await createSourceTemplateMutation.mutateAsync({
-        sourceName: newSourceName,
-        mediums: []
-      });
-      toast({
-        title: "Source Added",
-        description: `${newSourceName} added to your library`,
-      });
-    } catch (error) {
-      console.error("Failed to save template:", error);
-    }
-
-    setCustomSource("");
-    setShowAddSource(false);
-  };
-
-  const showCustomMediumInput = (sourceName: string) => {
-    setCustomMediumInputs(prev => ({
-      ...prev,
-      [sourceName]: { value: "", addToLibrary: false, show: true }
-    }));
-  };
-
-  const hideCustomMediumInput = (sourceName: string) => {
-    setCustomMediumInputs(prev => ({
-      ...prev,
-      [sourceName]: { value: "", addToLibrary: false, show: false }
-    }));
-  };
-
-  const updateCustomMediumInput = (sourceName: string, value: string, addToLibrary: boolean) => {
-    setCustomMediumInputs(prev => ({
-      ...prev,
-      [sourceName]: { ...prev[sourceName], value, addToLibrary }
-    }));
-  };
-
-  const addCustomMedium = async (sourceName: string) => {
-    const input = customMediumInputs[sourceName];
-    if (!input?.value.trim()) return;
-
-    const customMedium = input.value.trim();
-    
-    // Add medium to current source
-    handleMediumSelect(sourceName, customMedium);
-
-    // Add to library if requested
-    if (input.addToLibrary) {
-      try {
-        const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
-        if (template) {
-          const updatedMediums = [...(template.mediums || []), customMedium];
-          await createSourceTemplateMutation.mutateAsync({
-            sourceName,
-            mediums: updatedMediums
-          });
-        } else {
-          await createSourceTemplateMutation.mutateAsync({
-            sourceName,
-            mediums: [customMedium]
-          });
-        }
-        toast({
-          title: "Added to Library",
-          description: `${customMedium} added to ${sourceName} template`,
-        });
-      } catch (error) {
-        console.error("Failed to update template:", error);
-      }
-    }
-
-    // Reset input
-    hideCustomMediumInput(sourceName);
-  };
-
-  // Tag management functions
+  // Tag handling functions
   const handleTagSelect = (tagName: string) => {
     if (!selectedTags.includes(tagName)) {
       setSelectedTags([...selectedTags, tagName]);
@@ -373,845 +262,376 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   const handleCustomTagSubmit = async () => {
     if (!customTagInput.trim()) return;
-
+    
     try {
-      await createTagMutation.mutateAsync({ name: customTagInput.trim() });
+      await createTagMutation.mutateAsync({
+        userId: user.id,
+        name: customTagInput.trim()
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/tags"] });
       handleTagSelect(customTagInput.trim());
       setCustomTagInput("");
       setShowCustomTagInput(false);
       
       toast({
-        title: "Tag Created",
-        description: `"${customTagInput.trim()}" added to your tag library`,
-      });
-    } catch (error) {
-      console.error("Failed to create tag:", error);
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied",
-        description: "Link copied to clipboard",
+        title: "Success",
+        description: "Tag created and added to campaign",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getCheckedSourcesWithContent = () => {
-    const results: Array<{
-      sourceName: string;
-      medium: string;
-      content: string;
-      utmLink: string;
-      linkName: string;
-    }> = [];
-
-    // Only proceed if we have required fields
-    if (!campaignName.trim() || !targetUrl.trim()) {
-      return results;
-    }
-
-    Object.entries(sourceStates).forEach(([sourceName, state]) => {
-      if (!state.checked) return;
-      
-      // Create combined list of regular mediums and duplicated rows (same logic as in render)
-      const allRows: Array<{key: string, medium: string}> = [];
-      
-      // Add regular medium rows
-      state.selectedMediums.forEach((medium, index) => {
-        allRows.push({ key: medium, medium });
-        
-        // Add any duplicated rows that should appear after this medium
-        const duplicates = duplicatedRows[sourceName] || [];
-        duplicates
-          .filter(dup => dup.insertAfterIndex === index)
-          .forEach(dup => {
-            allRows.push({ key: dup.id, medium: dup.medium });
-          });
-      });
-      
-      // Process all rows (original + duplicated)
-      allRows.forEach(({ key, medium }) => {
-        const content = state.contentInputs[key] || "";
-        if (!content.trim()) return;
-        
-        const utmLink = generateUTMLink({
-          targetUrl,
-          utm_campaign: campaignName,
-          utm_source: sourceName.toLowerCase(),
-          utm_medium: medium,
-          utm_content: content
-        });
-
-        results.push({
-          sourceName,
-          medium,
-          content,
-          utmLink,
-          linkName: `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}`
-        });
-      });
-    });
-
-    return results;
-  };
-
-  const copyAllLinks = (sourceName: string) => {
-    const sourceState = sourceStates[sourceName];
-    if (!sourceState || !campaignName.trim() || !targetUrl.trim()) return;
-    
-    // Create combined list of regular mediums and duplicated rows (same logic as in render)
-    const allRows: Array<{key: string, medium: string}> = [];
-    
-    // Add regular medium rows
-    sourceState.selectedMediums.forEach((medium, index) => {
-      allRows.push({ key: medium, medium });
-      
-      // Add any duplicated rows that should appear after this medium
-      const duplicates = duplicatedRows[sourceName] || [];
-      duplicates
-        .filter(dup => dup.insertAfterIndex === index)
-        .forEach(dup => {
-          allRows.push({ key: dup.id, medium: dup.medium });
-        });
-    });
-    
-    const links = allRows
-      .map(({ key, medium }) => {
-        const content = sourceState.contentInputs[key];
-        if (!content || !content.trim()) return null;
-        
-        const utmLink = generateUTMLink({
-          targetUrl,
-          utm_campaign: campaignName,
-          utm_source: sourceName.toLowerCase(),
-          utm_medium: medium,
-          utm_content: content
-        });
-
-        const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}`;
-        return `${linkName} - ${utmLink}`;
-      })
-      .filter(Boolean)
-      .join('\n');
-    
-    if (links) {
-      copyToClipboard(links);
-    } else {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in Campaign Name and Landing Page URL first",
+        description: "Failed to create tag",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      {/* Campaign Info Section */}
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="campaignName" className="text-sm font-medium">
-            Campaign Name *
-          </Label>
-          <Input
-            id="campaignName"
-            value={campaignName}
-            onChange={(e) => setCampaignName(e.target.value)}
-            placeholder="Fill in campaign name..."
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="targetUrl" className="text-sm font-medium">
-            Landing Page URL *
-          </Label>
-          <Input
-            id="targetUrl"
-            value={targetUrl}
-            onChange={(e) => setTargetUrl(e.target.value)}
-            placeholder="Fill in landing page URL..."
-            className="mt-1"
-          />
-        </div>
-      </div>
-
-      {/* Tags Section */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">
-          Campaign Tags
-        </Label>
-        <div className="space-y-3">
-          {/* Selected Tags */}
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedTags.map((tag) => (
-                <div
-                  key={tag}
-                  className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
-                >
-                  <span>{tag}</span>
-                  <button
-                    onClick={() => removeTag(tag)}
-                    className="hover:bg-blue-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Tag Selection */}
-          <div className="flex flex-wrap gap-2">
-            {/* Available Tags */}
-            {tags
-              .filter((tag: Tag) => !selectedTags.includes(tag.name))
-              .map((tag: Tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => handleTagSelect(tag.name)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  {tag.name}
-                </button>
-              ))}
-
-            {/* Add New Tag */}
-            {!showCustomTagInput && (
-              <button
-                onClick={() => setShowCustomTagInput(true)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-600"
-              >
-                <Plus className="w-4 h-4" />
-                Add Tag
-              </button>
-            )}
-          </div>
-
-          {/* Custom Tag Input */}
-          {showCustomTagInput && (
-            <div className="flex items-center gap-2">
-              <Input
-                value={customTagInput}
-                onChange={(e) => setCustomTagInput(e.target.value)}
-                placeholder="Enter new tag name..."
-                className="w-48"
-                onKeyPress={(e) => e.key === 'Enter' && handleCustomTagSubmit()}
-              />
-              <Button
-                onClick={handleCustomTagSubmit}
-                disabled={!customTagInput.trim() || createTagMutation.isPending}
-                size="sm"
-              >
-                Add
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowCustomTagInput(false);
-                  setCustomTagInput("");
-                }}
-                variant="outline"
-                size="sm"
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Validation Message */}
-      {(!campaignName.trim() || !targetUrl.trim()) && Object.values(sourceStates).some(state => state.checked && state.selectedMediums.length > 0) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="text-yellow-800">
-              <h3 className="text-sm font-medium">Required fields missing</h3>
-              <div className="mt-2 text-sm">
-                <p>Please fill in the following required fields to generate UTM links:</p>
-                <ul className="mt-1 ml-4 list-disc">
-                  {!campaignName.trim() && <li>Campaign Name</li>}
-                  {!targetUrl.trim() && <li>Landing Page URL</li>}
-                </ul>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Section 1: Campaign and Landing Pages */}
+      <Card>
+        <SectionHeader 
+          title="Campaign and Landing Pages" 
+          sectionKey="campaign"
+          showNextButton={true}
+          nextSection="tags"
+          onNext={() => handleNext('campaign', 'tags')}
+        />
+        {expandedSections.campaign && (
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="campaignName" className="text-sm font-medium">
+                  Campaign Name *
+                </Label>
+                <Input
+                  id="campaignName"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Fill in campaign name..."
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="targetUrl" className="text-sm font-medium">
+                  Landing Page URL *
+                </Label>
+                <Input
+                  id="targetUrl"
+                  value={targetUrl}
+                  onChange={(e) => setTargetUrl(e.target.value)}
+                  placeholder="Fill in landing page URL..."
+                  className="mt-1"
+                />
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Card>
 
-      {/* Sources and Mediums Section */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Select Sources and Mediums *</Label>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {(() => {
-            const allSources = getAllSources();
-            const midPoint = Math.ceil(allSources.length / 2);
-            const leftColumnSources = allSources.slice(0, midPoint);
-            const rightColumnSources = allSources.slice(midPoint);
-
-            return (
-              <>
-                {/* Left Column */}
-                <div className="space-y-3">
-                  {leftColumnSources.map((sourceName) => {
-                    const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
-                    const availableMediums = getAvailableMediums(sourceName);
-
-                    return (
-                      <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
-                        <div className="w-24 pt-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              checked={state.checked}
-                              onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
-                            />
-                            <span className="text-sm font-medium">{sourceName}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 space-y-2">
-                          {/* Existing selected mediums */}
-                          <div className="flex flex-wrap gap-2">
-                            {state.selectedMediums.map((medium) => (
-                              <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
-                                <span className="text-sm">{medium}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeMedium(sourceName, medium)}
-                                  className="h-4 w-4 p-0 hover:bg-gray-200"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Add new medium dropdown */}
-                          {state.checked && (
-                            <div className="flex items-center space-x-2">
-                              <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Choose..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableMediums
-                                    .filter((medium: string) => !state.selectedMediums.includes(medium))
-                                    .map((medium: string) => (
-                                      <SelectItem key={medium} value={medium}>
-                                        {medium}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => showCustomMediumInput(sourceName)}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* Custom medium input */}
-                          {state.checked && customMediumInputs[sourceName]?.show && (
-                            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
-                              <Input
-                                value={customMediumInputs[sourceName]?.value || ""}
-                                onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
-                                placeholder="Enter custom medium"
-                                className="w-40"
-                              />
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  checked={customMediumInputs[sourceName]?.addToLibrary || false}
-                                  onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
-                                />
-                                <span className="text-sm">Add to library</span>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addCustomMedium(sourceName)}
-                                disabled={!customMediumInputs[sourceName]?.value?.trim()}
-                              >
-                                Add
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => hideCustomMediumInput(sourceName)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+      {/* Section 2: Tags */}
+      <Card>
+        <SectionHeader 
+          title="Tags" 
+          sectionKey="tags"
+          showNextButton={true}
+          nextSection="sources"
+          onNext={() => handleNext('tags', 'sources')}
+        />
+        {expandedSections.tags && (
+          <div className="p-6">
+            <div className="space-y-3">
+              {/* Selected Tags */}
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedTags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        onClick={() => removeTag(tag)}
+                        className="hover:bg-blue-200 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                {/* Right Column */}
-                <div className="space-y-3">
-                  {rightColumnSources.map((sourceName) => {
-                    const state = sourceStates[sourceName] || { checked: false, selectedMediums: [], contentInputs: {} };
-                    const availableMediums = getAvailableMediums(sourceName);
+              {/* Tag Selection */}
+              <div className="flex flex-wrap gap-2">
+                {/* Available Tags */}
+                {tags
+                  .filter((tag: Tag) => !selectedTags.includes(tag.name))
+                  .map((tag: Tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => handleTagSelect(tag.name)}
+                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
 
-                    return (
-                      <div key={sourceName} className="flex items-start space-x-4 p-3 border rounded-lg">
-                        <div className="w-24 pt-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              checked={state.checked}
-                              onCheckedChange={(checked) => handleSourceToggle(sourceName, checked as boolean)}
-                            />
-                            <span className="text-sm font-medium">{sourceName}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 space-y-2">
-                          {/* Existing selected mediums */}
-                          <div className="flex flex-wrap gap-2">
-                            {state.selectedMediums.map((medium) => (
-                              <div key={medium} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-md">
-                                <span className="text-sm">{medium}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeMedium(sourceName, medium)}
-                                  className="h-4 w-4 p-0 hover:bg-gray-200"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Add new medium dropdown */}
-                          {state.checked && (
-                            <div className="flex items-center space-x-2">
-                              <Select onValueChange={(medium) => handleMediumSelect(sourceName, medium)}>
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Choose..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableMediums
-                                    .filter((medium: string) => !state.selectedMediums.includes(medium))
-                                    .map((medium: string) => (
-                                      <SelectItem key={medium} value={medium}>
-                                        {medium}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => showCustomMediumInput(sourceName)}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* Custom medium input */}
-                          {state.checked && customMediumInputs[sourceName]?.show && (
-                            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
-                              <Input
-                                value={customMediumInputs[sourceName]?.value || ""}
-                                onChange={(e) => updateCustomMediumInput(sourceName, e.target.value, customMediumInputs[sourceName]?.addToLibrary || false)}
-                                placeholder="Enter custom medium"
-                                className="w-40"
-                              />
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  checked={customMediumInputs[sourceName]?.addToLibrary || false}
-                                  onCheckedChange={(checked) => updateCustomMediumInput(sourceName, customMediumInputs[sourceName]?.value || "", checked as boolean)}
-                                />
-                                <span className="text-sm">Add to library</span>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addCustomMedium(sourceName)}
-                                disabled={!customMediumInputs[sourceName]?.value?.trim()}
-                              >
-                                Add
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => hideCustomMediumInput(sourceName)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-
-        {/* Add Custom Source */}
-        <div className="pt-4 border-t">
-          {!showAddSource ? (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Add Source</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddSource(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Input
-                value={customSource}
-                onChange={(e) => setCustomSource(e.target.value)}
-                placeholder="Enter source name"
-                className="w-48"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addCustomSource}
-                disabled={!customSource.trim()}
-              >
-                Add
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowAddSource(false);
-                  setCustomSource("");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Generated Content Sections */}
-      <div className="space-y-6">
-        {Object.entries(sourceStates)
-          .filter(([_, state]) => state.checked && state.selectedMediums.length > 0)
-          .map(([sourceName, state]) => (
-            <Card key={sourceName} className="border-l-4 border-l-blue-500">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
-                
-                {/* Desktop: Headers - shown once per source */}
-                <div className="hidden md:grid md:grid-cols-4 gap-4 mb-2">
-                  <Label className="text-sm font-medium">Medium</Label>
-                  <Label className="text-sm font-medium">Content</Label>
-                  <Label className="text-sm font-medium">Link name</Label>
-                  <Label className="text-sm font-medium">UTM Link</Label>
-                </div>
-                
-                {/* Desktop: Grid rows */}
-                <div className="hidden md:block space-y-2">
-                  {(() => {
-                    // Create combined list of regular mediums and duplicated rows
-                    const allRows: Array<{key: string, medium: string, isDuplicated: boolean}> = [];
-                    
-                    // Add regular medium rows
-                    state.selectedMediums.forEach((medium, index) => {
-                      allRows.push({ key: medium, medium, isDuplicated: false });
-                      
-                      // Add any duplicated rows that should appear after this medium
-                      const duplicates = duplicatedRows[sourceName] || [];
-                      duplicates
-                        .filter(dup => dup.insertAfterIndex === index)
-                        .forEach(dup => {
-                          allRows.push({ key: dup.id, medium: dup.medium, isDuplicated: true });
-                        });
-                    });
-                    
-                    return allRows.map(({ key, medium, isDuplicated }) => {
-                      const content = state.contentInputs[key] || "";
-                      const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
-                      const utmLink = canGenerateLink ? generateUTMLink({
-                        targetUrl,
-                        utm_campaign: campaignName,
-                        utm_source: sourceName.toLowerCase(),
-                        utm_medium: medium,
-                        utm_content: content
-                      }) : "";
-                      const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
-
-                      return (
-                        <div key={key} className="grid grid-cols-4 gap-4 items-center">
-                          <Input 
-                            value={medium} 
-                            readOnly 
-                            className="bg-gray-50" 
-                          />
-                          <Input
-                            value={content}
-                            onChange={(e) => handleContentChange(sourceName, key, e.target.value)}
-                            placeholder="fill in content..."
-                          />
-                          <Input
-                            value={linkName}
-                            readOnly
-                            className="bg-gray-50"
-                          />
-                          <div className="flex">
-                            <Input
-                              value={utmLink}
-                              readOnly
-                              className="flex-1 bg-gray-50 text-xs"
-                            />
-                            {utmLink && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
-                                className="ml-2"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => duplicateRow(sourceName, key)}
-                              className="ml-2"
-                              title="Duplicate this row"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-
-                {/* Mobile: Stacked layout */}
-                <div className="md:hidden space-y-4">
-                  {(() => {
-                    // Create combined list of regular mediums and duplicated rows
-                    const allRows: Array<{key: string, medium: string, isDuplicated: boolean}> = [];
-                    
-                    // Add regular medium rows
-                    state.selectedMediums.forEach((medium, index) => {
-                      allRows.push({ key: medium, medium, isDuplicated: false });
-                      
-                      // Add any duplicated rows that should appear after this medium
-                      const duplicates = duplicatedRows[sourceName] || [];
-                      duplicates
-                        .filter(dup => dup.insertAfterIndex === index)
-                        .forEach(dup => {
-                          allRows.push({ key: dup.id, medium: dup.medium, isDuplicated: true });
-                        });
-                    });
-                    
-                    return allRows.map(({ key, medium, isDuplicated }) => {
-                      const content = state.contentInputs[key] || "";
-                      const canGenerateLink = content.trim() && campaignName.trim() && targetUrl.trim();
-                      const utmLink = canGenerateLink ? generateUTMLink({
-                        targetUrl,
-                        utm_campaign: campaignName,
-                        utm_source: sourceName.toLowerCase(),
-                        utm_medium: medium,
-                        utm_content: content
-                      }) : "";
-                      const linkName = canGenerateLink ? `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${content}` : "";
-
-                      return (
-                        <div key={key} className="border rounded-lg p-3 space-y-3">
-                          {/* Medium and Content on same line */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
-                              <Input 
-                                value={medium} 
-                                readOnly 
-                                className="bg-gray-50 text-sm" 
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
-                              <Input
-                                value={content}
-                                onChange={(e) => handleContentChange(sourceName, key, e.target.value)}
-                                placeholder="fill in content..."
-                                className="text-sm"
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Link name below */}
-                          <div>
-                            <Label className="text-xs text-gray-600 mb-1 block">Link name</Label>
-                            <Input
-                              value={linkName}
-                              readOnly
-                              className="bg-gray-50 text-sm"
-                            />
-                          </div>
-                          
-                          {/* UTM Link below - with line breaks if needed */}
-                          <div>
-                            <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
-                            <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
-                              {utmLink || "Fill in content to generate UTM link"}
-                            </div>
-                          </div>
-                          
-                          {/* Buttons below UTM link */}
-                          <div className="flex gap-2 pt-2">
-                            {utmLink && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(`${linkName} - ${utmLink}`)}
-                                className="flex-1"
-                              >
-                                <Copy className="w-4 h-4 mr-2" />
-                                Copy
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => duplicateRow(sourceName, key)}
-                              className="flex-1"
-                              title="Duplicate this row"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Duplicate
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-                
-                <div className="mt-4">
-                  <Button
-                    onClick={() => copyAllLinks(sourceName)}
-                    disabled={(() => {
-                      // Check if any row (original or duplicated) has content
-                      const allRows: Array<{key: string}> = [];
-                      
-                      // Add regular medium rows
-                      state.selectedMediums.forEach((medium, index) => {
-                        allRows.push({ key: medium });
-                        
-                        // Add any duplicated rows that should appear after this medium
-                        const duplicates = duplicatedRows[sourceName] || [];
-                        duplicates
-                          .filter(dup => dup.insertAfterIndex === index)
-                          .forEach(dup => {
-                            allRows.push({ key: dup.id });
-                          });
-                      });
-                      
-                      return !allRows.some(row => state.contentInputs[row.key]?.trim());
-                    })()}
+                {/* Add New Tag */}
+                {!showCustomTagInput && (
+                  <button
+                    onClick={() => setShowCustomTagInput(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-600"
                   >
-                    COPY LINKS
+                    <Plus className="w-4 h-4" />
+                    Add Tag
+                  </button>
+                )}
+              </div>
+
+              {/* Custom Tag Input */}
+              {showCustomTagInput && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={customTagInput}
+                    onChange={(e) => setCustomTagInput(e.target.value)}
+                    placeholder="Enter new tag name..."
+                    className="w-48"
+                    onKeyPress={(e) => e.key === 'Enter' && handleCustomTagSubmit()}
+                  />
+                  <Button
+                    onClick={handleCustomTagSubmit}
+                    disabled={!customTagInput.trim() || createTagMutation.isPending}
+                    size="sm"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowCustomTagInput(false);
+                      setCustomTagInput("");
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Cancel
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-      </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Card>
 
-      {/* Generate All Links Button - Only show if we have valid combinations */}
-      {getCheckedSourcesWithContent().length > 0 && (
-        <div className="pt-8 border-t">
-          <Button
-            onClick={async () => {
-              // In edit mode, first delete existing campaign links
-              if (editMode && existingCampaignData.length > 0) {
-                try {
-                  await deleteCampaignLinksMutation.mutateAsync(campaignName);
-                } catch (error) {
-                  console.error("Failed to delete existing campaign links:", error);
-                  toast({
-                    title: "Error",
-                    description: "Failed to update campaign. Please try again.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-              }
-              
-              // Save all valid combinations to database
-              const validSources = getCheckedSourcesWithContent();
-              
-              let successCount = 0;
-              
-              for (const source of validSources) {
-                try {
-                  await createUtmLinkMutation.mutateAsync({
-                    userId: user.id,
-                    targetUrl,
-                    utm_campaign: campaignName,
-                    utm_source: source.sourceName.toLowerCase(),
-                    utm_medium: source.medium,
-                    utm_content: source.content,
-                    fullUtmLink: source.utmLink,
-                    tags: selectedTags
-                  });
-                  successCount++;
-                } catch (error) {
-                  console.error("Failed to save link:", error);
-                }
-              }
-              
-              if (successCount > 0) {
-                toast({
-                  title: "Success",
-                  description: editMode 
-                    ? `Updated ${successCount} UTM links successfully`
-                    : `Generated ${successCount} UTM links successfully`,
-                });
-                // Navigate back to management page after successful save
-                if (onSaveSuccess) {
-                  onSaveSuccess();
-                }
-              } else {
-                toast({
-                  title: "Error",
-                  description: "Failed to generate UTM links. Please check your inputs.",
-                  variant: "destructive",
-                });
-              }
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
-          >
-{editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
-          </Button>
-        </div>
-      )}
+      {/* Section 3: Sources and Mediums */}
+      <Card>
+        <SectionHeader 
+          title="Sources and Mediums" 
+          sectionKey="sources"
+          showNextButton={true}
+          nextSection="output"
+          onNext={() => handleNext('sources', 'output')}
+        />
+        {expandedSections.sources && (
+          <div className="p-6">
+            <div className="text-sm text-gray-600 mb-4">
+              Select sources and mediums for your campaign. Content is required for each selected medium.
+            </div>
+            <div className="space-y-6">
+              {sourceTemplates
+                .filter((template: SourceTemplate) => editMode ? true : !template.isArchived)
+                .map((template: SourceTemplate) => {
+                  const state = sourceStates[template.sourceName] || {
+                    checked: false,
+                    selectedMediums: [],
+                    contentInputs: {}
+                  };
+
+                  return (
+                    <Card key={template.id}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <Checkbox
+                            id={`source-${template.sourceName}`}
+                            checked={state.checked}
+                            onCheckedChange={(checked) => {
+                              setSourceStates(prev => ({
+                                ...prev,
+                                [template.sourceName]: {
+                                  ...state,
+                                  checked: !!checked
+                                }
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`source-${template.sourceName}`} className="text-lg font-medium">
+                            {template.sourceName}
+                          </Label>
+                        </div>
+
+                        {state.checked && (
+                          <div className="ml-6 space-y-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">Select Mediums</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {(template.mediums || []).map((medium: string) => (
+                                  <Button
+                                    key={medium}
+                                    variant={state.selectedMediums.includes(medium) ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                      const newMediums = state.selectedMediums.includes(medium)
+                                        ? state.selectedMediums.filter(m => m !== medium)
+                                        : [...state.selectedMediums, medium];
+                                      
+                                      setSourceStates(prev => ({
+                                        ...prev,
+                                        [template.sourceName]: {
+                                          ...state,
+                                          selectedMediums: newMediums
+                                        }
+                                      }));
+                                    }}
+                                  >
+                                    {medium}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {state.selectedMediums.length > 0 && (
+                              <div>
+                                <Label className="text-sm font-medium mb-2 block">Content for Selected Mediums</Label>
+                                <div className="space-y-3">
+                                  {state.selectedMediums.map((medium: string) => (
+                                    <div key={medium} className="flex items-center gap-3">
+                                      <Label className="w-20 text-sm">{medium}:</Label>
+                                      <Input
+                                        value={state.contentInputs[medium] || ''}
+                                        onChange={(e) => {
+                                          setSourceStates(prev => ({
+                                            ...prev,
+                                            [template.sourceName]: {
+                                              ...state,
+                                              contentInputs: {
+                                                ...state.contentInputs,
+                                                [medium]: e.target.value
+                                              }
+                                            }
+                                          }));
+                                        }}
+                                        placeholder={`Content for ${medium}...`}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Section 4: Campaign Links */}
+      <Card>
+        <SectionHeader 
+          title="Campaign Links" 
+          sectionKey="output"
+        />
+        {expandedSections.output && (
+          <div className="p-6">
+            {getCheckedSourcesWithContent().length > 0 ? (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  Preview of {getCheckedSourcesWithContent().length} UTM links:
+                </div>
+                <div className="space-y-2">
+                  {getCheckedSourcesWithContent().map((link, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded text-sm font-mono break-all">
+                      {link.utmLink}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={async () => {
+                    // In edit mode, first delete existing campaign links
+                    if (editMode && existingCampaignData.length > 0) {
+                      try {
+                        await deleteCampaignLinksMutation.mutateAsync(campaignName);
+                      } catch (error) {
+                        console.error("Failed to delete existing campaign links:", error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to update campaign. Please try again.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                    }
+                    
+                    // Save all valid combinations to database
+                    const validSources = getCheckedSourcesWithContent();
+                    
+                    let successCount = 0;
+                    
+                    for (const source of validSources) {
+                      try {
+                        await createUtmLinkMutation.mutateAsync({
+                          userId: user.id,
+                          targetUrl,
+                          utm_campaign: campaignName,
+                          utm_source: source.sourceName.toLowerCase(),
+                          utm_medium: source.medium,
+                          utm_content: source.content,
+                          fullUtmLink: source.utmLink,
+                          tags: selectedTags
+                        });
+                        successCount++;
+                      } catch (error) {
+                        console.error("Failed to save link:", error);
+                      }
+                    }
+                    
+                    if (successCount > 0) {
+                      toast({
+                        title: "Success",
+                        description: editMode 
+                          ? `Updated ${successCount} UTM links successfully`
+                          : `Generated ${successCount} UTM links successfully`,
+                      });
+                      // Navigate back to management page after successful save
+                      if (onSaveSuccess) {
+                        onSaveSuccess();
+                      }
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Failed to generate UTM links. Please check your inputs.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
+                >
+                  {editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
+                </Button>
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center py-8">
+                Complete the previous sections to see your campaign links here.
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
