@@ -1341,11 +1341,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       }
                       
                       if (successCount > 0) {
-                        // Invalidate the utm-links cache to refresh campaign management page
+                        // Force complete cache invalidation and refresh
+                        queryClient.clear(); // Clear all cached data
                         await queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
-                        // Clear all cached data and force refetch
-                        await queryClient.removeQueries({ queryKey: ["/api/utm-links"] });
-                        await queryClient.refetchQueries({ queryKey: ["/api/utm-links"] });
                         
                         toast({
                           title: "Success",
@@ -1354,12 +1352,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             : `Generated ${successCount} UTM links successfully`,
                         });
                         
-                        // Add a small delay to ensure cache is cleared before navigation
-                        setTimeout(() => {
-                          if (onSaveSuccess) {
-                            onSaveSuccess();
-                          }
-                        }, 100);
+                        // Force immediate navigation with cache cleared
+                        if (onSaveSuccess) {
+                          onSaveSuccess();
+                        }
                       } else {
                         toast({
                           title: "Error",
