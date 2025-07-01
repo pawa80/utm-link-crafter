@@ -1,0 +1,22 @@
+GeneratedLinks - Links data: Array(0)
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 0
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: Array(20)
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 20
+GeneratedLinks.tsx:65 GeneratedLinks - Sample link: Object
+GeneratedLinks.tsx:66 GeneratedLinks - All campaign names: Array(20)
+GeneratedLinks.tsx:67 GeneratedLinks - Unique campaigns: Array(7)0: "tull"1: "Sommer t"2: "Sommer 5"3: "Sommer 4"4: "Sommer 3"5: "Sommer 2"6: "Sommer 1"length: 7[[Prototype]]: Array(0)
+GeneratedLinks.tsx:151 GeneratedLinks - Grouped by campaign: Object
+GeneratedLinks.tsx:180 GeneratedLinks - Campaign groups before filtering: Array(7)
+GeneratedLinks.tsx:253 GeneratedLinks - Final campaign groups: Array(7)
+GeneratedLinks.tsx:254 GeneratedLinks - Campaign groups length: 7
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: []
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 0
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: (20) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 20
+GeneratedLinks.tsx:65 GeneratedLinks - Sample link: {id: 122, userId: 2, targetUrl: 'https://vg.no/', utm_campaign: 'tull', utm_source: 'youtube', …}
+GeneratedLinks.tsx:66 GeneratedLinks - All campaign names: (20) ['tull', 'Sommer t', 'Sommer t', 'Sommer 5', 'Sommer 5', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 1', 'Sommer 1', 'Sommer 1']
+GeneratedLinks.tsx:67 GeneratedLinks - Unique campaigns: (7) ['tull', 'Sommer t', 'Sommer 5', 'Sommer 4', 'Sommer 3', 'Sommer 2', 'Sommer 1']
+GeneratedLinks.tsx:151 GeneratedLinks - Grouped by campaign: {tull: Array(1), Sommer t: Array(2), Sommer 5: Array(2), Sommer 4: Array(4), Sommer 3: Array(4), …}
+GeneratedLinks.tsx:180 GeneratedLinks - Campaign groups before filtering: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:253 GeneratedLinks - Final campaign groups: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:254 GeneratedLinks - Campaign groups length: 7

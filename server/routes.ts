@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's UTM links
   app.get("/api/utm-links", authMiddleware, async (req: any, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 20;
+      const limit = parseInt(req.query.limit as string) || 100;
       const offset = parseInt(req.query.offset as string) || 0;
       
       const links = await storage.getUserUtmLinks(req.user.id, limit, offset);
