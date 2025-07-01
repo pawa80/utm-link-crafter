@@ -954,7 +954,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       
                       if (successCount > 0) {
                         // Invalidate the utm-links cache to refresh campaign management page
-                        queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+                        await queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+                        // Also refetch to ensure fresh data
+                        await queryClient.refetchQueries({ queryKey: ["/api/utm-links"] });
                         
                         toast({
                           title: "Success",

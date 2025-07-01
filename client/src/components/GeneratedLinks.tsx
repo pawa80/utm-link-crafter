@@ -48,13 +48,14 @@ export default function GeneratedLinks() {
 
   const { data: links = [], isLoading } = useQuery<UtmLink[]>({
     queryKey: ["/api/utm-links"],
-    onSuccess: (data) => {
-      console.log("UTM Links data received:", data);
-      if (data.length > 0) {
-        console.log("Sample link:", data[0]);
-      }
-    }
   });
+  
+  // Debug logging
+  console.log("GeneratedLinks - Links data:", links);
+  console.log("GeneratedLinks - Links count:", links.length);
+  if (links.length > 0) {
+    console.log("GeneratedLinks - Sample link:", links[0]);
+  }
 
   const handleCopyToClipboard = async (link: string) => {
     const success = await copyToClipboard(link);
