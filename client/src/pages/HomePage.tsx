@@ -1,14 +1,75 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AuthScreen from "@/components/AuthScreen";
+import UserHeader from "@/components/UserHeader";
 import { Plus, Settings } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { createOrGetUser } from "@/lib/auth";
+import type { User as AuthUser } from "firebase/auth";
+import type { User } from "@shared/schema";
 
 export default function HomePage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setAuthUser(firebaseUser);
+        try {
+          const userData = await createOrGetUser(firebaseUser);
+          setUser(userData);
+        } catch (error) {
+          console.error("Error creating/getting user:", error);
+        }
+      } else {
+        setAuthUser(null);
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleAuthSuccess = async () => {
+    // Auth state change will be handled by the useEffect
+  };
+
+  const handleLogout = () => {
+    setLocation("/");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser || !user) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Top Navigation with User */}
+        <div className="flex justify-end mb-8 pt-4">
+          <UserHeader user={user} onLogout={handleLogout} />
+        </div>
+
         {/* Header */}
-        <div className="text-center mb-12 pt-12">
+        <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             UTM Link Builder
           </h1>

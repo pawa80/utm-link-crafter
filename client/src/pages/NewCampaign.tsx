@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import CampaignWizard from "@/components/CampaignWizard";
 import AuthScreen from "@/components/AuthScreen";
+import UserHeader from "@/components/UserHeader";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
@@ -44,6 +45,10 @@ export default function NewCampaign() {
     setLocation("/campaigns");
   };
 
+  const handleLogout = () => {
+    setLocation("/");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
@@ -62,14 +67,15 @@ export default function NewCampaign() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Navigation */}
-        <div className="mb-6">
+        {/* Top Navigation with User */}
+        <div className="flex justify-between items-center mb-6 pt-4">
           <Link href="/campaigns">
-            <Button variant="ghost" className="mb-4">
+            <Button variant="ghost">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Campaign Management
             </Button>
           </Link>
+          <UserHeader user={user} onLogout={handleLogout} />
         </div>
 
         <div className="space-y-6">
