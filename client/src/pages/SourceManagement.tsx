@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
-import { ArrowLeft, Plus, Archive, ArchiveRestore, Trash2, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Archive, ArchiveRestore, Trash2, Settings, ArrowUpDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -25,6 +26,7 @@ export default function SourceManagement() {
   const [showArchived, setShowArchived] = useState(false);
   const [newSourceName, setNewSourceName] = useState("");
   const [newMediums, setNewMediums] = useState<{ [sourceId: number]: string }>({});
+  const [sortBy, setSortBy] = useState<"updated" | "alphabetic-az" | "alphabetic-za">("updated");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -208,19 +210,38 @@ export default function SourceManagement() {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
+  // Sort sources based on selected criteria
+  const sortSources = (sources: SourceTemplate[]) => {
+    return [...sources].sort((a, b) => {
+      switch (sortBy) {
+        case "updated":
+          // Newest first based on createdAt
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        case "alphabetic-az":
+          return a.sourceName.localeCompare(b.sourceName);
+        case "alphabetic-za":
+          return b.sourceName.localeCompare(a.sourceName);
+        default:
+          return 0;
+      }
+    });
+  };
+
   const filteredTemplates = showArchived 
-    ? sourceTemplates 
-    : sourceTemplates.filter(template => !template.isArchived);
+    ? sortSources(sourceTemplates)
+    : sortSources(sourceTemplates.filter(template => !template.isArchived));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Top Navigation */}
         <div className="flex justify-between items-center mb-6 pt-4">
-          <Link href="/campaigns">
+          <Link href="/">
             <Button variant="ghost">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Campaign Management
+              Back to Home
             </Button>
           </Link>
           <UserHeader user={user} onLogout={handleLogout} />
@@ -233,27 +254,8 @@ export default function SourceManagement() {
             <p className="text-gray-600">Manage your campaign sources and their mediums</p>
           </div>
 
-          {/* Controls */}
-          <div className="flex justify-between items-center">
-            <Button
-              onClick={() => setShowArchived(!showArchived)}
-              variant="outline"
-              className="text-primary hover:text-primary/80"
-            >
-              {showArchived ? (
-                <>
-                  <ArchiveRestore className="mr-2" size={16} />
-                  Show Active Only
-                </>
-              ) : (
-                <>
-                  <Archive className="mr-2" size={16} />
-                  Show Archived ({sourceTemplates.filter(t => t.isArchived).length})
-                </>
-              )}
-            </Button>
-
-            {/* Add New Source */}
+          {/* Add New Source */}
+          <div className="flex justify-center">
             <div className="flex items-center gap-2">
               <Input
                 value={newSourceName}
@@ -271,6 +273,35 @@ export default function SourceManagement() {
                 Add Source
               </Button>
             </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4" />
+                <Label>Sort by:</Label>
+                <Select value={sortBy} onValueChange={(value: "updated" | "alphabetic-az" | "alphabetic-za") => setSortBy(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="updated">Updated Date/Time (newest first)</SelectItem>
+                    <SelectItem value="alphabetic-az">Alphabetic (A-Z)</SelectItem>
+                    <SelectItem value="alphabetic-za">Alphabetic (Z-A)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Button
+              variant={showArchived ? "default" : "outline"}
+              onClick={() => setShowArchived(!showArchived)}
+              className="flex items-center gap-2"
+            >
+              <Archive className="w-4 h-4" />
+              {showArchived ? "Hide Archived" : "Show Archived"}
+            </Button>
           </div>
 
           {/* Sources List */}
