@@ -791,7 +791,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="flex justify-end">
                   <Button 
                     variant="outline" 
-                    onClick={copyAllCampaignLinks}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      copyAllCampaignLinks();
+                    }}
                     className="mb-4"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -810,7 +814,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => copySourceLinks(sourceName)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            copySourceLinks(sourceName);
+                          }}
                         >
                           <Copy className="w-4 h-4 mr-1" />
                           Copy Source Links
@@ -875,7 +883,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => {
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                             navigator.clipboard.writeText(utmLink);
                                             toast({
                                               title: "Copied!",
