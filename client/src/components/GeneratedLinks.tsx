@@ -437,16 +437,20 @@ export default function GeneratedLinks() {
                       </div>
                     )}
                     {!tags.length && targetUrl && <div className="mb-3" />}
-                    <div className="flex gap-2 w-full">
-                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`} className="flex-1">
+                    {/* First row - Edit button */}
+                    <div className="flex gap-2 w-full mb-2">
+                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`} className="w-full">
                         <Button
                           variant="outline"
-                          className="text-primary hover:text-primary/80 w-full h-10 min-w-0"
+                          className="text-primary hover:text-primary/80 w-full h-10"
                         >
-                          <Edit className="mr-1 flex-shrink-0" size={16} />
-                          <span className="truncate">Edit</span>
+                          <Edit className="mr-2" size={16} />
+                          Edit Campaign
                         </Button>
                       </Link>
+                    </div>
+                    {/* Second row - Show/Hide Links and Copy Links buttons */}
+                    <div className="flex gap-2 w-full">
                       <Button
                         onClick={() => toggleCampaignCollapse(campaignName)}
                         variant="outline"
