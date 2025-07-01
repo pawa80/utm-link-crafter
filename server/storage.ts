@@ -68,7 +68,7 @@ export class DatabaseStorage implements IStorage {
     return utmLink;
   }
 
-  async getUserUtmLinks(userId: number, limit = 20, offset = 0): Promise<UtmLink[]> {
+  async getUserUtmLinks(userId: number, limit = 1000, offset = 0): Promise<UtmLink[]> {
     const userLinks = await db
       .select()
       .from(utmLinks)
