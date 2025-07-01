@@ -468,7 +468,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 {landingPages.length > 0 && (
                   <div className="space-y-3">
                     {landingPages.map((landingPage) => (
-                      <div key={landingPage.id} className="flex gap-3 items-end">
+                      <div key={landingPage.id} className="flex flex-col sm:flex-row gap-3 sm:items-end">
                         <div className="flex-1">
                           <Label className="text-xs text-gray-600">Label</Label>
                           <Input
@@ -492,9 +492,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           onClick={() => removeLandingPage(landingPage.id)}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 sm:flex-shrink-0"
                         >
                           <X size={16} />
+                          <span className="ml-1 sm:hidden">Remove</span>
                         </Button>
                       </div>
                     ))}
@@ -930,7 +931,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         </Button>
                       </div>
                     </div>
-                    <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-gray-50 border-b">
@@ -1048,6 +1050,122 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           })}
                         </tbody>
                       </table>
+                    </div>
+                    
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {state.selectedMediums.flatMap((medium: string) => {
+                        const variants = getContentVariantsForMedium(sourceName, medium);
+                        return variants.map((variant, variantIndex) => {
+                          // Get selected landing page for this medium
+                          const selectedLandingPageId = state.landingPageSelections[medium];
+                          const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
+                          const urlToUse = selectedLandingPage?.url || targetUrl;
+                          
+                          const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
+                          const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
+                            targetUrl: urlToUse,
+                            utm_campaign: campaignName,
+                            utm_source: sourceName.toLowerCase(),
+                            utm_medium: medium,
+                            utm_content: variant.content.trim()
+                          }) : '';
+                          
+                          return (
+                            <div key={variant.id} className="bg-white border rounded-lg p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {medium}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addContentVariant(sourceName, medium, variant.id)}
+                                  className="flex-shrink-0"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
+                                <Input
+                                  value={variant.content}
+                                  onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
+                                  placeholder="Content..."
+                                  className="text-sm"
+                                />
+                              </div>
+                              
+                              {landingPages.length > 0 && (
+                                <div>
+                                  <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>
+                                  <Select
+                                    value={selectedLandingPageId || ""}
+                                    onValueChange={(value) => {
+                                      setSourceStates(prev => ({
+                                        ...prev,
+                                        [sourceName]: {
+                                          ...prev[sourceName],
+                                          landingPageSelections: {
+                                            ...prev[sourceName].landingPageSelections,
+                                            [medium]: value
+                                          }
+                                        }
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Choose page" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {landingPages.map((lp) => (
+                                        <SelectItem key={lp.id} value={lp.id}>
+                                          {lp.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                              
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Link Name</Label>
+                                <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                                  {linkName}
+                                </div>
+                              </div>
+                              
+                              {utmLink && (
+                                <div>
+                                  <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded flex-1 break-all">
+                                      {utmLink}
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(utmLink);
+                                        toast({
+                                          title: "Copied!",
+                                          description: "UTM link copied to clipboard",
+                                        });
+                                      }}
+                                      className="flex-shrink-0"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })}
                     </div>
                   </div>
                 ))}
