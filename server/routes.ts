@@ -87,6 +87,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete UTM links by campaign (for editing campaigns)
+  app.delete("/api/utm-links/campaign/:campaignName", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = decodeURIComponent(req.params.campaignName);
+      const success = await storage.deleteUtmLinksByCampaign(req.user.id, campaignName);
+      
+      if (success) {
+        res.json({ message: "Campaign links deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete campaign links" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Export user's UTM links as CSV
   app.get("/api/utm-links/export", authMiddleware, async (req: any, res) => {
     try {

@@ -1,6 +1,6 @@
 import { users, utmLinks, sourceTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -13,6 +13,7 @@ export interface IStorage {
   createUtmLink(utmLink: InsertUtmLink): Promise<UtmLink>;
   getUserUtmLinks(userId: number, limit?: number, offset?: number): Promise<UtmLink[]>;
   getUtmLink(id: number): Promise<UtmLink | undefined>;
+  deleteUtmLinksByCampaign(userId: number, campaignName: string): Promise<boolean>;
   
   // Source Template operations
   createSourceTemplate(sourceTemplate: InsertSourceTemplate): Promise<SourceTemplate>;
@@ -72,6 +73,23 @@ export class DatabaseStorage implements IStorage {
   async getUtmLink(id: number): Promise<UtmLink | undefined> {
     const [utmLink] = await db.select().from(utmLinks).where(eq(utmLinks.id, id));
     return utmLink || undefined;
+  }
+
+  async deleteUtmLinksByCampaign(userId: number, campaignName: string): Promise<boolean> {
+    try {
+      await db
+        .delete(utmLinks)
+        .where(
+          and(
+            eq(utmLinks.userId, userId),
+            eq(utmLinks.utm_campaign, campaignName)
+          )
+        );
+      return true;
+    } catch (error) {
+      console.error('Error deleting UTM links by campaign:', error);
+      return false;
+    }
   }
 
   async createSourceTemplate(insertSourceTemplate: InsertSourceTemplate): Promise<SourceTemplate> {

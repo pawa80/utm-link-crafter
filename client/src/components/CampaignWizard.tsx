@@ -64,6 +64,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  const deleteCampaignLinksMutation = useMutation({
+    mutationFn: async (campaignName: string) => {
+      const response = await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+    },
+  });
+
   // Initialize form with existing campaign data when in edit mode
   useEffect(() => {
     if (editMode && existingCampaignData.length > 0) {
@@ -978,6 +988,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         <div className="pt-8 border-t">
           <Button
             onClick={async () => {
+              // In edit mode, first delete existing campaign links
+              if (editMode && existingCampaignData.length > 0) {
+                try {
+                  await deleteCampaignLinksMutation.mutateAsync(campaignName);
+                } catch (error) {
+                  console.error("Failed to delete existing campaign links:", error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to update campaign. Please try again.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+              }
+              
               // Save all valid combinations to database
               const validSources = getCheckedSourcesWithContent();
               
@@ -1003,7 +1028,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               if (successCount > 0) {
                 toast({
                   title: "Success",
-                  description: `Generated ${successCount} UTM links successfully`,
+                  description: editMode 
+                    ? `Updated ${successCount} UTM links successfully`
+                    : `Generated ${successCount} UTM links successfully`,
                 });
                 // Navigate back to management page after successful save
                 if (onSaveSuccess) {
@@ -1020,7 +1047,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
           >
-            Save Campaign Links ({getCheckedSourcesWithContent().length})
+{editMode ? "Update Campaign Links" : "Save Campaign Links"} ({getCheckedSourcesWithContent().length})
           </Button>
         </div>
       )}
