@@ -64,7 +64,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       case 'tags':
         return true; // Tags are optional
       case 'sources':
-        return getCheckedSourcesWithContent().length > 0;
+        // Only check if sources and mediums are selected, not content
+        return Object.entries(sourceStates)
+          .filter(([, state]) => state.checked)
+          .some(([, state]) => state.selectedMediums.length > 0);
       default:
         return true;
     }
@@ -80,7 +83,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           else if (!validateUrl(targetUrl)) errorMessage = 'Please enter a valid URL';
           break;
         case 'sources':
-          errorMessage = 'Please select at least one source and medium with content';
+          errorMessage = 'Please select at least one source and medium';
           break;
       }
       
