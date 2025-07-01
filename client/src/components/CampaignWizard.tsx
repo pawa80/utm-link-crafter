@@ -357,14 +357,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       } else {
         // Campaign likely uses multiple landing pages, but if no landing pages are found,
         // we'll try to reconstruct the base URL from the UTM link
-        if (firstLink.utmLink) {
+        if (firstLink.fullUtmLink) {
           try {
-            const url = new URL(firstLink.utmLink);
+            const url = new URL(firstLink.fullUtmLink);
             // Remove all UTM parameters to get the base URL
             const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
             setTargetUrl(baseUrl);
           } catch (error) {
-            console.warn('Could not parse UTM link:', firstLink.utmLink);
+            console.warn('Could not parse UTM link:', firstLink.fullUtmLink);
             setTargetUrl('');
           }
         } else {
@@ -1284,6 +1284,27 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         }
                       }
                       
+                      // First, save landing pages if any exist
+                      if (landingPages.length > 0) {
+                        try {
+                          // Delete existing landing pages for this campaign
+                          await apiRequest("DELETE", `/api/campaign-landing-pages/${campaignName}`);
+                          
+                          // Save new landing pages
+                          for (const landingPage of landingPages) {
+                            if (landingPage.url.trim() && landingPage.label.trim()) {
+                              await apiRequest("POST", "/api/campaign-landing-pages", {
+                                campaignName,
+                                url: landingPage.url,
+                                label: landingPage.label
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          console.error("Failed to save landing pages:", error);
+                        }
+                      }
+                      
                       // Save all valid combinations to database
                       const validSources = getCheckedSourcesWithContent();
                       
@@ -1291,9 +1312,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       
                       for (const source of validSources) {
                         try {
+                          // Get the actual target URL used for this specific link
+                          const actualTargetUrl = source.utmLink ? 
+                            (() => {
+                              try {
+                                const url = new URL(source.utmLink);
+                                return url.origin + url.pathname;
+                              } catch {
+                                return targetUrl || '';
+                              }
+                            })() : 
+                            (targetUrl || '');
+                          
                           await createUtmLinkMutation.mutateAsync({
                             userId: user.id,
-                            targetUrl,
+                            targetUrl: actualTargetUrl,
                             utm_campaign: campaignName,
                             utm_source: source.sourceName.toLowerCase(),
                             utm_medium: source.medium,
