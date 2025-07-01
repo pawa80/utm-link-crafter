@@ -217,6 +217,56 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       );
   };
 
+  const copyAllCampaignLinks = () => {
+    const allLinks = getCheckedSourcesWithContent();
+    if (allLinks.length === 0) return;
+
+    // Group links by source
+    const linksBySource = allLinks.reduce((acc, link) => {
+      if (!acc[link.sourceName]) {
+        acc[link.sourceName] = [];
+      }
+      acc[link.sourceName].push(link);
+      return acc;
+    }, {} as { [sourceName: string]: typeof allLinks });
+
+    // Format: Campaign name, then sources with their links
+    let copyText = `${campaignName}\n`;
+    
+    Object.entries(linksBySource).forEach(([sourceName, links]) => {
+      copyText += `${sourceName}\n`;
+      links.forEach(link => {
+        const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
+        copyText += `${linkName} - ${link.utmLink}\n`;
+      });
+      copyText += '\n'; // Empty line between sources
+    });
+
+    navigator.clipboard.writeText(copyText.trim());
+    toast({
+      title: "Copied!",
+      description: "All campaign links copied to clipboard",
+    });
+  };
+
+  const copySourceLinks = (sourceName: string) => {
+    const sourceLinks = getCheckedSourcesWithContent().filter(link => link.sourceName === sourceName);
+    if (sourceLinks.length === 0) return;
+
+    // Format: Campaign Name, Source, then links
+    let copyText = `${campaignName}\n${sourceName}\n`;
+    sourceLinks.forEach(link => {
+      const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
+      copyText += `${linkName} - ${link.utmLink}\n`;
+    });
+
+    navigator.clipboard.writeText(copyText.trim());
+    toast({
+      title: "Copied!",
+      description: `${sourceName} links copied to clipboard`,
+    });
+  };
+
   // Initialize form with existing campaign data when in edit mode
   useEffect(() => {
     if (editMode && existingCampaignData.length > 0) {
@@ -732,6 +782,20 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         {expandedSections.output && (
           <div className="p-6">
             <div className="space-y-6">
+              {/* Copy Campaign Links Button */}
+              {getCheckedSourcesWithContent().length > 0 && (
+                <div className="flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={copyAllCampaignLinks}
+                    className="mb-4"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Campaign Links
+                  </Button>
+                </div>
+              )}
+              
               {Object.entries(sourceStates)
                 .filter(([, state]) => state.checked && state.selectedMediums.length > 0)
                 .map(([sourceName, state]) => (
@@ -739,7 +803,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     <div className="bg-blue-50 p-3 border-b">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-gray-900">{sourceName}</h3>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copySourceLinks(sourceName)}
+                        >
                           <Copy className="w-4 h-4 mr-1" />
                           Copy Source Links
                         </Button>
