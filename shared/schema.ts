@@ -46,6 +46,15 @@ export const tags = pgTable("tags", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const campaignLandingPages = pgTable("campaign_landing_pages", {
+  id: serial("id").primaryKey(),
+  userId: serial("user_id").references(() => users.id).notNull(),
+  campaignName: text("campaign_name").notNull(),
+  url: text("url").notNull(),
+  label: text("label").notNull(), // User-friendly name for the URL
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
@@ -91,6 +100,11 @@ export const insertTagSchema = createInsertSchema(tags).omit({
   createdAt: true,
 });
 
+export const insertCampaignLandingPageSchema = createInsertSchema(campaignLandingPages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
@@ -100,3 +114,5 @@ export type SourceTemplate = typeof sourceTemplates.$inferSelect;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Tag = typeof tags.$inferSelect;
+export type InsertCampaignLandingPage = z.infer<typeof insertCampaignLandingPageSchema>;
+export type CampaignLandingPage = typeof campaignLandingPages.$inferSelect;

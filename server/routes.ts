@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema } from "@shared/schema";
 import { z } from "zod";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
@@ -275,6 +275,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(tag);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Campaign Landing Pages API routes
+  app.get("/api/campaign-landing-pages/:campaignName", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = decodeURIComponent(req.params.campaignName);
+      const landingPages = await storage.getCampaignLandingPages(req.user.id, campaignName);
+      res.json(landingPages);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
+    try {
+      const landingPageData = insertCampaignLandingPageSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+      });
+      
+      const landingPage = await storage.createCampaignLandingPage(landingPageData);
+      res.json(landingPage);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/campaign-landing-pages/:campaignName", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = decodeURIComponent(req.params.campaignName);
+      const success = await storage.deleteCampaignLandingPages(req.user.id, campaignName);
+      res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -25,6 +25,11 @@ export interface IStorage {
   createTag(tag: InsertTag): Promise<Tag>;
   getUserTags(userId: number): Promise<Tag[]>;
   getTagByName(userId: number, name: string): Promise<Tag | undefined>;
+  
+  // Campaign Landing Page operations
+  createCampaignLandingPage(landingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage>;
+  getCampaignLandingPages(userId: number, campaignName: string): Promise<CampaignLandingPage[]>;
+  deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -141,6 +146,25 @@ export class DatabaseStorage implements IStorage {
   async getTagByName(userId: number, name: string): Promise<Tag | undefined> {
     const [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name)));
     return tag || undefined;
+  }
+
+  async createCampaignLandingPage(insertLandingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage> {
+    const [landingPage] = await db
+      .insert(campaignLandingPages)
+      .values(insertLandingPage)
+      .returning();
+    return landingPage;
+  }
+
+  async getCampaignLandingPages(userId: number, campaignName: string): Promise<CampaignLandingPage[]> {
+    return await db.select().from(campaignLandingPages)
+      .where(and(eq(campaignLandingPages.userId, userId), eq(campaignLandingPages.campaignName, campaignName)));
+  }
+
+  async deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean> {
+    const result = await db.delete(campaignLandingPages)
+      .where(and(eq(campaignLandingPages.userId, userId), eq(campaignLandingPages.campaignName, campaignName)));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
