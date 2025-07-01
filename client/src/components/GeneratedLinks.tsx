@@ -51,9 +51,8 @@ export default function GeneratedLinks() {
     queryKey: ["/api/utm-links"],
   });
 
-  // Force a fresh fetch to bypass browser cache
+  // Refresh data with a simple refetch
   const handleRefresh = () => {
-    queryClient.removeQueries({ queryKey: ["/api/utm-links"] });
     refetch();
   };
   

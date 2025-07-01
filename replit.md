@@ -94,6 +94,12 @@ The build process:
 Changelog:
 - June 17, 2025. Initial setup  
 - July 1, 2025. Fixed critical cache persistence bug - React Query cache now clears on logout to prevent stale data across user sessions
+- July 1, 2025. Fixed major campaign display issues:
+  - Landing pages now properly save to database during campaign creation
+  - UTM links store correct target URLs extracted from generated links  
+  - Fixed database query ordering to show newest campaigns first (was showing oldest)
+  - Increased record limit to 100 to display more campaigns
+  - Added manual refresh button to bypass browser cache issues
 
 ## User Preferences
 
