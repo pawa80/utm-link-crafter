@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { logout } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
 interface UserHeaderProps {
@@ -13,6 +14,8 @@ interface UserHeaderProps {
 export default function UserHeader({ user, onLogout }: UserHeaderProps) {
   const handleLogout = async () => {
     try {
+      // Clear all cached data before logout to prevent cache persistence
+      queryClient.clear();
       await logout();
       if (onLogout) {
         onLogout();

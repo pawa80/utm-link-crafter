@@ -92,7 +92,8 @@ The build process:
 ## Changelog
 
 Changelog:
-- June 17, 2025. Initial setup
+- June 17, 2025. Initial setup  
+- July 1, 2025. Fixed critical cache persistence bug - React Query cache now clears on logout to prevent stale data across user sessions
 
 ## User Preferences
 
