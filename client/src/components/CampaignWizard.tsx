@@ -1115,7 +1115,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="mt-4">
                   <Button
                     onClick={() => copyAllLinks(sourceName)}
-                    className="w-full"
                     disabled={(() => {
                       // Check if any row (original or duplicated) has content
                       const allRows: Array<{key: string}> = [];
@@ -1206,10 +1205,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 });
               }
             }}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
           >
-{editMode ? "Update Campaign" : "Save Campaign Links"} ({getCheckedSourcesWithContent().length})
+{editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
           </Button>
         </div>
       )}
