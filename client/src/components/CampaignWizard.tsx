@@ -236,6 +236,19 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     }));
   };
   
+  // Check if we have at least one valid URL (either targetUrl or landing pages with URLs)
+  const hasValidUrl = () => {
+    if (targetUrl.trim()) {
+      return true;
+    }
+    
+    if (landingPages.length > 0) {
+      return landingPages.some(lp => lp.url.trim() !== '');
+    }
+    
+    return false;
+  };
+  
   const getCheckedSourcesWithContent = () => {
     return Object.entries(sourceStates)
       .filter(([, state]) => state.checked)
@@ -244,18 +257,26 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           const variants = getContentVariantsForMedium(sourceName, medium);
           return variants
             .filter(variant => variant.content.trim() !== '')
-            .map(variant => ({
-              sourceName,
-              medium,
-              content: variant.content,
-              utmLink: generateUTMLink({
-                targetUrl,
-                utm_campaign: campaignName,
-                utm_source: sourceName.toLowerCase(),
-                utm_medium: medium,
-                utm_content: variant.content
-              })
-            }));
+            .map(variant => {
+              // Get selected landing page for this medium
+              const selectedLandingPageId = state.landingPageSelections[medium];
+              const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
+              // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
+              const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
+              
+              return {
+                sourceName,
+                medium,
+                content: variant.content,
+                utmLink: generateUTMLink({
+                  targetUrl: urlToUse,
+                  utm_campaign: campaignName,
+                  utm_source: sourceName.toLowerCase(),
+                  utm_medium: medium,
+                  utm_content: variant.content
+                })
+              };
+            });
         })
       );
   };
@@ -1244,7 +1265,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       }
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={!campaignName.trim() || !targetUrl.trim() || getCheckedSourcesWithContent().length === 0}
+                    disabled={!campaignName.trim() || !hasValidUrl() || getCheckedSourcesWithContent().length === 0}
                   >
                     {editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
                   </Button>
