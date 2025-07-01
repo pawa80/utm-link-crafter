@@ -683,83 +683,113 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         {expandedSections.output && (
           <div className="p-6">
             <div className="space-y-6">
-              {/* Content Input Section */}
-              <div>
-                <Label className="text-lg font-medium mb-4 block">Content for Selected Sources & Mediums</Label>
-                <div className="space-y-4">
-                  {Object.entries(sourceStates)
-                    .filter(([, state]) => state.checked && state.selectedMediums.length > 0)
-                    .map(([sourceName, state]) => (
-                      <Card key={sourceName}>
-                        <CardContent className="p-4">
-                          <h4 className="font-medium text-lg mb-3">{sourceName}</h4>
-                          <div className="space-y-3">
-                            {state.selectedMediums.map((medium: string) => (
-                              <div key={medium} className="flex items-center gap-3">
-                                <Label className="w-20 text-sm font-medium">{medium}:</Label>
+              {Object.entries(sourceStates)
+                .filter(([, state]) => state.checked && state.selectedMediums.length > 0)
+                .map(([sourceName, state]) => (
+                  <div key={sourceName} className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{sourceName}</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="grid grid-cols-4 gap-4 bg-gray-50 p-3 text-sm font-medium text-gray-700 border-b">
+                        <div>Medium</div>
+                        <div>Content</div>
+                        <div>Link Name</div>
+                        <div>UTM Link</div>
+                      </div>
+                      {state.selectedMediums.map((medium: string) => {
+                        const variants = state.contentInputs[medium]?.split(',').map(c => c.trim()).filter(Boolean) || [''];
+                        return variants.map((content, variantIndex) => {
+                          const linkName = `${sourceName} - ${medium} - ${content || 'No Content'}`;
+                          const utmLink = content.trim() ? generateUTMLink({
+                            targetUrl,
+                            utm_campaign: campaignName,
+                            utm_source: sourceName.toLowerCase(),
+                            utm_medium: medium,
+                            utm_content: content.trim()
+                          }) : '';
+                          
+                          return (
+                            <div key={`${medium}-${variantIndex}`} className="grid grid-cols-4 gap-4 p-3 border-b last:border-b-0">
+                              <div className="text-sm font-medium">{medium}</div>
+                              <div>
                                 <Input
-                                  value={state.contentInputs[medium] || ''}
+                                  value={content}
                                   onChange={(e) => {
+                                    const newVariants = [...variants];
+                                    newVariants[variantIndex] = e.target.value;
+                                    const newContent = newVariants.filter(Boolean).join(', ');
+                                    
                                     setSourceStates(prev => ({
                                       ...prev,
                                       [sourceName]: {
                                         ...state,
                                         contentInputs: {
                                           ...state.contentInputs,
-                                          [medium]: e.target.value
+                                          [medium]: newContent
                                         }
                                       }
                                     }));
                                   }}
-                                  placeholder={`Content for ${medium}...`}
-                                  className="flex-1"
+                                  placeholder="Content variant..."
+                                  className="text-sm"
                                 />
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              </div>
-
-              {/* UTM Links Preview Section */}
-              {getCheckedSourcesWithContent().length > 0 && (
-                <div>
-                  <Label className="text-lg font-medium mb-4 block">Generated UTM Links</Label>
-                  <div className="space-y-2">
-                    {getCheckedSourcesWithContent().map((link, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-700 mb-1">
-                            {link.sourceName} • {link.medium} • {link.content}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 break-all">
-                            {link.utmLink}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(link.utmLink);
-                            toast({
-                              title: "Copied!",
-                              description: "UTM link copied to clipboard",
-                            });
-                          }}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                              <div className="text-sm text-gray-600">{linkName}</div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-xs font-mono text-gray-500 break-all flex-1">
+                                  {utmLink}
+                                </div>
+                                <div className="flex gap-1">
+                                  {utmLink && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(utmLink);
+                                        toast({
+                                          title: "Copied!",
+                                          description: "UTM link copied to clipboard",
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                  {variantIndex === variants.length - 1 && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newVariants = [...variants, ''];
+                                        const newContent = newVariants.filter((v, i) => i === newVariants.length - 1 || Boolean(v)).join(', ');
+                                        
+                                        setSourceStates(prev => ({
+                                          ...prev,
+                                          [sourceName]: {
+                                            ...state,
+                                            contentInputs: {
+                                              ...state.contentInputs,
+                                              [medium]: newContent
+                                            }
+                                          }
+                                        }));
+                                      }}
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
 
               {/* Save Button */}
               {getCheckedSourcesWithContent().length > 0 && (
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-6 border-t">
                   <Button
                     onClick={async () => {
                       // In edit mode, first delete existing campaign links
@@ -828,11 +858,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               )}
 
               {/* Empty State */}
-              {getCheckedSourcesWithContent().length === 0 && (
+              {Object.entries(sourceStates).filter(([, state]) => state.checked && state.selectedMediums.length > 0).length === 0 && (
                 <div className="text-center py-12">
-                  <div className="text-gray-500 mb-2">No UTM links to generate</div>
+                  <div className="text-gray-500 mb-2">No sources and mediums selected</div>
                   <div className="text-sm text-gray-400">
-                    Please select sources, mediums, and add content in the previous sections.
+                    Please select sources and mediums in the previous section.
                   </div>
                 </div>
               )}
