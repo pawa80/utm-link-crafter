@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -20,6 +20,11 @@ export interface IStorage {
   getUserSourceTemplates(userId: number): Promise<SourceTemplate[]>;
   updateSourceTemplate(id: number, updates: Partial<InsertSourceTemplate>): Promise<SourceTemplate | undefined>;
   deleteSourceTemplate(id: number): Promise<boolean>;
+  
+  // Tag operations
+  createTag(tag: InsertTag): Promise<Tag>;
+  getUserTags(userId: number): Promise<Tag[]>;
+  getTagByName(userId: number, name: string): Promise<Tag | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -119,6 +124,23 @@ export class DatabaseStorage implements IStorage {
   async deleteSourceTemplate(id: number): Promise<boolean> {
     const result = await db.delete(sourceTemplates).where(eq(sourceTemplates.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async createTag(insertTag: InsertTag): Promise<Tag> {
+    const [tag] = await db
+      .insert(tags)
+      .values(insertTag)
+      .returning();
+    return tag;
+  }
+
+  async getUserTags(userId: number): Promise<Tag[]> {
+    return await db.select().from(tags).where(eq(tags.userId, userId));
+  }
+
+  async getTagByName(userId: number, name: string): Promise<Tag | undefined> {
+    const [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name)));
+    return tag || undefined;
   }
 }
 

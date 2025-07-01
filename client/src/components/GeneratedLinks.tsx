@@ -172,6 +172,8 @@ export default function GeneratedLinks() {
             {campaignGroups.map(({ campaignName, sources }) => {
               // Get target URL from first link in campaign (they should all be the same)
               const targetUrl = sources[0]?.links[0]?.targetUrl || '';
+              // Get tags from first link in campaign (they should all be the same)
+              const tags = sources[0]?.links[0]?.tags || [];
               // Get all links for this campaign for copying
               const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
               
@@ -205,6 +207,15 @@ export default function GeneratedLinks() {
                       </h2>
                       {targetUrl && (
                         <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
+                      )}
+                      {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {tags.map((tag: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -254,8 +265,18 @@ export default function GeneratedLinks() {
                       {campaignName}
                     </h2>
                     {targetUrl && (
-                      <p className="text-sm text-gray-600 mt-1 mb-3">{targetUrl}</p>
+                      <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
                     )}
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2 mb-3">
+                        {tags.map((tag: string, index: number) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {!tags.length && targetUrl && <div className="mb-3" />}
                     <div className="flex gap-2 w-full">
                       <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`} className="flex-1">
                         <Button

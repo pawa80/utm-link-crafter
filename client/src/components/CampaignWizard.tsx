@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
 import { Plus, Copy, X } from "lucide-react";
-import type { User, SourceTemplate, UtmLink } from "@shared/schema";
+import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
 
 interface CampaignWizardProps {
   user: User;
@@ -32,6 +32,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [customSource, setCustomSource] = useState("");
   const [showAddSource, setShowAddSource] = useState(false);
   const [customMediumInputs, setCustomMediumInputs] = useState<{ [sourceName: string]: { value: string; addToLibrary: boolean; show: boolean } }>({});
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTagInput, setCustomTagInput] = useState("");
+  const [showCustomTagInput, setShowCustomTagInput] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,6 +43,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     queryKey: ["/api/source-templates"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/source-templates");
+      return response.json();
+    },
+  });
+
+  const { data: tags = [] } = useQuery({
+    queryKey: ["/api/tags"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/tags");
       return response.json();
     },
   });
@@ -64,6 +75,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: async (tagData: { name: string }) => {
+      const response = await apiRequest("POST", "/api/tags", tagData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tags'] });
+    },
+  });
+
   const deleteCampaignLinksMutation = useMutation({
     mutationFn: async (campaignName: string) => {
       const response = await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
@@ -80,6 +101,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       const firstLink = existingCampaignData[0];
       setCampaignName(firstLink.utm_campaign);
       setTargetUrl(firstLink.targetUrl);
+      setSelectedTags(firstLink.tags || []);
       
       // Group existing links by source and medium to populate form
       const newSourceStates: { [sourceName: string]: SourceState } = {};
@@ -338,6 +360,35 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     hideCustomMediumInput(sourceName);
   };
 
+  // Tag management functions
+  const handleTagSelect = (tagName: string) => {
+    if (!selectedTags.includes(tagName)) {
+      setSelectedTags([...selectedTags, tagName]);
+    }
+  };
+
+  const removeTag = (tagName: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagName));
+  };
+
+  const handleCustomTagSubmit = async () => {
+    if (!customTagInput.trim()) return;
+
+    try {
+      await createTagMutation.mutateAsync({ name: customTagInput.trim() });
+      handleTagSelect(customTagInput.trim());
+      setCustomTagInput("");
+      setShowCustomTagInput(false);
+      
+      toast({
+        title: "Tag Created",
+        description: `"${customTagInput.trim()}" added to your tag library`,
+      });
+    } catch (error) {
+      console.error("Failed to create tag:", error);
+    }
+  };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -490,6 +541,91 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             placeholder="Fill in landing page URL..."
             className="mt-1"
           />
+        </div>
+      </div>
+
+      {/* Tags Section */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">
+          Campaign Tags
+        </Label>
+        <div className="space-y-3">
+          {/* Selected Tags */}
+          {selectedTags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedTags.map((tag) => (
+                <div
+                  key={tag}
+                  className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
+                >
+                  <span>{tag}</span>
+                  <button
+                    onClick={() => removeTag(tag)}
+                    className="hover:bg-blue-200 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Tag Selection */}
+          <div className="flex flex-wrap gap-2">
+            {/* Available Tags */}
+            {tags
+              .filter((tag: Tag) => !selectedTags.includes(tag.name))
+              .map((tag: Tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => handleTagSelect(tag.name)}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  {tag.name}
+                </button>
+              ))}
+
+            {/* Add New Tag */}
+            {!showCustomTagInput && (
+              <button
+                onClick={() => setShowCustomTagInput(true)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-600"
+              >
+                <Plus className="w-4 h-4" />
+                Add Tag
+              </button>
+            )}
+          </div>
+
+          {/* Custom Tag Input */}
+          {showCustomTagInput && (
+            <div className="flex items-center gap-2">
+              <Input
+                value={customTagInput}
+                onChange={(e) => setCustomTagInput(e.target.value)}
+                placeholder="Enter new tag name..."
+                className="w-48"
+                onKeyPress={(e) => e.key === 'Enter' && handleCustomTagSubmit()}
+              />
+              <Button
+                onClick={handleCustomTagSubmit}
+                disabled={!customTagInput.trim() || createTagMutation.isPending}
+                size="sm"
+              >
+                Add
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowCustomTagInput(false);
+                  setCustomTagInput("");
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1042,7 +1178,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     utm_source: source.sourceName.toLowerCase(),
                     utm_medium: source.medium,
                     utm_content: source.content,
-                    fullUtmLink: source.utmLink
+                    fullUtmLink: source.utmLink,
+                    tags: selectedTags
                   });
                   successCount++;
                 } catch (error) {

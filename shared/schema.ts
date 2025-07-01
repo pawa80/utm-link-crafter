@@ -39,6 +39,13 @@ export const sourceTemplates = pgTable("source_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  userId: serial("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
@@ -54,6 +61,7 @@ export const utmLinks = pgTable("utm_links", {
   customField1Value: text("custom_field_1_value"),
   customField2Value: text("custom_field_2_value"),
   customField3Value: text("custom_field_3_value"),
+  tags: text("tags").array().default([]), // Array of tag names associated with this campaign
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -78,6 +86,11 @@ export const insertSourceTemplateSchema = createInsertSchema(sourceTemplates).om
   createdAt: true,
 });
 
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
@@ -85,3 +98,5 @@ export type UtmLink = typeof utmLinks.$inferSelect;
 export type InsertSourceTemplate = z.infer<typeof insertSourceTemplateSchema>;
 export type SourceTemplate = typeof sourceTemplates.$inferSelect;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type Tag = typeof tags.$inferSelect;

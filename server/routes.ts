@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema } from "@shared/schema";
 import { z } from "zod";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
@@ -244,6 +244,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Tags API routes
+  app.get("/api/tags", authMiddleware, async (req: any, res) => {
+    try {
+      const tags = await storage.getUserTags(req.user.id);
+      res.json(tags);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/tags", authMiddleware, async (req: any, res) => {
+    try {
+      const tagData = insertTagSchema.parse(req.body);
+      
+      // Check if tag already exists
+      const existingTag = await storage.getTagByName(req.user.id, tagData.name);
+      if (existingTag) {
+        return res.json(existingTag);
+      }
+      
+      const tag = await storage.createTag({
+        ...tagData,
+        userId: req.user.id,
+      });
+      
+      res.json(tag);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
