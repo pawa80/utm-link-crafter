@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { List, Copy, Download, ChevronDown, ChevronUp, Edit } from "lucide-react";
+import { Link } from "wouter";
 import type { UtmLink } from "@shared/schema";
 
 export default function GeneratedLinks() {
@@ -207,6 +208,16 @@ export default function GeneratedLinks() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-primary hover:text-primary/80"
+                        >
+                          <Edit className="mr-2" size={16} />
+                          Edit Campaign
+                        </Button>
+                      </Link>
                       <Button
                         onClick={() => toggleCampaignCollapse(campaignName)}
                         variant="outline"
@@ -246,6 +257,15 @@ export default function GeneratedLinks() {
                       <p className="text-sm text-gray-600 mt-1 mb-3">{targetUrl}</p>
                     )}
                     <div className="flex gap-2 w-full">
+                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="text-primary hover:text-primary/80 w-full h-10 min-w-0"
+                        >
+                          <Edit className="mr-1 flex-shrink-0" size={16} />
+                          <span className="truncate">Edit</span>
+                        </Button>
+                      </Link>
                       <Button
                         onClick={() => toggleCampaignCollapse(campaignName)}
                         variant="outline"

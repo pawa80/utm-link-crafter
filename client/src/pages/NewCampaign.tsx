@@ -5,17 +5,34 @@ import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createOrGetUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
-import type { User } from "@shared/schema";
+import type { User, UtmLink } from "@shared/schema";
 
 export default function NewCampaign() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
+  
+  // Parse URL parameters to check for edit mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const editCampaignName = urlParams.get('edit');
+  const isEditMode = !!editCampaignName;
+  
+  // Fetch campaign data for editing
+  const { data: campaignLinks = [] } = useQuery<UtmLink[]>({
+    queryKey: ["/api/utm-links"],
+    enabled: isEditMode && !!user, // Only fetch when in edit mode and user is loaded
+  });
+  
+  // Filter links for the campaign being edited
+  const editingCampaignLinks = isEditMode && editCampaignName 
+    ? campaignLinks.filter(link => link.utm_campaign === editCampaignName)
+    : [];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -81,12 +98,21 @@ export default function NewCampaign() {
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Campaign</h1>
-            <p className="text-gray-600">Build and save your UTM campaign links</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEditMode ? `Edit Campaign: ${editCampaignName}` : "Create New Campaign"}
+            </h1>
+            <p className="text-gray-600">
+              {isEditMode ? "Modify and save your UTM campaign links" : "Build and save your UTM campaign links"}
+            </p>
           </div>
 
           {/* Campaign Wizard */}
-          <CampaignWizard user={user} onSaveSuccess={handleSaveSuccess} />
+          <CampaignWizard 
+            user={user} 
+            onSaveSuccess={handleSaveSuccess}
+            editMode={isEditMode}
+            existingCampaignData={editingCampaignLinks}
+          />
         </div>
       </div>
     </div>

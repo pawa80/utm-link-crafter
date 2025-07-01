@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
 import { Plus, Copy, X } from "lucide-react";
-import type { User, SourceTemplate } from "@shared/schema";
+import type { User, SourceTemplate, UtmLink } from "@shared/schema";
 
 interface CampaignWizardProps {
   user: User;
   onSaveSuccess?: () => void;
+  editMode?: boolean;
+  existingCampaignData?: UtmLink[];
 }
 
 interface SourceState {
@@ -23,7 +25,7 @@ interface SourceState {
   contentInputs: { [medium: string]: string };
 }
 
-export default function CampaignWizard({ user, onSaveSuccess }: CampaignWizardProps) {
+export default function CampaignWizard({ user, onSaveSuccess, editMode = false, existingCampaignData = [] }: CampaignWizardProps) {
   const [campaignName, setCampaignName] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [sourceStates, setSourceStates] = useState<{ [sourceName: string]: SourceState }>({});
@@ -61,6 +63,40 @@ export default function CampaignWizard({ user, onSaveSuccess }: CampaignWizardPr
       queryClient.invalidateQueries({ queryKey: ['/api/source-templates'] });
     },
   });
+
+  // Initialize form with existing campaign data when in edit mode
+  useEffect(() => {
+    if (editMode && existingCampaignData.length > 0) {
+      const firstLink = existingCampaignData[0];
+      setCampaignName(firstLink.utm_campaign);
+      setTargetUrl(firstLink.targetUrl);
+      
+      // Group existing links by source and medium to populate form
+      const newSourceStates: { [sourceName: string]: SourceState } = {};
+      
+      existingCampaignData.forEach(link => {
+        const sourceName = link.utm_source;
+        const medium = link.utm_medium;
+        const content = link.utm_content || '';
+        
+        if (!newSourceStates[sourceName]) {
+          newSourceStates[sourceName] = {
+            checked: true,
+            selectedMediums: [],
+            contentInputs: {}
+          };
+        }
+        
+        if (!newSourceStates[sourceName].selectedMediums.includes(medium)) {
+          newSourceStates[sourceName].selectedMediums.push(medium);
+        }
+        
+        newSourceStates[sourceName].contentInputs[medium] = content;
+      });
+      
+      setSourceStates(newSourceStates);
+    }
+  }, [editMode, existingCampaignData]);
 
   // Get all available sources (predefined + user templates)
   const getAllSources = () => {
