@@ -230,14 +230,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       return acc;
     }, {} as { [sourceName: string]: typeof allLinks });
 
-    // New format: "Campaign:" Campaign Name, then "Source:" for each source
-    let copyText = `"Campaign:" ${campaignName}\n`;
+    // New format: Campaign: Campaign Name, then Source: for each source
+    let copyText = `Campaign: ${campaignName}\n`;
     
     Object.entries(linksBySource).forEach(([sourceName, links], index) => {
-      copyText += `"Source:" ${sourceName}\n\n`;
+      copyText += `Source: ${sourceName}\n\n`;
       links.forEach(link => {
         const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
-        copyText += `"${linkName} - ${link.utmLink}"\n`;
+        copyText += `${linkName} - ${link.utmLink}\n`;
       });
       
       // Add extra line break between sources, but not after the last one
@@ -257,11 +257,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     const sourceLinks = getCheckedSourcesWithContent().filter(link => link.sourceName === sourceName);
     if (sourceLinks.length === 0) return;
 
-    // New format: "Campaign:" Campaign Name, "Source:" Source Name, then quoted links
-    let copyText = `"Campaign:" ${campaignName}\n"Source:" ${sourceName}\n\n`;
+    // New format: Campaign: Campaign Name, Source: Source Name, then links
+    let copyText = `Campaign: ${campaignName}\nSource: ${sourceName}\n\n`;
     sourceLinks.forEach(link => {
       const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
-      copyText += `"${linkName} - ${link.utmLink}"\n`;
+      copyText += `${linkName} - ${link.utmLink}\n`;
     });
 
     navigator.clipboard.writeText(copyText);

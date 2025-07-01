@@ -323,14 +323,14 @@ export default function GeneratedLinks() {
                   linksBySource[sourceName] = sourceLinks;
                 });
 
-                // New format: "Campaign:" Campaign Name, then "Source:" for each source
-                let copyText = `"Campaign:" ${campaignName}\n`;
+                // New format: Campaign: Campaign Name, then Source: for each source
+                let copyText = `Campaign: ${campaignName}\n`;
                 
                 Object.entries(linksBySource).forEach(([sourceName, sourceLinks], index) => {
-                  copyText += `"Source:" ${sourceName}\n\n`;
+                  copyText += `Source: ${sourceName}\n\n`;
                   sourceLinks.forEach(link => {
                     const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
-                    copyText += `"${linkName} - ${link.fullUtmLink}"\n`;
+                    copyText += `${linkName} - ${link.fullUtmLink}\n`;
                   });
                   
                   // Add extra line break between sources, but not after the last one
@@ -478,11 +478,11 @@ export default function GeneratedLinks() {
                   {/* Sources for this campaign - only show when not collapsed */}
                   {!isCollapsed && sources.map(({ sourceName, links: sourceLinks }) => {
                     const handleCopySourceLinks = async () => {
-                      // New format: "Campaign:" Campaign Name, "Source:" Source Name, then quoted links
-                      let copyText = `"Campaign:" ${campaignName}\n"Source:" ${sourceName}\n\n`;
+                      // New format: Campaign: Campaign Name, Source: Source Name, then links
+                      let copyText = `Campaign: ${campaignName}\nSource: ${sourceName}\n\n`;
                       sourceLinks.forEach(link => {
                         const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
-                        copyText += `"${linkName} - ${link.fullUtmLink}"\n`;
+                        copyText += `${linkName} - ${link.fullUtmLink}\n`;
                       });
 
                       try {
