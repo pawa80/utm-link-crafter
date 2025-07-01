@@ -565,6 +565,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                                 updates: {
                                                   mediums: [...(template.mediums || []), mediumValue]
                                                 }
+                                              }, {
+                                                onSuccess: () => {
+                                                  // Invalidate source templates cache to refresh the UI
+                                                  queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+                                                }
                                               });
                                             }
                                             
@@ -603,6 +608,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                               templateId: template.id,
                                               updates: {
                                                 mediums: [...(template.mediums || []), mediumValue]
+                                              }
+                                            }, {
+                                              onSuccess: () => {
+                                                // Invalidate source templates cache to refresh the UI
+                                                queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
                                               }
                                             });
                                           }
