@@ -1,6 +1,6 @@
 import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -75,7 +75,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(utmLinks.userId, userId))
       .limit(limit)
       .offset(offset)
-      .orderBy(utmLinks.createdAt);
+      .orderBy(desc(utmLinks.id)); // Order by ID descending to show newest first
     
     return userLinks;
   }
