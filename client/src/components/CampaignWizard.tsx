@@ -1028,11 +1028,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       <table className="w-full">
                         <thead>
                           <tr className="bg-gray-50 border-b">
-                            <th className="text-left p-3 text-sm font-medium text-gray-700 w-24">Medium</th>
-                            <th className="text-left p-3 text-sm font-medium text-gray-700 w-40">Content</th>
                             {landingPages.length > 0 && (
                               <th className="text-left p-3 text-sm font-medium text-gray-700 w-40">Landing Page</th>
                             )}
+                            <th className="text-left p-3 text-sm font-medium text-gray-700 w-24">Medium</th>
+                            <th className="text-left p-3 text-sm font-medium text-gray-700 w-40">Content</th>
                             <th className="text-left p-3 text-sm font-medium text-gray-700 w-60">Link name</th>
                             <th className="text-left p-3 text-sm font-medium text-gray-700">UTM Link</th>
                           </tr>
@@ -1058,27 +1058,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               
                               return (
                                 <tr key={variant.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                                  <td className="p-3">
-                                    <div className="text-sm font-medium text-gray-900">{medium}</div>
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        value={variant.content}
-                                        onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
-                                        placeholder="Content..."
-                                        className="text-sm flex-1"
-                                      />
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addContentVariant(sourceName, medium, variant.id)}
-                                        className="flex-shrink-0"
-                                      >
-                                        <Plus className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </td>
                                   {landingPages.length > 0 && (
                                     <td className="p-3">
                                       <Select
@@ -1109,6 +1088,27 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       </Select>
                                     </td>
                                   )}
+                                  <td className="p-3">
+                                    <div className="text-sm font-medium text-gray-900">{medium}</div>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        value={variant.content}
+                                        onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
+                                        placeholder="Content..."
+                                        className="text-sm flex-1"
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addContentVariant(sourceName, medium, variant.id)}
+                                        className="flex-shrink-0"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </td>
                                   <td className="p-3">
                                     <div className="text-sm text-gray-600">{linkName}</div>
                                   </td>
@@ -1167,30 +1167,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           
                           return (
                             <div key={variant.id} className="bg-white border rounded-lg p-4 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                                  {medium}
-                                </span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => addContentVariant(sourceName, medium, variant.id)}
-                                  className="flex-shrink-0"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              
-                              <div>
-                                <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
-                                <Input
-                                  value={variant.content}
-                                  onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
-                                  placeholder="Content..."
-                                  className="text-sm"
-                                />
-                              </div>
-                              
                               {landingPages.length > 0 && (
                                 <div>
                                   <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>
@@ -1222,6 +1198,33 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                   </Select>
                                 </div>
                               )}
+                              
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                    {medium}
+                                  </span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => addContentVariant(sourceName, medium, variant.id)}
+                                    className="flex-shrink-0"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
+                                <Input
+                                  value={variant.content}
+                                  onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
+                                  placeholder="Content..."
+                                  className="text-sm"
+                                />
+                              </div>
                               
                               <div>
                                 <Label className="text-xs text-gray-600 mb-1 block">Link Name</Label>
