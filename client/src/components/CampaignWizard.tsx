@@ -230,19 +230,23 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       return acc;
     }, {} as { [sourceName: string]: typeof allLinks });
 
-    // Format: Campaign name, then sources with their links
-    let copyText = `${campaignName}\n`;
+    // New format: "Campaign:" Campaign Name, then "Source:" for each source
+    let copyText = `"Campaign:" ${campaignName}\n`;
     
-    Object.entries(linksBySource).forEach(([sourceName, links]) => {
-      copyText += `${sourceName}\n`;
+    Object.entries(linksBySource).forEach(([sourceName, links], index) => {
+      copyText += `"Source:" ${sourceName}\n\n`;
       links.forEach(link => {
         const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
-        copyText += `${linkName} - ${link.utmLink}\n`;
+        copyText += `"${linkName} - ${link.utmLink}"\n`;
       });
-      copyText += '\n'; // Empty line between sources
+      
+      // Add extra line break between sources, but not after the last one
+      if (index < Object.entries(linksBySource).length - 1) {
+        copyText += '\n';
+      }
     });
 
-    navigator.clipboard.writeText(copyText.trim());
+    navigator.clipboard.writeText(copyText);
     toast({
       title: "Copied!",
       description: "All campaign links copied to clipboard",
@@ -253,14 +257,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     const sourceLinks = getCheckedSourcesWithContent().filter(link => link.sourceName === sourceName);
     if (sourceLinks.length === 0) return;
 
-    // Format: Campaign Name, Source, then links
-    let copyText = `${campaignName}\n${sourceName}\n`;
+    // New format: "Campaign:" Campaign Name, "Source:" Source Name, then quoted links
+    let copyText = `"Campaign:" ${campaignName}\n"Source:" ${sourceName}\n\n`;
     sourceLinks.forEach(link => {
       const linkName = `${sourceName} ${link.medium.charAt(0).toUpperCase() + link.medium.slice(1)} ${link.content}`.trim();
-      copyText += `${linkName} - ${link.utmLink}\n`;
+      copyText += `"${linkName} - ${link.utmLink}"\n`;
     });
 
-    navigator.clipboard.writeText(copyText.trim());
+    navigator.clipboard.writeText(copyText);
     toast({
       title: "Copied!",
       description: `${sourceName} links copied to clipboard`,

@@ -283,9 +283,30 @@ export default function GeneratedLinks() {
               const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
               
               const handleCopyAllCampaignLinks = async () => {
-                const linkText = allCampaignLinks.join('\n');
+                // Group links by source for formatting
+                const linksBySource: { [sourceName: string]: UtmLink[] } = {};
+                sources.forEach(({ sourceName, links: sourceLinks }) => {
+                  linksBySource[sourceName] = sourceLinks;
+                });
+
+                // New format: "Campaign:" Campaign Name, then "Source:" for each source
+                let copyText = `"Campaign:" ${campaignName}\n`;
+                
+                Object.entries(linksBySource).forEach(([sourceName, sourceLinks], index) => {
+                  copyText += `"Source:" ${sourceName}\n\n`;
+                  sourceLinks.forEach(link => {
+                    const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                    copyText += `"${linkName} - ${link.fullUtmLink}"\n`;
+                  });
+                  
+                  // Add extra line break between sources, but not after the last one
+                  if (index < Object.entries(linksBySource).length - 1) {
+                    copyText += '\n';
+                  }
+                });
+
                 try {
-                  await navigator.clipboard.writeText(linkText);
+                  await navigator.clipboard.writeText(copyText);
                   toast({
                     title: "Links copied!",
                     description: `Copied ${allCampaignLinks.length} links for ${campaignName}`,
@@ -423,9 +444,15 @@ export default function GeneratedLinks() {
                   {/* Sources for this campaign - only show when not collapsed */}
                   {!isCollapsed && sources.map(({ sourceName, links: sourceLinks }) => {
                     const handleCopySourceLinks = async () => {
-                      const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
+                      // New format: "Campaign:" Campaign Name, "Source:" Source Name, then quoted links
+                      let copyText = `"Campaign:" ${campaignName}\n"Source:" ${sourceName}\n\n`;
+                      sourceLinks.forEach(link => {
+                        const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                        copyText += `"${linkName} - ${link.fullUtmLink}"\n`;
+                      });
+
                       try {
-                        await navigator.clipboard.writeText(sourceLinksText);
+                        await navigator.clipboard.writeText(copyText);
                         toast({
                           title: "Source links copied!",
                           description: `Copied ${sourceLinks.length} links for ${sourceName}`,
