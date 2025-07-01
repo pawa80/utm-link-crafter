@@ -172,8 +172,10 @@ export default function GeneratedLinks() {
             {campaignGroups.map(({ campaignName, sources }) => {
               // Get target URL from first link in campaign (they should all be the same)
               const targetUrl = sources[0]?.links[0]?.targetUrl || '';
-              // Get tags from first link in campaign (they should all be the same)
-              const tags = sources[0]?.links[0]?.tags || [];
+              // Get tags from the most recent link in campaign (in case older links don't have tags)
+              const allLinksInCampaign = sources.flatMap(source => source.links);
+              const mostRecentLink = allLinksInCampaign.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+              const tags = mostRecentLink?.tags || [];
               // Get all links for this campaign for copying
               const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
               
