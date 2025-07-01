@@ -952,7 +952,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               // Get selected landing page for this medium
                               const selectedLandingPageId = state.landingPageSelections[medium];
                               const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
-                              const urlToUse = selectedLandingPage?.url || targetUrl;
+                              // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
+                              const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
                               
                               const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
                               const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
@@ -1060,7 +1061,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           // Get selected landing page for this medium
                           const selectedLandingPageId = state.landingPageSelections[medium];
                           const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
-                          const urlToUse = selectedLandingPage?.url || targetUrl;
+                          // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
+                          const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
                           
                           const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
                           const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
