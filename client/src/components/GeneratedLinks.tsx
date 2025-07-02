@@ -9,8 +9,9 @@ import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
 import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
-import type { UtmLink } from "@shared/schema";
+import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import CampaignCard from "./CampaignCard";
 
 export default function GeneratedLinks() {
   const { toast } = useToast();
@@ -18,6 +19,8 @@ export default function GeneratedLinks() {
   const [initializedCollapse, setInitializedCollapse] = useState(false);
   const [sortBy, setSortBy] = useState<string>("created-newest");
   const [filterByTag, setFilterByTag] = useState<string>("all");
+
+
 
   const toggleCampaignCollapse = (campaignName: string) => {
     if (!initializedCollapse) {
@@ -324,182 +327,17 @@ export default function GeneratedLinks() {
         ) : (
           <div className="space-y-8">
             {campaignGroups.map(({ campaignName, sources }) => {
-              // Get target URL from first link in campaign (they should all be the same)
-              const targetUrl = sources[0]?.links[0]?.targetUrl || '';
-              // Get tags from the most recent link in campaign (in case older links don't have tags)
-              const allLinksInCampaign = sources.flatMap(source => source.links);
-              const mostRecentLink = allLinksInCampaign.sort((a, b) => {
-                const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return bDate - aDate;
-              })[0];
-              const tags = mostRecentLink?.tags || [];
-              // Get all links for this campaign for copying
-              const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
-              
-              const handleCopyAllCampaignLinks = async () => {
-                // Group links by source for formatting
-                const linksBySource: { [sourceName: string]: UtmLink[] } = {};
-                sources.forEach(({ sourceName, links: sourceLinks }) => {
-                  linksBySource[sourceName] = sourceLinks;
-                });
-
-                // New format: Campaign: Campaign Name, then Source: for each source
-                let copyText = `Campaign: ${campaignName}\n`;
-                
-                Object.entries(linksBySource).forEach(([sourceName, sourceLinks], index) => {
-                  copyText += `Source: ${sourceName}\n\n`;
-                  sourceLinks.forEach(link => {
-                    const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
-                    copyText += `${linkName} - ${link.fullUtmLink}\n`;
-                  });
-                  
-                  // Add extra line break between sources, but not after the last one
-                  if (index < Object.entries(linksBySource).length - 1) {
-                    copyText += '\n';
-                  }
-                });
-
-                try {
-                  await navigator.clipboard.writeText(copyText);
-                  toast({
-                    title: "Links copied!",
-                    description: `Copied ${allCampaignLinks.length} links for ${campaignName}`,
-                  });
-                } catch (err) {
-                  console.error('Failed to copy links:', err);
-                  toast({
-                    title: "Copy failed",
-                    description: "Could not copy links to clipboard",
-                    variant: "destructive",
-                  });
-                }
-              };
-              
               const isCollapsed = isCampaignCollapsed(campaignName);
               
               return (
                 <div key={campaignName} className="space-y-6">
-                  {/* Campaign header - desktop layout */}
-                  <div className="hidden md:flex items-center justify-between border-b border-gray-200 pb-2">
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">
-                        {campaignName}
-                      </h2>
-                      {targetUrl && (
-                        <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
-                      )}
-                      {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-primary hover:text-primary/80"
-                        >
-                          <Edit className="mr-2" size={16} />
-                          Edit Campaign
-                        </Button>
-                      </Link>
-                      <Button
-                        onClick={() => toggleCampaignCollapse(campaignName)}
-                        variant="outline"
-                        size="sm"
-                        className="text-primary hover:text-primary/80"
-                      >
-                        {isCollapsed ? (
-                          <>
-                            <ChevronDown className="mr-2" size={16} />
-                            Show Links
-                          </>
-                        ) : (
-                          <>
-                            <ChevronUp className="mr-2" size={16} />
-                            Hide Links
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={handleCopyAllCampaignLinks}
-                        variant="outline"
-                        size="sm"
-                        className="text-primary hover:text-primary/80"
-                      >
-                        <Copy className="mr-2" size={16} />
-                        Copy Campaign Links
-                      </Button>
-                    </div>
-                  </div>
+                  <CampaignCard
+                    campaignName={campaignName}
+                    sources={sources}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={() => toggleCampaignCollapse(campaignName)}
+                  />
 
-                  {/* Campaign header - mobile layout */}
-                  <div className="md:hidden border-b border-gray-200 pb-3">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {campaignName}
-                    </h2>
-                    {targetUrl && (
-                      <p className="text-sm text-gray-600 mt-1">{targetUrl}</p>
-                    )}
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2 mb-3">
-                        {tags.map((tag: string, index: number) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {!tags.length && targetUrl && <div className="mb-3" />}
-                    {/* First row - Edit button */}
-                    <div className="flex gap-2 w-full mb-2">
-                      <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`} className="w-full">
-                        <Button
-                          variant="outline"
-                          className="text-primary hover:text-primary/80 w-full h-10"
-                        >
-                          <Edit className="mr-2" size={16} />
-                          Edit Campaign
-                        </Button>
-                      </Link>
-                    </div>
-                    {/* Second row - Show/Hide Links and Copy Links buttons */}
-                    <div className="flex gap-2 w-full">
-                      <Button
-                        onClick={() => toggleCampaignCollapse(campaignName)}
-                        variant="outline"
-                        className="text-primary hover:text-primary/80 flex-1 h-10 min-w-0"
-                      >
-                        {isCollapsed ? (
-                          <>
-                            <ChevronDown className="mr-1 flex-shrink-0" size={16} />
-                            <span className="truncate">Show Links</span>
-                          </>
-                        ) : (
-                          <>
-                            <ChevronUp className="mr-1 flex-shrink-0" size={16} />
-                            <span className="truncate">Hide Links</span>
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={handleCopyAllCampaignLinks}
-                        variant="outline"
-                        className="text-primary hover:text-primary/80 flex-1 h-10 min-w-0"
-                      >
-                        <Copy className="mr-1 flex-shrink-0" size={16} />
-                        <span className="truncate">Copy Links</span>
-                      </Button>
-                    </div>
-                  </div>
-                  
                   {/* Sources for this campaign - only show when not collapsed */}
                   {!isCollapsed && sources.map(({ sourceName, links: sourceLinks }) => {
                     const handleCopySourceLinks = async () => {
