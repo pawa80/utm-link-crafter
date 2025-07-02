@@ -50,6 +50,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     campaign: true,
     tags: editMode,
     sources: editMode,
+    mediums: editMode,
     output: editMode
   });
   const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
@@ -129,7 +130,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         
         return campaignName.trim() !== '' && (hasValidSingleUrl || hasValidLandingPages) && !hasDuplicateUrls;
       case 'sources':
-        // Only check if sources and mediums are selected, not content
+        // Only check if sources are selected
+        return Object.entries(sourceStates)
+          .some(([, state]) => state.checked);
+      case 'mediums':
+        // Check if sources have mediums selected
         return Object.entries(sourceStates)
           .filter(([, state]) => state.checked)
           .some(([, state]) => state.selectedMediums.length > 0);
@@ -566,6 +571,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         campaign: true,
         tags: true,
         sources: true,
+        mediums: true,
         output: true
       });
     }
@@ -816,16 +822,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         )}
       </Card>
 
-      {/* Section 2: Sources and Mediums */}
+      {/* Section 2: Sources */}
       <Card>
         <SectionHeader 
-          title="Sources and Mediums" 
+          title="Sources" 
           sectionKey="sources"
         />
         {expandedSections.sources && (
           <div className="p-6">
             <div className="text-sm text-gray-600 mb-4">
-              Select sources and mediums for your campaign. Content is required for each selected medium.
+              Select sources for your campaign. You can choose mediums and add content in the next section.
             </div>
             <div className="space-y-6">
               {sourceTemplates
@@ -1064,7 +1070,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             {!editMode && (
               <div className="flex justify-end pt-4 border-t">
                 <Button
-                  onClick={() => handleNext('sources', 'output')}
+                  onClick={() => handleNext('sources', 'mediums')}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Next
@@ -1075,7 +1081,80 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         )}
       </Card>
 
-      {/* Section 3: Campaign Links */}
+      {/* Section 3: Mediums and Content */}
+      <Card>
+        <SectionHeader 
+          title="Mediums and Content" 
+          sectionKey="mediums"
+        />
+        {expandedSections.mediums && (
+          <div className="p-6">
+            <div className="text-sm text-gray-600 mb-4">
+              Select mediums and add content for your selected sources.
+            </div>
+            
+            {Object.entries(sourceStates)
+              .filter(([, state]) => state.checked)
+              .map(([sourceName, state]) => {
+                const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+                  template.sourceName === sourceName
+                );
+                
+                return (
+                  <Card key={sourceName} className="mb-4">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Select Mediums</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {(sourceTemplate?.mediums || []).map((medium: string) => (
+                              <Button
+                                key={medium}
+                                variant={state.selectedMediums.includes(medium) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const newMediums = state.selectedMediums.includes(medium)
+                                    ? state.selectedMediums.filter(m => m !== medium)
+                                    : [...state.selectedMediums, medium];
+                                  
+                                  setSourceStates(prev => ({
+                                    ...prev,
+                                    [sourceName]: {
+                                      ...state,
+                                      selectedMediums: newMediums
+                                    }
+                                  }));
+                                }}
+                              >
+                                {medium}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            
+            {/* Next Button */}
+            {!editMode && (
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => handleNext('mediums', 'output')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Section 4: Campaign Links */}
       <Card>
         <SectionHeader 
           title="Campaign Links" 
@@ -1172,7 +1251,55 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 </td>
                               )}
                               <td className="p-3">
-                                <div className="text-sm font-medium text-gray-900">{row.medium}</div>
+                                <Select
+                                  value={row.medium}
+                                  onValueChange={(value) => {
+                                    // Update the medium for this specific row/variant
+                                    const oldKey = getVariantKey(sourceName, row.medium);
+                                    const newKey = getVariantKey(sourceName, value);
+                                    
+                                    // Move the content variant to the new medium
+                                    setContentVariants(prev => {
+                                      const oldVariants = prev[oldKey] || [];
+                                      const newVariants = prev[newKey] || [];
+                                      const variantToMove = oldVariants.find(v => v.id === row.variant.id);
+                                      
+                                      if (variantToMove) {
+                                        const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
+                                        const updatedNewVariants = [...newVariants, variantToMove];
+                                        
+                                        return {
+                                          ...prev,
+                                          [oldKey]: updatedOldVariants,
+                                          [newKey]: updatedNewVariants
+                                        };
+                                      }
+                                      return prev;
+                                    });
+                                    
+                                    // Update the source state to include the new medium
+                                    setSourceStates(prev => ({
+                                      ...prev,
+                                      [sourceName]: {
+                                        ...prev[sourceName],
+                                        selectedMediums: [...new Set([...prev[sourceName].selectedMediums, value])]
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {sourceTemplates
+                                      .find((template: SourceTemplate) => template.sourceName === sourceName)
+                                      ?.mediums?.map((medium: string) => (
+                                        <SelectItem key={medium} value={medium}>
+                                          {medium}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
                               </td>
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
