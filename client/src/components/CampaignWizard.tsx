@@ -437,14 +437,28 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           const sourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
           const medium = link.utm_medium;
           
-          // Find the matching landing page by URL
-          const matchingLandingPage = formattedLandingPages.find(lp => lp.url === link.targetUrl);
+          // Find the matching landing page by URL with robust matching
+          const normalizeUrl = (url: string) => {
+            // Remove protocol inconsistencies and normalize
+            return url.replace(/^https?:\/\/?/i, '').replace(/\/$/, '').toLowerCase();
+          };
+          
+          const normalizedTargetUrl = normalizeUrl(link.targetUrl);
+          const matchingLandingPage = formattedLandingPages.find(lp => 
+            normalizeUrl(lp.url) === normalizedTargetUrl
+          );
           
           if (matchingLandingPage && newSourceStates[sourceName]) {
             newSourceStates[sourceName].landingPageSelections[medium] = matchingLandingPage.id;
             console.log(`Mapped ${sourceName}-${medium} to landing page: ${matchingLandingPage.label} (${matchingLandingPage.id})`);
+            console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
+            console.log(`  Landing URL: ${matchingLandingPage.url} -> ${normalizeUrl(matchingLandingPage.url)}`);
           } else {
-            console.log(`No matching landing page found for ${sourceName}-${medium} with targetUrl: ${link.targetUrl}`);
+            console.log(`No matching landing page found for ${sourceName}-${medium}`);
+            console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
+            console.log(`  Available landing pages:`, formattedLandingPages.map(lp => 
+              `${lp.label}: ${lp.url} -> ${normalizeUrl(lp.url)}`
+            ));
           }
         });
       }

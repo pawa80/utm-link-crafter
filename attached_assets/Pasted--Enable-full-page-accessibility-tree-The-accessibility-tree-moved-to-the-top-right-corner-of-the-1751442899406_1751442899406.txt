@@ -1,0 +1,46 @@
+
+
+Enable full-page accessibility tree
+The accessibility tree moved to the top right corner of the DOM tree. Send us your feedback.
+
+Name: "Notifications (F8)"
+aria-labelledby: Not specified
+aria-label: "Notifications (F8)" 
+title: Not specified
+Role: region
+Focusable: true
+﻿
+chunk-WERSD76P.js?v=47ace23b:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: 
+[]
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 0
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: 
+(38) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 38
+GeneratedLinks.tsx:65 GeneratedLinks - Sample link: 
+{id: 130, userId: 2, targetUrl: 'https://https/playmops.io', utm_campaign: 'Test 2025', utm_source: 'tiktok', …}
+GeneratedLinks.tsx:66 GeneratedLinks - All campaign names: 
+(38) ['Test 2025', 'Test 2025', 'Test 2025', 'Test 2025', 'tull', 'Sommer t', 'Sommer t', 'Sommer 5', 'Sommer 5', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 1', 'Sommer 1', 'Sommer 1', 'Sommer 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'Fluffy Part 1', 'Fluffy Part 1', 'Test', 'Test', 'Sommer 2025', 'Sommer 2025', 'organic_summer_2025', 'organic_summer_2025']
+GeneratedLinks.tsx:67 GeneratedLinks - Unique campaigns: 
+(13) ['Test 2025', 'tull', 'Sommer t', 'Sommer 5', 'Sommer 4', 'Sommer 3', 'Sommer 2', 'Sommer 1', 'PLAY 1', 'Fluffy Part 1', 'Test', 'Sommer 2025', 'organic_summer_2025']
+GeneratedLinks.tsx:151 GeneratedLinks - Grouped by campaign: 
+{Test 2025: Array(4), tull: Array(1), Sommer t: Array(2), Sommer 5: Array(2), Sommer 4: Array(4), …}
+GeneratedLinks.tsx:180 GeneratedLinks - Campaign groups before filtering: 
+(13) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:253 GeneratedLinks - Final campaign groups: 
+(13) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:254 GeneratedLinks - Campaign groups length: 13
+CampaignWizard.tsx:347 Initializing edit mode with data: 
+(4) [{…}, {…}, {…}, {…}]
+CampaignWizard.tsx:348 Existing landing pages: 
+(2) [{…}, {…}]
+CampaignWizard.tsx:349 Source templates: 
+(6) [{…}, {…}, {…}, {…}, {…}, {…}]
+CampaignWizard.tsx:447 No matching landing page found for TikTok-hashtag with targetUrl: https://https/playmops.io
+CampaignWizard.tsx:447 No matching landing page found for TikTok-spark with targetUrl: https://https/playmops.io
+CampaignWizard.tsx:447 No matching landing page found for LinkedIn-video with targetUrl: https://https/playmops.io
+CampaignWizard.tsx:447 No matching landing page found for LinkedIn-sponsored with targetUrl: https://https/playmops.io
+CampaignWizard.tsx:452 Final newSourceStates with landing page selections: 
+{TikTok: {…}, LinkedIn: {…}}
+﻿
+
