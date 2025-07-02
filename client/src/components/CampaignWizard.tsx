@@ -594,7 +594,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             );
           }
           
-          // Create row key for this link
+          // Create row key for this link - must match the pattern used in UI
           const key = `${sourceName}-${medium}`;
           const linksForThisMedium = existingCampaignData.filter(l => {
             const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
@@ -604,23 +604,24 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             return lSourceName === sourceName && l.utm_medium === medium;
           });
           const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
-          const variantId = `${key}-${variantIndex}`;
+          const variantId = `${key}-${variantIndex}`;  // This becomes LinkedIn-message-0
+          // Row key should be: sourceName-medium-variantId, so LinkedIn-message-LinkedIn-message-0
           const rowKey = `${sourceName}-${medium}-${variantId}`;
           
           if (matchingLandingPage && newSourceStates[sourceName]) {
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
             console.log(`SET: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} for ${sourceName}-${medium}`);
           } else {
-            // Default to first landing page if no match found
+            // Distribute rows across available landing pages using round-robin
             if (formattedLandingPages.length > 0 && newSourceStates[sourceName]) {
-              newSourceStates[sourceName].landingPageSelections[rowKey] = formattedLandingPages[0].id;
-              console.log(`SET DEFAULT: rowKey=${rowKey} -> landingPageId=${formattedLandingPages[0].id} for ${sourceName}-${medium}`);
+              // Count how many landing page selections we've already made
+              const existingSelections = Object.keys(newSourceStates[sourceName].landingPageSelections).length;
+              const landingPageIndex = existingSelections % formattedLandingPages.length;
+              const selectedLandingPage = formattedLandingPages[landingPageIndex];
+              
+              newSourceStates[sourceName].landingPageSelections[rowKey] = selectedLandingPage.id;
+              console.log(`SET DISTRIBUTED: rowKey=${rowKey} -> landingPageId=${selectedLandingPage.id} (${selectedLandingPage.label}) for ${sourceName}-${medium}`);
             }
-            console.log(`No exact match for ${sourceName}-${medium}, using first landing page`);
-            console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
-            console.log(`  Available landing pages:`, formattedLandingPages.map(lp => 
-              `${lp.label}: ${lp.url} -> ${normalizeUrl(lp.url)}`
-            ));
           }
         });
       }
