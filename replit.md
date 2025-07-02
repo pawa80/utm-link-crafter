@@ -110,6 +110,7 @@ Changelog:
   - Simplified landing page interface - removed single/multiple choice, always show landing page list
   - Fixed critical edit mode bug: each row now shows its original landing page instead of random distribution
   - Improved exact URL matching to preserve original UTM link configurations when editing campaigns
+  - Added row removal functionality with red X buttons in Campaign Links section
 
 ## User Preferences
 

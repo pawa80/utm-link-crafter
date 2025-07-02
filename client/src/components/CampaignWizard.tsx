@@ -296,6 +296,43 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       [key]: newVariants
     }));
   };
+
+  const removeContentVariant = (sourceName: string, medium: string, variantId: string) => {
+    const key = getVariantKey(sourceName, medium);
+    const variants = contentVariants[key] || [];
+    
+    // Don't allow removing the last variant - always keep at least one
+    if (variants.length <= 1) {
+      toast({
+        title: "Cannot remove",
+        description: "You must have at least one content variant per medium.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Remove the variant
+    const newVariants = variants.filter(v => v.id !== variantId);
+    
+    // Update content variants
+    setContentVariants(prev => ({
+      ...prev,
+      [key]: newVariants
+    }));
+    
+    // Remove any landing page selection for this variant
+    const rowKey = `${sourceName}-${medium}-${variantId}`;
+    setSourceStates(prev => ({
+      ...prev,
+      [sourceName]: {
+        ...prev[sourceName],
+        landingPageSelections: (() => {
+          const { [rowKey]: removedKey, ...rest } = prev[sourceName]?.landingPageSelections || {};
+          return rest;
+        })()
+      }
+    }));
+  };
   
   // Check if we have at least one valid URL (either targetUrl or landing pages with URLs)
   const hasValidUrl = () => {
@@ -1064,6 +1101,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             <th className="text-left p-3 text-sm font-medium text-gray-700 w-40">Content</th>
                             <th className="text-left p-3 text-sm font-medium text-gray-700 w-60">Link name</th>
                             <th className="text-left p-3 text-sm font-medium text-gray-700">UTM Link</th>
+                            <th className="text-center p-3 text-sm font-medium text-gray-700 w-16">Remove</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1246,6 +1284,20 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                     </Button>
                                   )}
                                 </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeContentVariant(sourceName, row.medium, row.variant.id);
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
                               </td>
                             </tr>
                           ))}
