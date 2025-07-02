@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
-import { Plus, Copy, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Copy, X } from "lucide-react";
 import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
 
 interface CampaignWizardProps {
@@ -48,27 +48,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [customSourceInput, setCustomSourceInput] = useState("");
   const [showCustomSourceInput, setShowCustomSourceInput] = useState(false);
   
-  // Section collapse states
-  const [expandedSections, setExpandedSections] = useState({
-    campaign: true,
-    tags: editMode,
-    sources: editMode,
-    mediums: editMode,
-    output: editMode
-  });
-  const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
+  // All sections are now always visible
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Section management functions
-  const toggleSection = (section: string) => {
-    setManuallyExpanded(prev => new Set([...prev, section]));
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section as keyof typeof prev]
-    }));
-  };
+  // All sections are now always visible - no toggle functionality needed
 
   // Landing page management functions
   const addLandingPage = () => {
@@ -127,88 +112,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     });
   };
 
-  const validateSection = (section: string): boolean => {
-    switch (section) {
-      case 'campaign':
-        // Check if we have a campaign name
-        if (!campaignName.trim()) return false;
-        
-        // Check if we have at least one valid URL (either single URL or landing pages)
-        const hasValidSingleUrl = landingPages.length === 0 && targetUrl.trim() !== '' && validateUrl(targetUrl);
-        const hasValidLandingPages = landingPages.length > 0 && 
-          landingPages.every(lp => lp.url.trim() !== '' && validateUrl(lp.url));
-        
-        if (!hasValidSingleUrl && !hasValidLandingPages) return false;
-        
-        // Check for duplicate URLs in landing pages
-        if (landingPages.length > 0) {
-          const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
-          const hasDuplicateUrls = urls.length !== new Set(urls).size;
-          if (hasDuplicateUrls) return false;
-        }
-        
-        return true;
-      case 'sources':
-        // Only check if sources are selected
-        return Object.entries(sourceStates)
-          .some(([, state]) => state.checked);
-      case 'mediums':
-        // Check if sources have mediums selected
-        return Object.entries(sourceStates)
-          .filter(([, state]) => state.checked)
-          .some(([, state]) => state.selectedMediums.length > 0);
-      default:
-        return true;
-    }
-  };
+  // Section validation removed - now handled at save time only
 
-  const handleNext = (currentSection: string, nextSection: string) => {
-    if (!validateSection(currentSection)) {
-      let errorMessage = '';
-      switch (currentSection) {
-        case 'campaign':
-          if (!campaignName.trim()) {
-            errorMessage = 'Campaign name is required';
-          } else if (landingPages.length === 0 && !targetUrl.trim()) {
-            errorMessage = 'At least one landing page URL is required';
-          } else if (landingPages.length === 0 && targetUrl.trim() && !validateUrl(targetUrl)) {
-            errorMessage = 'Please enter a valid URL';
-          } else if (landingPages.length > 0) {
-            const invalidPage = landingPages.find(lp => !lp.url.trim() || !validateUrl(lp.url));
-            if (invalidPage) {
-              errorMessage = 'All landing pages must have valid URLs';
-            } else {
-              // Check for duplicate URLs
-              const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
-              const hasDuplicateUrls = urls.length !== new Set(urls).size;
-              if (hasDuplicateUrls) {
-                errorMessage = 'Each landing page must have a unique URL';
-              }
-            }
-          }
-          break;
-        case 'sources':
-          errorMessage = 'Please select at least one source and medium';
-          break;
-      }
-      
-      toast({
-        title: "Validation Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Only auto-collapse/expand if sections weren't manually expanded
-    if (!manuallyExpanded.has(currentSection) && !manuallyExpanded.has(nextSection)) {
-      setExpandedSections(prev => ({
-        ...prev,
-        [currentSection]: false,
-        [nextSection]: true
-      }));
-    }
-  };
+  // NEXT button functionality removed - all sections always visible
 
   const { data: sourceTemplates = [] } = useQuery({
     queryKey: ["/api/source-templates"],
@@ -677,35 +583,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       setSourceStates(newSourceStates);
       setContentVariants(newContentVariants);
       
-      // Expand all sections when in edit mode
-      setExpandedSections({
-        campaign: true,
-        tags: true,
-        sources: true,
-        mediums: true,
-        output: true
-      });
+      // All sections are now always expanded - no state management needed
     }
   }, [editMode, existingCampaignData, existingLandingPages, sourceTemplates]);
 
-  // Helper component for section headers
-  const SectionHeader = ({ 
-    title, 
-    sectionKey
-  }: { 
-    title: string; 
-    sectionKey: string;
-  }) => (
-    <div className="flex items-center justify-between p-4 bg-gray-50 border-b cursor-pointer" 
-         onClick={() => toggleSection(sectionKey)}>
+  // Simple header component - no collapsing functionality
+  const SectionHeader = ({ title }: { title: string }) => (
+    <div className="p-4 bg-gray-50 border-b">
       <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      <div className="flex items-center gap-3">
-        {expandedSections[sectionKey as keyof typeof expandedSections] ? (
-          <ChevronUp className="w-5 h-5 text-gray-500" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-500" />
-        )}
-      </div>
     </div>
   );
 
@@ -751,11 +636,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Section 1: Campaign and Landing Pages */}
       <Card>
-        <SectionHeader 
-          title="Campaign and Landing Pages" 
-          sectionKey="campaign"
-        />
-        {expandedSections.campaign && (
+        <SectionHeader title="Campaign and Landing Pages" />
           <div className="p-6">
             <div className="space-y-6">
               {/* Campaign Name and Tags - Desktop: same row, Mobile: stacked */}
@@ -913,29 +794,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 </div>
               </div>
             </div>
-            
-            {/* Next Button at bottom of section */}
-            {!editMode && (
-              <div className="flex justify-end pt-4 border-t">
-                <Button
-                  onClick={() => handleNext('campaign', 'sources')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+
           </div>
-        )}
       </Card>
 
       {/* Section 2: Sources */}
       <Card>
-        <SectionHeader 
-          title="Sources" 
-          sectionKey="sources"
-        />
-        {expandedSections.sources && (
+        <SectionHeader title="Sources" />
           <div className="p-6">
             <div className="text-sm text-gray-600 mb-4">
               Select sources for your campaign.
@@ -1025,29 +890,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               )}
             </div>
             
-            {/* Next Button */}
-            {!editMode && (
-              <div className="flex justify-end pt-4 border-t mt-6">
-                <Button
-                  onClick={() => handleNext('sources', 'output')}
-                  disabled={!validateSection('sources')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+
           </div>
-        )}
       </Card>
 
       {/* Section 4: Campaign Links */}
       <Card>
-        <SectionHeader 
-          title="Campaign Links" 
-          sectionKey="output"
-        />
-        {expandedSections.output && (
+        <SectionHeader title="Campaign Links" />
           <div className="p-6">
             <div className="space-y-6">
               {/* Copy Campaign Links Button */}
@@ -1526,7 +1375,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               )}
             </div>
           </div>
-        )}
       </Card>
     </div>
   );

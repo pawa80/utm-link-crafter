@@ -111,6 +111,10 @@ Changelog:
   - Fixed critical edit mode bug: each row now shows its original landing page instead of random distribution
   - Improved exact URL matching to preserve original UTM link configurations when editing campaigns
   - Added row removal functionality with red X buttons in Campaign Links section
+  - Removed expandable/collapsible sections - all sections now always visible
+  - Simplified interface by removing section toggle functionality
+  - Removed NEXT buttons and section-by-section validation
+  - Cleaned up unused ChevronDown/ChevronUp imports
 
 ## User Preferences
 
