@@ -624,22 +624,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           });
           const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
           const variantId = `${key}-${variantIndex}`;  // This becomes LinkedIn-message-0
-          // Row key should be: sourceName-medium-variantId, so LinkedIn-message-LinkedIn-message-0
+          // Row key should match pattern: sourceName-medium-variantId
           const rowKey = `${sourceName}-${medium}-${variantId}`;
           
           if (matchingLandingPage && newSourceStates[sourceName]) {
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
             console.log(`SET: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} for ${sourceName}-${medium}`);
           } else {
-            // Distribute rows across available landing pages using round-robin
+            // Distribute rows across available landing pages using round-robin based on global link index
             if (formattedLandingPages.length > 0 && newSourceStates[sourceName]) {
-              // Count how many landing page selections we've already made
-              const existingSelections = Object.keys(newSourceStates[sourceName].landingPageSelections).length;
-              const landingPageIndex = existingSelections % formattedLandingPages.length;
+              // Use the overall link index for round-robin distribution to ensure different landing pages
+              const landingPageIndex = linkIndex % formattedLandingPages.length;
               const selectedLandingPage = formattedLandingPages[landingPageIndex];
               
               newSourceStates[sourceName].landingPageSelections[rowKey] = selectedLandingPage.id;
-              console.log(`SET DISTRIBUTED: rowKey=${rowKey} -> landingPageId=${selectedLandingPage.id} (${selectedLandingPage.label}) for ${sourceName}-${medium}`);
+              console.log(`SET DISTRIBUTED: rowKey=${rowKey} -> landingPageId=${selectedLandingPage.id} (${selectedLandingPage.label}) for ${sourceName}-${medium} (linkIndex=${linkIndex})`);
             }
           }
         });
