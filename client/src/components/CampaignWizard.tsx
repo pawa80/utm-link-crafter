@@ -94,9 +94,25 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   };
 
   const updateLandingPage = (id: string, field: 'url' | 'label', value: string) => {
-    setLandingPages(prev => prev.map(lp => 
-      lp.id === id ? { ...lp, [field]: value } : lp
-    ));
+    setLandingPages(prev => {
+      const updated = prev.map(lp => 
+        lp.id === id ? { ...lp, [field]: value } : lp
+      );
+      
+      // Check for duplicate URLs when updating URL field
+      if (field === 'url' && value.trim()) {
+        const duplicateCount = updated.filter(lp => lp.url.trim().toLowerCase() === value.trim().toLowerCase()).length;
+        if (duplicateCount > 1) {
+          toast({
+            title: "Duplicate URL",
+            description: "This URL is already used by another landing page. Please use a unique URL for each landing page.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const validateSection = (section: string): boolean => {
@@ -106,7 +122,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         const hasValidSingleUrl = targetUrl.trim() !== '' && validateUrl(targetUrl);
         const hasValidLandingPages = landingPages.length > 0 && 
           landingPages.every(lp => lp.url.trim() !== '' && lp.label.trim() !== '' && validateUrl(lp.url));
-        return campaignName.trim() !== '' && (hasValidSingleUrl || hasValidLandingPages);
+        
+        // Check for duplicate URLs in landing pages
+        const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
+        const hasDuplicateUrls = urls.length !== new Set(urls).size;
+        
+        return campaignName.trim() !== '' && (hasValidSingleUrl || hasValidLandingPages) && !hasDuplicateUrls;
       case 'tags':
         return true; // Tags are optional
       case 'sources':
@@ -129,7 +150,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           else if (targetUrl.trim() && !validateUrl(targetUrl)) errorMessage = 'Please enter a valid URL';
           else if (landingPages.length > 0) {
             const invalidPage = landingPages.find(lp => !lp.url.trim() || !lp.label.trim() || !validateUrl(lp.url));
-            if (invalidPage) errorMessage = 'All landing pages must have valid URLs and labels';
+            if (invalidPage) {
+              errorMessage = 'All landing pages must have valid URLs and labels';
+            } else {
+              // Check for duplicate URLs
+              const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
+              const hasDuplicateUrls = urls.length !== new Set(urls).size;
+              if (hasDuplicateUrls) {
+                errorMessage = 'Each landing page must have a unique URL';
+              }
+            }
           }
           break;
         case 'sources':

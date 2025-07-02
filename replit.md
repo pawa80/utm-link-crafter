@@ -101,6 +101,10 @@ Changelog:
   - Increased record limit to 100 to display more campaigns
   - Added manual refresh button to bypass browser cache issues
   - RESOLVED: Fixed API route default limit (was 20, now 100) - all campaigns now display correctly
+- July 2, 2025. Fixed landing page mapping and added validation:
+  - Fixed landing page dropdown bug in edit mode using robust URL normalization
+  - Added duplicate URL validation in Section 1 with user-friendly error messages
+  - Implemented column reordering in Section 4: Landing Page, Medium, Content, Link Name, UTM Link
 
 ## User Preferences
 
