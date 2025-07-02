@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Edit, Copy } from "lucide-react";
+import { ChevronDown, ChevronUp, Edit, Copy, Archive } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 
 interface CampaignCardProps {
@@ -25,6 +35,8 @@ export default function CampaignCard({
   onToggleCollapse 
 }: CampaignCardProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   
   // Fetch landing pages for this specific campaign
   const { data: landingPages = [] } = useQuery<CampaignLandingPage[]>({
@@ -46,6 +58,34 @@ export default function CampaignCard({
 
   // Get all links for this campaign for copying
   const allCampaignLinks = sources.flatMap(source => source.links.map(link => link.fullUtmLink));
+
+  // Archive campaign mutation
+  const archiveCampaignMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
+      await apiRequest("DELETE", `/api/campaign-landing-pages/${encodeURIComponent(campaignName)}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
+      toast({
+        title: "Campaign archived",
+        description: `Campaign "${campaignName}" has been successfully archived.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Archive failed",
+        description: error.message || "Could not archive campaign",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleArchiveCampaign = () => {
+    archiveCampaignMutation.mutate();
+    setShowArchiveDialog(false);
+  };
 
   const handleCopyAllCampaignLinks = async () => {
     // Group links by source for formatting
@@ -156,6 +196,15 @@ export default function CampaignCard({
             <Copy className="mr-2" size={16} />
             Copy Campaign Links
           </Button>
+          <Button
+            onClick={() => setShowArchiveDialog(true)}
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+          >
+            <Archive className="mr-2" size={16} />
+            Archive Campaign
+          </Button>
         </div>
       </div>
 
@@ -229,8 +278,39 @@ export default function CampaignCard({
             <Copy className="mr-2" size={16} />
             Copy Campaign Links
           </Button>
+          <Button
+            onClick={() => setShowArchiveDialog(true)}
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+          >
+            <Archive className="mr-2" size={16} />
+            Archive Campaign
+          </Button>
         </div>
       </div>
+
+      {/* Archive Campaign Confirmation Dialog */}
+      <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Campaign</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive the campaign "{campaignName}"? This will permanently delete all UTM links and landing pages associated with this campaign. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleArchiveCampaign}
+              disabled={archiveCampaignMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {archiveCampaignMutation.isPending ? "Archiving..." : "Archive Campaign"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
