@@ -291,6 +291,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = req.query.campaignName as string;
+      if (!campaignName) {
+        return res.status(400).json({ message: "Campaign name is required" });
+      }
+      
+      const landingPages = await storage.getCampaignLandingPages(req.user.id, campaignName);
+      res.json(landingPages);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   app.post("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
     try {
       const landingPageData = insertCampaignLandingPageSchema.parse({

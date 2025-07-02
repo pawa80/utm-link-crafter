@@ -28,6 +28,10 @@ export default function CampaignCard({
   // Fetch landing pages for this specific campaign
   const { data: landingPages = [] } = useQuery<CampaignLandingPage[]>({
     queryKey: ["/api/campaign-landing-pages", campaignName],
+    queryFn: async () => {
+      const response = await fetch(`/api/campaign-landing-pages?campaignName=${encodeURIComponent(campaignName)}`);
+      return response.json();
+    },
   });
 
   // Get tags from the most recent link in campaign
