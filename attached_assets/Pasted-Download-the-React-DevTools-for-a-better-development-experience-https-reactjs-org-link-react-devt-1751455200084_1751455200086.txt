@@ -1,0 +1,26 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: []
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 0
+GeneratedLinks.tsx:62 GeneratedLinks - Links data: (46) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:63 GeneratedLinks - Links count: 46
+GeneratedLinks.tsx:65 GeneratedLinks - Sample link: {id: 171, userId: 2, targetUrl: 'https://playmops.io/', utm_campaign: 'Onsdag 02', utm_source: 'linkedin', …}
+GeneratedLinks.tsx:66 GeneratedLinks - All campaign names: (46) ['Onsdag 02', 'Onsdag 02', 'Onsdag 01', 'Onsdag 01', 'Onsdag 01', 'Onsdag 01', 'Onsdag 01', 'Onsdag 01', 'Test 2025', 'Test 2025', 'Test 2025', 'Test 2025', 'tull', 'Sommer t', 'Sommer t', 'Sommer 5', 'Sommer 5', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 4', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 3', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 2', 'Sommer 1', 'Sommer 1', 'Sommer 1', 'Sommer 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'PLAY 1', 'Fluffy Part 1', 'Fluffy Part 1', 'Test', 'Test', 'Sommer 2025', 'Sommer 2025', 'organic_summer_2025', 'organic_summer_2025']
+GeneratedLinks.tsx:67 GeneratedLinks - Unique campaigns: (15) ['Onsdag 02', 'Onsdag 01', 'Test 2025', 'tull', 'Sommer t', 'Sommer 5', 'Sommer 4', 'Sommer 3', 'Sommer 2', 'Sommer 1', 'PLAY 1', 'Fluffy Part 1', 'Test', 'Sommer 2025', 'organic_summer_2025']
+GeneratedLinks.tsx:151 GeneratedLinks - Grouped by campaign: {Onsdag 02: Array(2), Onsdag 01: Array(6), Test 2025: Array(4), tull: Array(1), Sommer t: Array(2), …}
+GeneratedLinks.tsx:180 GeneratedLinks - Campaign groups before filtering: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:253 GeneratedLinks - Final campaign groups: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:254 GeneratedLinks - Campaign groups length: 15
+CampaignWizard.tsx:480 Initializing edit mode with data: (2) [{…}, {…}]
+CampaignWizard.tsx:481 Existing landing pages: (2) [{…}, {…}]
+CampaignWizard.tsx:482 Source templates: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+CampaignWizard.tsx:604 No matching landing page found for LinkedIn-message
+CampaignWizard.tsx:605   Target URL: https://playmops.io/ -> playmops.io
+CampaignWizard.tsx:606   Available landing pages: (2) ['http://playmops.io/lp1: http://playmops.io/lp1 -> playmops.io/lp1', 'http://playmops.io/lp2: http://playmops.io/lp2 -> playmops.io/lp2']
+CampaignWizard.tsx:604 No matching landing page found for LinkedIn-message
+CampaignWizard.tsx:605   Target URL: https://playmops.io/ -> playmops.io
+CampaignWizard.tsx:606   Available landing pages: (2) ['http://playmops.io/lp1: http://playmops.io/lp1 -> playmops.io/lp1', 'http://playmops.io/lp2: http://playmops.io/lp2 -> playmops.io/lp2']
+CampaignWizard.tsx:613 Final newSourceStates with landing page selections: {LinkedIn: {…}}
+CampaignWizard.tsx:335 Looking for landing page selection with key: LinkedIn-message-LinkedIn-message-0, found: undefined
+CampaignWizard.tsx:335 Looking for landing page selection with key: LinkedIn-message-LinkedIn-message-1, found: undefined
+CampaignWizard.tsx:335 Looking for landing page selection with key: LinkedIn-message-LinkedIn-message-0, found: undefined
+CampaignWizard.tsx:335 Looking for landing page selection with key: LinkedIn-message-LinkedIn-message-1, found: undefined

@@ -578,30 +578,45 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           };
           
           const normalizedTargetUrl = normalizeUrl(link.targetUrl);
-          const matchingLandingPage = formattedLandingPages.find(lp => 
+          let matchingLandingPage = formattedLandingPages.find(lp => 
             normalizeUrl(lp.url) === normalizedTargetUrl
           );
           
+          // If no exact match, try to find by domain match for campaigns that might use different landing pages
+          if (!matchingLandingPage) {
+            const getDomain = (url: string) => {
+              const normalized = normalizeUrl(url);
+              return normalized.split('/')[0];
+            };
+            const targetDomain = getDomain(link.targetUrl);
+            matchingLandingPage = formattedLandingPages.find(lp => 
+              getDomain(lp.url) === targetDomain
+            );
+          }
+          
+          // Create row key for this link
+          const key = `${sourceName}-${medium}`;
+          const linksForThisMedium = existingCampaignData.filter(l => {
+            const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+              template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
+            );
+            const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
+            return lSourceName === sourceName && l.utm_medium === medium;
+          });
+          const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
+          const variantId = `${key}-${variantIndex}`;
+          const rowKey = `${sourceName}-${medium}-${variantId}`;
+          
           if (matchingLandingPage && newSourceStates[sourceName]) {
-            // Create unique row key using source-medium and variant ID for consistency with getSortedTableRows
-            const key = `${sourceName}-${medium}`;
-            const linksForThisMedium = existingCampaignData.filter(l => {
-              const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
-                template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
-              );
-              const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
-              return lSourceName === sourceName && l.utm_medium === medium;
-            });
-            const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
-            const variantId = `${key}-${variantIndex}`;
-            const rowKey = `${sourceName}-${medium}-${variantId}`;
-            
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
             console.log(`SET: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} for ${sourceName}-${medium}`);
-            console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
-            console.log(`  Landing URL: ${matchingLandingPage.url} -> ${normalizeUrl(matchingLandingPage.url)}`);
           } else {
-            console.log(`No matching landing page found for ${sourceName}-${medium}`);
+            // Default to first landing page if no match found
+            if (formattedLandingPages.length > 0 && newSourceStates[sourceName]) {
+              newSourceStates[sourceName].landingPageSelections[rowKey] = formattedLandingPages[0].id;
+              console.log(`SET DEFAULT: rowKey=${rowKey} -> landingPageId=${formattedLandingPages[0].id} for ${sourceName}-${medium}`);
+            }
+            console.log(`No exact match for ${sourceName}-${medium}, using first landing page`);
             console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
             console.log(`  Available landing pages:`, formattedLandingPages.map(lp => 
               `${lp.label}: ${lp.url} -> ${normalizeUrl(lp.url)}`
