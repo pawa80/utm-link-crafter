@@ -92,10 +92,10 @@ export default function NewCampaign() {
       <div className="max-w-6xl mx-auto">
         {/* Top Navigation with User */}
         <div className="flex justify-between items-center mb-6 pt-4">
-          <Link href="/campaigns">
+          <Link href="/">
             <Button variant="ghost">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Campaign Management
+              Back to Home
             </Button>
           </Link>
           <UserHeader user={user} onLogout={handleLogout} />
