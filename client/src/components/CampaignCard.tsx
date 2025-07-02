@@ -166,7 +166,7 @@ export default function CampaignCard({
               className="text-primary hover:text-primary/80"
             >
               <Edit className="mr-2" size={16} />
-              Edit Campaign
+              Edit
             </Button>
           </Link>
           <Button
@@ -194,7 +194,7 @@ export default function CampaignCard({
             className="text-primary hover:text-primary/80"
           >
             <Copy className="mr-2" size={16} />
-            Copy Campaign Links
+            Copy Links
           </Button>
           <Button
             onClick={() => setShowArchiveDialog(true)}
@@ -203,7 +203,7 @@ export default function CampaignCard({
             className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
           >
             <Archive className="mr-2" size={16} />
-            Archive Campaign
+            Archive
           </Button>
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function CampaignCard({
                 className="text-primary hover:text-primary/80 flex-1"
               >
                 <Edit className="mr-2" size={16} />
-                Edit Campaign
+                Edit
               </Button>
             </Link>
             <Button
@@ -276,7 +276,7 @@ export default function CampaignCard({
             className="text-primary hover:text-primary/80"
           >
             <Copy className="mr-2" size={16} />
-            Copy Campaign Links
+            Copy Links
           </Button>
           <Button
             onClick={() => setShowArchiveDialog(true)}
@@ -285,7 +285,7 @@ export default function CampaignCard({
             className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
           >
             <Archive className="mr-2" size={16} />
-            Archive Campaign
+            Archive
           </Button>
         </div>
       </div>

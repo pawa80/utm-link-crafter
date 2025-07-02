@@ -124,6 +124,12 @@ Changelog:
   - Sort state preserved per source template for independent sorting
   - Hover effects and visual feedback for clickable headers
   - Enhanced user control over Campaign Links table organization
+- July 2, 2025. Campaign Management page improvements completed:
+  - Step 1: Added landing page URLs display under each campaign name in headers
+  - Step 2: Implemented UTM Links count display between landing pages and tags
+  - Step 3: Added Archive Campaign functionality with confirmation dialog
+  - Removed "Campaign" text from all buttons for cleaner interface (Edit, Copy Links, Archive)
+  - Archive button styled in red to indicate destructive action
 
 ## User Preferences
 
