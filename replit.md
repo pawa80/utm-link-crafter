@@ -116,6 +116,8 @@ Changelog:
   - Removed NEXT buttons and section-by-section validation
   - Cleaned up unused ChevronDown/ChevronUp imports
   - Adjusted Landing Page URL fields and Add Landing Page button to use proper width (w-96) for better visual alignment
+  - Fixed critical edit mode bug: changing campaign name now properly updates the existing campaign instead of creating a new one
+  - Added originalCampaignName tracking to ensure proper deletion of existing UTM links and landing pages during campaign updates
 
 ## User Preferences
 

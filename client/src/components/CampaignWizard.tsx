@@ -35,6 +35,7 @@ interface ContentVariant {
 
 export default function CampaignWizard({ user, onSaveSuccess, editMode = false, existingCampaignData = [], existingLandingPages = [] }: CampaignWizardProps) {
   const [campaignName, setCampaignName] = useState("");
+  const [originalCampaignName, setOriginalCampaignName] = useState(""); // Track original name for edit mode
   const [targetUrl, setTargetUrl] = useState(""); // Keep for backward compatibility
   const [landingPages, setLandingPages] = useState<Array<{ id: string; url: string; label: string }>>([]);
   const [sourceStates, setSourceStates] = useState<{ [sourceName: string]: SourceState }>({});
@@ -287,7 +288,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   };
 
   // Helper function to generate sorted table rows
-  const getSortedTableRows = (sourceName: string, state: any) => {
+  const getSortedTableRows = (sourceName: string, state: SourceState) => {
     // Collect all rows with their landing page order for sorting
     const allRows = state.selectedMediums.flatMap((medium: string) => {
       const variants = getContentVariantsForMedium(sourceName, medium);
@@ -446,6 +447,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       
       const firstLink = existingCampaignData[0];
       setCampaignName(firstLink.utm_campaign);
+      setOriginalCampaignName(firstLink.utm_campaign); // Track original name for proper deletion
       
       // Check if campaign uses single URL or multiple landing pages
       const hasSingleUrl = firstLink.targetUrl && firstLink.targetUrl.trim() !== '';
@@ -558,8 +560,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             })
             .sort((a, b) => {
               // Sort by content first, then by ID for stable ordering
-              if (a.utm_content !== b.utm_content) {
-                return a.utm_content.localeCompare(b.utm_content);
+              const aContent = a.utm_content || '';
+              const bContent = b.utm_content || '';
+              if (aContent !== bContent) {
+                return aContent.localeCompare(bContent);
               }
               return a.id - b.id;
             });
@@ -1156,7 +1160,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     
                     {/* Mobile Card View */}
                     <div className="md:hidden space-y-4">
-                      {getSortedTableRows(sourceName, state).map((row: any) => (
+                      {getSortedTableRows(sourceName, state).map((row) => (
                         <div key={row.key} className="bg-white border rounded-lg p-4 space-y-3">
                           {landingPages.length > 0 && (
                             <div>
@@ -1262,10 +1266,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="flex justify-end pt-6 border-t">
                   <Button
                     onClick={async () => {
-                      // In edit mode, first delete existing campaign links
+                      // In edit mode, first delete existing campaign links using original name
                       if (editMode && existingCampaignData.length > 0) {
                         try {
-                          await deleteCampaignLinksMutation.mutateAsync(campaignName);
+                          await deleteCampaignLinksMutation.mutateAsync(originalCampaignName);
                         } catch (error) {
                           console.error("Failed to delete existing campaign links:", error);
                           toast({
@@ -1280,8 +1284,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       // First, save landing pages if any exist
                       if (landingPages.length > 0) {
                         try {
-                          // Delete existing landing pages for this campaign
-                          await apiRequest("DELETE", `/api/campaign-landing-pages/${campaignName}`);
+                          // Delete existing landing pages for this campaign using original name
+                          await apiRequest("DELETE", `/api/campaign-landing-pages/${editMode ? originalCampaignName : campaignName}`);
                           
                           // Save new landing pages
                           for (const landingPage of landingPages) {
