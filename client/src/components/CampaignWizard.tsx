@@ -72,8 +72,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   // Landing page management functions
   const addLandingPage = () => {
-    const newId = `lp-${Date.now()}`;
-    setLandingPages(prev => [...prev, { id: newId, url: "", label: "" }]); // Keep label for backward compatibility
+    // If this is the first landing page and we have a single URL, convert it to the first landing page
+    if (landingPages.length === 0 && targetUrl.trim()) {
+      const firstId = `lp-${Date.now()}`;
+      setLandingPages([{ id: firstId, url: targetUrl.trim(), label: targetUrl.trim() }]);
+      setTargetUrl(""); // Clear the single URL field
+    } else {
+      // Add a new empty landing page
+      const newId = `lp-${Date.now()}`;
+      setLandingPages(prev => [...prev, { id: newId, url: "", label: "" }]);
+    }
   };
 
   const removeLandingPage = (id: string) => {
@@ -122,16 +130,24 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const validateSection = (section: string): boolean => {
     switch (section) {
       case 'campaign':
-        // Either old single URL or new multiple landing pages should be valid
-        const hasValidSingleUrl = targetUrl.trim() !== '' && validateUrl(targetUrl);
+        // Check if we have a campaign name
+        if (!campaignName.trim()) return false;
+        
+        // Check if we have at least one valid URL (either single URL or landing pages)
+        const hasValidSingleUrl = landingPages.length === 0 && targetUrl.trim() !== '' && validateUrl(targetUrl);
         const hasValidLandingPages = landingPages.length > 0 && 
-          landingPages.every(lp => lp.url.trim() !== '' && lp.label.trim() !== '' && validateUrl(lp.url));
+          landingPages.every(lp => lp.url.trim() !== '' && validateUrl(lp.url));
+        
+        if (!hasValidSingleUrl && !hasValidLandingPages) return false;
         
         // Check for duplicate URLs in landing pages
-        const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
-        const hasDuplicateUrls = urls.length !== new Set(urls).size;
+        if (landingPages.length > 0) {
+          const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
+          const hasDuplicateUrls = urls.length !== new Set(urls).size;
+          if (hasDuplicateUrls) return false;
+        }
         
-        return campaignName.trim() !== '' && (hasValidSingleUrl || hasValidLandingPages) && !hasDuplicateUrls;
+        return true;
       case 'sources':
         // Only check if sources are selected
         return Object.entries(sourceStates)
@@ -151,13 +167,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       let errorMessage = '';
       switch (currentSection) {
         case 'campaign':
-          if (!campaignName.trim()) errorMessage = 'Campaign name is required';
-          else if (!targetUrl.trim() && landingPages.length === 0) errorMessage = 'At least one landing page URL is required';
-          else if (targetUrl.trim() && !validateUrl(targetUrl)) errorMessage = 'Please enter a valid URL';
-          else if (landingPages.length > 0) {
-            const invalidPage = landingPages.find(lp => !lp.url.trim() || !lp.label.trim() || !validateUrl(lp.url));
+          if (!campaignName.trim()) {
+            errorMessage = 'Campaign name is required';
+          } else if (landingPages.length === 0 && !targetUrl.trim()) {
+            errorMessage = 'At least one landing page URL is required';
+          } else if (landingPages.length === 0 && targetUrl.trim() && !validateUrl(targetUrl)) {
+            errorMessage = 'Please enter a valid URL';
+          } else if (landingPages.length > 0) {
+            const invalidPage = landingPages.find(lp => !lp.url.trim() || !validateUrl(lp.url));
             if (invalidPage) {
-              errorMessage = 'All landing pages must have valid URLs and labels';
+              errorMessage = 'All landing pages must have valid URLs';
             } else {
               // Check for duplicate URLs
               const urls = landingPages.map(lp => lp.url.trim().toLowerCase()).filter(url => url);
@@ -812,63 +831,59 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               
               {/* Landing Pages Section */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="text-sm font-medium">Landing Page URLs *</Label>
+                <Label className="text-sm font-medium mb-4 block">Landing Page URLs *</Label>
+                
+                {/* Always show landing pages interface */}
+                <div className="space-y-3">
+                  {landingPages.length === 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Input
+                          value={targetUrl}
+                          onChange={(e) => setTargetUrl(e.target.value)}
+                          placeholder="https://example.com/page"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {landingPages.map((landingPage) => (
+                    <div key={landingPage.id} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Input
+                          value={landingPage.url}
+                          onChange={(e) => updateLandingPage(landingPage.id, 'url', e.target.value)}
+                          placeholder="https://example.com/page"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => removeLandingPage(landingPage.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {/* Add Landing Page button always at bottom */}
                   <Button
                     type="button"
                     onClick={addLandingPage}
                     variant="outline"
                     size="sm"
-                    className="text-primary hover:text-primary/80"
+                    className="text-primary hover:text-primary/80 w-full"
                   >
                     <Plus className="mr-1" size={16} />
                     Add Landing Page
                   </Button>
+                  
+                  <p className="text-xs text-gray-500">
+                    Add multiple landing pages to choose different URLs for different UTM links in the Campaign Links section.
+                  </p>
                 </div>
-                
-                {/* Show legacy single URL field if no landing pages */}
-                {landingPages.length === 0 && (
-                  <div className="space-y-2">
-                    <Input
-                      value={targetUrl}
-                      onChange={(e) => setTargetUrl(e.target.value)}
-                      placeholder="Enter landing page URL or click 'Add Landing Page' for multiple URLs..."
-                      className="w-full"
-                    />
-                    <p className="text-xs text-gray-500">
-                      You can use a single URL here, or add multiple URLs below for more control.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Multiple landing pages interface */}
-                {landingPages.length > 0 && (
-                  <div className="space-y-3">
-                    {landingPages.map((landingPage) => (
-                      <div key={landingPage.id} className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <Input
-                            value={landingPage.url}
-                            onChange={(e) => updateLandingPage(landingPage.id, 'url', e.target.value)}
-                            placeholder="https://example.com/page"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={() => removeLandingPage(landingPage.id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X size={16} />
-                        </Button>
-                      </div>
-                    ))}
-                    <p className="text-xs text-gray-500">
-                      Add multiple landing pages to choose different URLs for different UTM links in Section 4.
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
             
