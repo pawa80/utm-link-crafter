@@ -105,6 +105,7 @@ Changelog:
   - Fixed landing page dropdown bug in edit mode using robust URL normalization
   - Added duplicate URL validation in Section 1 with user-friendly error messages
   - Implemented column reordering in Section 4: Landing Page, Medium, Content, Link Name, UTM Link
+  - Added row sorting in Section 4 to match Landing Page URL Labels order from Section 1
 
 ## User Preferences
 

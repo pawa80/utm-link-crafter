@@ -317,6 +317,57 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       );
   };
 
+  // Helper function to generate sorted table rows
+  const getSortedTableRows = (sourceName: string, state: any) => {
+    // Collect all rows with their landing page order for sorting
+    const allRows = state.selectedMediums.flatMap((medium: string) => {
+      const variants = getContentVariantsForMedium(sourceName, medium);
+      return variants.map((variant: any) => {
+        // Get selected landing page for this medium
+        const selectedLandingPageId = state.landingPageSelections[medium];
+        const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
+        // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
+        const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
+        
+        const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
+        const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
+          targetUrl: urlToUse,
+          utm_campaign: campaignName,
+          utm_source: sourceName.toLowerCase(),
+          utm_medium: medium,
+          utm_content: variant.content.trim()
+        }) : '';
+        
+        // Get landing page order for sorting (999 for no selection to sort last)
+        const landingPageOrder = selectedLandingPage ? 
+          landingPages.findIndex(lp => lp.id === selectedLandingPage.id) : 999;
+        
+        return {
+          key: `${variant.id}-${medium}`,
+          medium,
+          variant,
+          selectedLandingPageId,
+          selectedLandingPage,
+          urlToUse,
+          linkName,
+          utmLink,
+          landingPageOrder
+        };
+      });
+    });
+    
+    // Sort by landing page order, then by medium, then by variant content
+    return allRows.sort((a: any, b: any) => {
+      if (a.landingPageOrder !== b.landingPageOrder) {
+        return a.landingPageOrder - b.landingPageOrder;
+      }
+      if (a.medium !== b.medium) {
+        return a.medium.localeCompare(b.medium);
+      }
+      return a.variant.content.localeCompare(b.variant.content);
+    });
+  };
+
   const copyAllCampaignLinks = () => {
     const allLinks = getCheckedSourcesWithContent();
     if (allLinks.length === 0) return;
@@ -1104,140 +1155,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           </tr>
                         </thead>
                         <tbody>
-                          {state.selectedMediums.flatMap((medium: string) => {
-                            const variants = getContentVariantsForMedium(sourceName, medium);
-                            return variants.map((variant, variantIndex) => {
-                              // Get selected landing page for this medium
-                              const selectedLandingPageId = state.landingPageSelections[medium];
-                              const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
-                              // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
-                              const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
-                              
-                              const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
-                              const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
-                                targetUrl: urlToUse,
-                                utm_campaign: campaignName,
-                                utm_source: sourceName.toLowerCase(),
-                                utm_medium: medium,
-                                utm_content: variant.content.trim()
-                              }) : '';
-                              
-                              return (
-                                <tr key={variant.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                                  {landingPages.length > 0 && (
-                                    <td className="p-3">
-                                      <Select
-                                        value={selectedLandingPageId || ""}
-                                        onValueChange={(value) => {
-                                          setSourceStates(prev => ({
-                                            ...prev,
-                                            [sourceName]: {
-                                              ...prev[sourceName],
-                                              landingPageSelections: {
-                                                ...prev[sourceName].landingPageSelections,
-                                                [medium]: value
-                                              }
-                                            }
-                                          }));
-                                        }}
-                                      >
-                                        <SelectTrigger className="w-full h-8 text-xs">
-                                          <SelectValue placeholder="Choose page" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {landingPages.map((lp) => (
-                                            <SelectItem key={lp.id} value={lp.id}>
-                                              {lp.label}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </td>
-                                  )}
-                                  <td className="p-3">
-                                    <div className="text-sm font-medium text-gray-900">{medium}</div>
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        value={variant.content}
-                                        onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
-                                        placeholder="Content..."
-                                        className="text-sm flex-1"
-                                      />
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addContentVariant(sourceName, medium, variant.id)}
-                                        className="flex-shrink-0"
-                                      >
-                                        <Plus className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="text-sm text-gray-600">{linkName}</div>
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="flex items-center gap-2">
-                                      <div className="text-xs font-mono text-gray-500 break-all flex-1">
-                                        {utmLink}
-                                      </div>
-                                      {utmLink && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            navigator.clipboard.writeText(utmLink);
-                                            toast({
-                                              title: "Copied!",
-                                              description: "UTM link copied to clipboard",
-                                            });
-                                          }}
-                                          className="flex-shrink-0"
-                                        >
-                                          <Copy className="w-3 h-3" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            });
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-4">
-                      {state.selectedMediums.flatMap((medium: string) => {
-                        const variants = getContentVariantsForMedium(sourceName, medium);
-                        return variants.map((variant, variantIndex) => {
-                          // Get selected landing page for this medium
-                          const selectedLandingPageId = state.landingPageSelections[medium];
-                          const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
-                          // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
-                          const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
-                          
-                          const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
-                          const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
-                            targetUrl: urlToUse,
-                            utm_campaign: campaignName,
-                            utm_source: sourceName.toLowerCase(),
-                            utm_medium: medium,
-                            utm_content: variant.content.trim()
-                          }) : '';
-                          
-                          return (
-                            <div key={variant.id} className="bg-white border rounded-lg p-4 space-y-3">
+                          {getSortedTableRows(sourceName, state).map((row) => (
+                            <tr key={row.key} className="border-b last:border-b-0 hover:bg-gray-50">
                               {landingPages.length > 0 && (
-                                <div>
-                                  <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>
+                                <td className="p-3">
                                   <Select
-                                    value={selectedLandingPageId || ""}
+                                    value={row.selectedLandingPageId || ""}
                                     onValueChange={(value) => {
                                       setSourceStates(prev => ({
                                         ...prev,
@@ -1245,13 +1168,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                           ...prev[sourceName],
                                           landingPageSelections: {
                                             ...prev[sourceName].landingPageSelections,
-                                            [medium]: value
+                                            [row.medium]: value
                                           }
                                         }
                                       }));
                                     }}
                                   >
-                                    <SelectTrigger className="w-full">
+                                    <SelectTrigger className="w-full h-8 text-xs">
                                       <SelectValue placeholder="Choose page" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1262,57 +1185,45 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                </div>
+                                </td>
                               )}
-                              
-                              <div>
-                                <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                                    {medium}
-                                  </span>
+                              <td className="p-3">
+                                <div className="text-sm font-medium text-gray-900">{row.medium}</div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={row.variant.content}
+                                    onChange={(e) => updateContentVariant(sourceName, row.medium, row.variant.id, e.target.value)}
+                                    placeholder="Content..."
+                                    className="text-sm flex-1"
+                                  />
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => addContentVariant(sourceName, medium, variant.id)}
+                                    onClick={() => addContentVariant(sourceName, row.medium, row.variant.id)}
                                     className="flex-shrink-0"
                                   >
                                     <Plus className="w-3 h-3" />
                                   </Button>
                                 </div>
-                              </div>
-                              
-                              <div>
-                                <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
-                                <Input
-                                  value={variant.content}
-                                  onChange={(e) => updateContentVariant(sourceName, medium, variant.id, e.target.value)}
-                                  placeholder="Content..."
-                                  className="text-sm"
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label className="text-xs text-gray-600 mb-1 block">Link Name</Label>
-                                <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
-                                  {linkName}
-                                </div>
-                              </div>
-                              
-                              {utmLink && (
-                                <div>
-                                  <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded flex-1 break-all">
-                                      {utmLink}
-                                    </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="text-sm text-gray-600">{row.linkName}</div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs font-mono text-gray-500 break-all flex-1">
+                                    {row.utmLink}
+                                  </div>
+                                  {row.utmLink && (
                                     <Button
                                       variant="outline"
                                       size="sm"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        navigator.clipboard.writeText(utmLink);
+                                        navigator.clipboard.writeText(row.utmLink);
                                         toast({
                                           title: "Copied!",
                                           description: "UTM link copied to clipboard",
@@ -1322,13 +1233,113 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                     >
                                       <Copy className="w-3 h-3" />
                                     </Button>
-                                  </div>
+                                  )}
                                 </div>
-                              )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {getSortedTableRows(sourceName, state).map((row: any) => (
+                        <div key={row.key} className="bg-white border rounded-lg p-4 space-y-3">
+                          {landingPages.length > 0 && (
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>
+                              <Select
+                                value={row.selectedLandingPageId || ""}
+                                onValueChange={(value) => {
+                                  setSourceStates(prev => ({
+                                    ...prev,
+                                    [sourceName]: {
+                                      ...prev[sourceName],
+                                      landingPageSelections: {
+                                        ...prev[sourceName].landingPageSelections,
+                                        [row.medium]: value
+                                      }
+                                    }
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Choose page" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {landingPages.map((lp) => (
+                                    <SelectItem key={lp.id} value={lp.id}>
+                                      {lp.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                          );
-                        });
-                      })}
+                          )}
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                {row.medium}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addContentVariant(sourceName, row.medium, row.variant.id)}
+                                className="flex-shrink-0"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
+                            <Input
+                              value={row.variant.content}
+                              onChange={(e) => updateContentVariant(sourceName, row.medium, row.variant.id, e.target.value)}
+                              placeholder="Content..."
+                              className="text-sm"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Link Name</Label>
+                            <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {row.linkName}
+                            </div>
+                          </div>
+                          
+                          {row.utmLink && (
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
+                              <div className="flex items-center gap-2">
+                                <div className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded flex-1 break-all">
+                                  {row.utmLink}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(row.utmLink);
+                                    toast({
+                                      title: "Copied!",
+                                      description: "UTM link copied to clipboard",
+                                    });
+                                  }}
+                                  className="flex-shrink-0"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
