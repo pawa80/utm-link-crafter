@@ -430,6 +430,25 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           label: lp.label
         }));
         setLandingPages(formattedLandingPages);
+        
+        // Map landing page selections based on existing UTM link target URLs
+        existingCampaignData.forEach(link => {
+          const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+            template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
+          );
+          const sourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
+          const medium = link.utm_medium;
+          
+          // Find the matching landing page by URL
+          const matchingLandingPage = formattedLandingPages.find(lp => lp.url === link.targetUrl);
+          
+          if (matchingLandingPage && newSourceStates[sourceName]) {
+            newSourceStates[sourceName].landingPageSelections[medium] = matchingLandingPage.id;
+            console.log(`Mapped ${sourceName}-${medium} to landing page: ${matchingLandingPage.label} (${matchingLandingPage.id})`);
+          } else {
+            console.log(`No matching landing page found for ${sourceName}-${medium} with targetUrl: ${link.targetUrl}`);
+          }
+        });
       }
       
       // Expand all sections when in edit mode
