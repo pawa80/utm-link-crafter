@@ -745,7 +745,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="space-y-3">
                   {landingPages.length === 0 && (
                     <div className="flex items-center gap-3">
-                      <div className="flex-1">
+                      <div className="w-96">
                         <Input
                           value={targetUrl}
                           onChange={(e) => setTargetUrl(e.target.value)}
@@ -757,7 +757,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   
                   {landingPages.map((landingPage) => (
                     <div key={landingPage.id} className="flex items-center gap-3">
-                      <div className="flex-1">
+                      <div className="w-96">
                         <Input
                           value={landingPage.url}
                           onChange={(e) => updateLandingPage(landingPage.id, 'url', e.target.value)}
@@ -782,7 +782,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     onClick={addLandingPage}
                     variant="outline"
                     size="sm"
-                    className="text-primary hover:text-primary/80 w-full"
+                    className="text-primary hover:text-primary/80 w-96"
                   >
                     <Plus className="mr-1" size={16} />
                     Add Landing Page
