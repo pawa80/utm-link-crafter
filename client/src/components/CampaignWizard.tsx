@@ -581,8 +581,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         }));
         setLandingPages(formattedLandingPages);
         
-        // Map landing page selections based on existing UTM link target URLs
-        // We need to match each individual link to its landing page, not just by medium
+        // Map each existing UTM link back to its exact original landing page and content
         existingCampaignData.forEach((link, linkIndex) => {
           const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
             template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
@@ -590,9 +589,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           const sourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
           const medium = link.utm_medium;
           
-          // Find the matching landing page by URL with robust matching
+          // Find the exact matching landing page by URL
           const normalizeUrl = (url: string) => {
-            // Remove protocol inconsistencies and normalize
             return url.replace(/^https?:\/\/?/i, '').replace(/\/$/, '').toLowerCase();
           };
           
@@ -601,45 +599,26 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             normalizeUrl(lp.url) === normalizedTargetUrl
           );
           
-          // If no exact match, try to find by domain match for campaigns that might use different landing pages
-          if (!matchingLandingPage) {
-            const getDomain = (url: string) => {
-              const normalized = normalizeUrl(url);
-              return normalized.split('/')[0];
-            };
-            const targetDomain = getDomain(link.targetUrl);
-            matchingLandingPage = formattedLandingPages.find(lp => 
-              getDomain(lp.url) === targetDomain
-            );
-          }
-          
-          // Create row key for this link - must match the pattern used in UI
+          // Create the exact row key that matches this specific link
           const key = `${sourceName}-${medium}`;
           const linksForThisMedium = existingCampaignData.filter(l => {
             const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
               template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
             );
             const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
-            return lSourceName === sourceName && l.utm_medium === medium;
+            // Match by source, medium, AND content to get exact link
+            return lSourceName === sourceName && l.utm_medium === medium && l.utm_content === link.utm_content;
           });
           const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
-          const variantId = `${key}-${variantIndex}`;  // This becomes LinkedIn-message-0
-          // Row key should match pattern: sourceName-medium-variantId
+          const variantId = `${key}-${variantIndex}`;
           const rowKey = `${sourceName}-${medium}-${variantId}`;
           
+          // Only set the landing page if we found an exact match
           if (matchingLandingPage && newSourceStates[sourceName]) {
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
-            console.log(`SET: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} for ${sourceName}-${medium}`);
+            console.log(`EXACT MATCH: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} (${matchingLandingPage.url}) for link ${link.id}`);
           } else {
-            // Distribute rows across available landing pages using round-robin based on global link index
-            if (formattedLandingPages.length > 0 && newSourceStates[sourceName]) {
-              // Use the overall link index for round-robin distribution to ensure different landing pages
-              const landingPageIndex = linkIndex % formattedLandingPages.length;
-              const selectedLandingPage = formattedLandingPages[landingPageIndex];
-              
-              newSourceStates[sourceName].landingPageSelections[rowKey] = selectedLandingPage.id;
-              console.log(`SET DISTRIBUTED: rowKey=${rowKey} -> landingPageId=${selectedLandingPage.id} (${selectedLandingPage.label}) for ${sourceName}-${medium} (linkIndex=${linkIndex})`);
-            }
+            console.log(`NO MATCH: Could not find landing page for ${link.targetUrl} among available pages:`, formattedLandingPages.map(lp => lp.url));
           }
         });
       }

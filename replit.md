@@ -106,6 +106,10 @@ Changelog:
   - Added duplicate URL validation in Section 1 with user-friendly error messages
   - Implemented column reordering in Section 4: Landing Page, Medium, Content, Link Name, UTM Link
   - Added row sorting in Section 4 to match Landing Page URL Labels order from Section 1
+- July 2, 2025. Major edit mode improvements:
+  - Simplified landing page interface - removed single/multiple choice, always show landing page list
+  - Fixed critical edit mode bug: each row now shows its original landing page instead of random distribution
+  - Improved exact URL matching to preserve original UTM link configurations when editing campaigns
 
 ## User Preferences
 
