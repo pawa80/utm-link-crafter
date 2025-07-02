@@ -332,7 +332,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         // Get selected landing page for this specific row (unique by source-medium-variantId)
         const rowKey = `${sourceName}-${medium}-${variant.id}`;
         const selectedLandingPageId = state.landingPageSelections[rowKey];
-        console.log(`Looking for landing page selection with key: ${rowKey}, found: ${selectedLandingPageId}`);
+
         const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
         // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
         const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
@@ -1098,44 +1098,72 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 <Select
                                   value={row.medium}
                                   onValueChange={(value) => {
-                                    // Simply update the medium in the selectedMediums array at the correct index
+                                    // Update the medium and preserve all data
+                                    const oldMedium = row.medium;
+                                    const oldKey = getVariantKey(sourceName, oldMedium);
+                                    const newKey = getVariantKey(sourceName, value);
+                                    const oldRowKey = `${sourceName}-${oldMedium}-${row.variant.id}`;
+                                    
+                                    // Find the position of this medium in the selectedMediums array
                                     const currentMediums = sourceStates[sourceName].selectedMediums;
-                                    const mediumIndex = currentMediums.findIndex(m => m === row.medium);
+                                    const mediumIndex = currentMediums.findIndex(m => m === oldMedium);
                                     
                                     if (mediumIndex !== -1) {
+                                      // Update the medium in the array
                                       const newMediums = [...currentMediums];
                                       newMediums[mediumIndex] = value;
                                       
-                                      setSourceStates(prev => ({
-                                        ...prev,
-                                        [sourceName]: {
-                                          ...prev[sourceName],
-                                          selectedMediums: newMediums
-                                        }
-                                      }));
-                                      
-                                      // Update content variant with new medium
-                                      const oldKey = getVariantKey(sourceName, row.medium);
-                                      const newKey = getVariantKey(sourceName, value);
-                                      
+                                      // Update content variants
                                       setContentVariants(prev => {
-                                        const currentVariant = prev[oldKey]?.find(v => v.id === row.variant.id);
+                                        const oldVariants = prev[oldKey] || [];
+                                        const currentVariant = oldVariants.find(v => v.id === row.variant.id);
+                                        
                                         if (currentVariant) {
-                                          // Keep existing variants for the new medium key
-                                          const existingVariants = prev[newKey] || [];
-                                          const newVariantId = `${newKey}-${existingVariants.length}`;
+                                          const existingNewVariants = prev[newKey] || [];
+                                          const newVariantId = `${newKey}-${existingNewVariants.length}`;
                                           const newVariant = { ...currentVariant, id: newVariantId };
                                           
-                                          // Remove the old variant
-                                          const updatedOldVariants = prev[oldKey]?.filter(v => v.id !== row.variant.id) || [];
+                                          // Remove the specific variant from old key
+                                          const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
                                           
-                                          return {
+                                          const result = {
                                             ...prev,
                                             [oldKey]: updatedOldVariants,
-                                            [newKey]: [...existingVariants, newVariant]
+                                            [newKey]: [...existingNewVariants, newVariant]
                                           };
+                                          
+                                          // Clean up empty keys
+                                          if (result[oldKey].length === 0) {
+                                            delete result[oldKey];
+                                          }
+                                          
+                                          return result;
                                         }
                                         return prev;
+                                      });
+                                      
+                                      // Update source states and landing page selections
+                                      setSourceStates(prev => {
+                                        const currentSelection = prev[sourceName].landingPageSelections[oldRowKey];
+                                        const newLandingPageSelections = { ...prev[sourceName].landingPageSelections };
+                                        
+                                        // Remove old selection
+                                        delete newLandingPageSelections[oldRowKey];
+                                        
+                                        // Add new selection with updated key
+                                        const newRowKey = `${sourceName}-${value}-${newKey}-${Object.keys(newLandingPageSelections).filter(k => k.startsWith(`${sourceName}-${value}-`)).length}`;
+                                        if (currentSelection) {
+                                          newLandingPageSelections[newRowKey] = currentSelection;
+                                        }
+                                        
+                                        return {
+                                          ...prev,
+                                          [sourceName]: {
+                                            ...prev[sourceName],
+                                            selectedMediums: newMediums,
+                                            landingPageSelections: newLandingPageSelections
+                                          }
+                                        };
                                       });
                                     }
                                   }}
