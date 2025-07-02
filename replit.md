@@ -134,6 +134,9 @@ Changelog:
   - Archive button styled in red to indicate destructive action
   - Simplified query client by removing cache-bypassing refresh logic
   - Enhanced links table with Landing Page column in both desktop and mobile layouts
+  - Updated table column widths to be more dynamic with flexible sizing (1fr for Landing Page and UTM Link columns)
+  - Added text wrapping to Landing Page field for better content visibility, similar to UTM Link field
+  - Improved desktop grid layout: Landing Page (1fr), Medium (120px), Content (150px), Link name (200px), UTM Link (1fr), Actions (80px)
 
 ## User Preferences
 
