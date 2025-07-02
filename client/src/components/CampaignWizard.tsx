@@ -128,8 +128,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         const hasDuplicateUrls = urls.length !== new Set(urls).size;
         
         return campaignName.trim() !== '' && (hasValidSingleUrl || hasValidLandingPages) && !hasDuplicateUrls;
-      case 'tags':
-        return true; // Tags are optional
       case 'sources':
         // Only check if sources and mediums are selected, not content
         return Object.entries(sourceStates)
@@ -643,17 +641,102 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         {expandedSections.campaign && (
           <div className="p-6">
             <div className="space-y-6">
-              <div>
-                <Label htmlFor="campaignName" className="text-sm font-medium">
-                  Campaign Name *
-                </Label>
-                <Input
-                  id="campaignName"
-                  value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Fill in campaign name..."
-                  className="mt-1"
-                />
+              {/* Campaign Name and Tags - Desktop: same row, Mobile: stacked */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div>
+                  <Label htmlFor="campaignName" className="text-sm font-medium">
+                    Campaign Name *
+                  </Label>
+                  <Input
+                    id="campaignName"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Fill in campaign name..."
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium">Tags</Label>
+                  <div className="mt-1 space-y-3">
+                    {/* Selected Tags */}
+                    {selectedTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTags.map((tag) => (
+                          <div
+                            key={tag}
+                            className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
+                          >
+                            <span>{tag}</span>
+                            <button
+                              onClick={() => removeTag(tag)}
+                              className="hover:bg-blue-200 rounded-full p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tag Selection */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Available Tags */}
+                      {tags
+                        .filter((tag: Tag) => !selectedTags.includes(tag.name))
+                        .map((tag: Tag) => (
+                          <button
+                            key={tag.id}
+                            onClick={() => handleTagSelect(tag.name)}
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
+
+                      {/* Add New Tag */}
+                      {!showCustomTagInput && (
+                        <button
+                          onClick={() => setShowCustomTagInput(true)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-600"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Tag
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Custom Tag Input */}
+                    {showCustomTagInput && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={customTagInput}
+                          onChange={(e) => setCustomTagInput(e.target.value)}
+                          placeholder="Enter new tag name..."
+                          className="w-48"
+                          onKeyPress={(e) => e.key === 'Enter' && handleCustomTagSubmit()}
+                        />
+                        <Button
+                          onClick={handleCustomTagSubmit}
+                          disabled={!customTagInput.trim() || createTagMutation.isPending}
+                          size="sm"
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setShowCustomTagInput(false);
+                            setCustomTagInput("");
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
               
               {/* Landing Pages Section */}
@@ -722,7 +805,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             {!editMode && (
               <div className="flex justify-end pt-4 border-t">
                 <Button
-                  onClick={() => handleNext('campaign', 'tags')}
+                  onClick={() => handleNext('campaign', 'sources')}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Next
@@ -733,109 +816,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         )}
       </Card>
 
-      {/* Section 2: Tags */}
-      <Card>
-        <SectionHeader 
-          title="Tags" 
-          sectionKey="tags"
-        />
-        {expandedSections.tags && (
-          <div className="p-6">
-            <div className="space-y-3">
-              {/* Selected Tags */}
-              {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedTags.map((tag) => (
-                    <div
-                      key={tag}
-                      className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
-                    >
-                      <span>{tag}</span>
-                      <button
-                        onClick={() => removeTag(tag)}
-                        className="hover:bg-blue-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Tag Selection */}
-              <div className="flex flex-wrap gap-2">
-                {/* Available Tags */}
-                {tags
-                  .filter((tag: Tag) => !selectedTags.includes(tag.name))
-                  .map((tag: Tag) => (
-                    <button
-                      key={tag.id}
-                      onClick={() => handleTagSelect(tag.name)}
-                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-
-                {/* Add New Tag */}
-                {!showCustomTagInput && (
-                  <button
-                    onClick={() => setShowCustomTagInput(true)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-600"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Tag
-                  </button>
-                )}
-              </div>
-
-              {/* Custom Tag Input */}
-              {showCustomTagInput && (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={customTagInput}
-                    onChange={(e) => setCustomTagInput(e.target.value)}
-                    placeholder="Enter new tag name..."
-                    className="w-48"
-                    onKeyPress={(e) => e.key === 'Enter' && handleCustomTagSubmit()}
-                  />
-                  <Button
-                    onClick={handleCustomTagSubmit}
-                    disabled={!customTagInput.trim() || createTagMutation.isPending}
-                    size="sm"
-                  >
-                    Add
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowCustomTagInput(false);
-                      setCustomTagInput("");
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
-            
-            {/* Next Button at bottom of section */}
-            {!editMode && (
-              <div className="flex justify-end pt-4 border-t">
-                <Button
-                  onClick={() => handleNext('tags', 'sources')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Section 3: Sources and Mediums */}
+      {/* Section 2: Sources and Mediums */}
       <Card>
         <SectionHeader 
           title="Sources and Mediums" 
@@ -1094,7 +1075,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         )}
       </Card>
 
-      {/* Section 4: Campaign Links */}
+      {/* Section 3: Campaign Links */}
       <Card>
         <SectionHeader 
           title="Campaign Links" 
