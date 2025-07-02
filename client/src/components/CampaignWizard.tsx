@@ -600,16 +600,27 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             normalizeUrl(lp.url) === normalizedTargetUrl
           );
           
-          // Create the exact row key that matches this specific link
+          // Create a unique row key for this specific link
+          // Use the link's content and a unique index to ensure no conflicts
           const key = `${sourceName}-${medium}`;
-          const linksForThisMedium = existingCampaignData.filter(l => {
-            const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
-              template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
-            );
-            const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
-            // Match by source, medium, AND content to get exact link
-            return lSourceName === sourceName && l.utm_medium === medium && l.utm_content === link.utm_content;
-          });
+          
+          // Get all links for this source-medium combination, sorted by content then by ID for consistency
+          const linksForThisMedium = existingCampaignData
+            .filter(l => {
+              const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+                template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
+              );
+              const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
+              return lSourceName === sourceName && l.utm_medium === medium;
+            })
+            .sort((a, b) => {
+              // Sort by content first, then by ID for stable ordering
+              if (a.utm_content !== b.utm_content) {
+                return a.utm_content.localeCompare(b.utm_content);
+              }
+              return a.id - b.id;
+            });
+          
           const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
           const variantId = `${key}-${variantIndex}`;
           const rowKey = `${sourceName}-${medium}-${variantId}`;
