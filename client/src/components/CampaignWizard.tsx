@@ -1148,14 +1148,27 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                         newLandingPageSelections[newRowKey] = currentSelection;
                                       }
                                       
-                                      // Update selectedMediums - replace the old medium with new medium if it doesn't exist
-                                      const currentMediums = prev[sourceName].selectedMediums;
-                                      let updatedMediums = [...currentMediums];
+                                      // Calculate what mediums will be in use after this change
+                                      // We need to look at contentVariants state directly since we're in a callback
+                                      const mediumsInUse = new Set<string>();
                                       
-                                      // If the new medium doesn't exist in the array, add it
-                                      if (!updatedMediums.includes(value)) {
-                                        updatedMediums.push(value);
-                                      }
+                                      // Examine current contentVariants and predict what will be left
+                                      Object.keys(contentVariants).forEach(key => {
+                                        const [source, medium] = key.split('-');
+                                        if (source === sourceName && contentVariants[key].length > 0) {
+                                          // Skip the old key if it will be empty after removing our variant
+                                          if (key === oldKey && contentVariants[key].length === 1) {
+                                            // This key will be empty after removing our variant
+                                            return;
+                                          }
+                                          mediumsInUse.add(medium);
+                                        }
+                                      });
+                                      
+                                      // Add the new medium
+                                      mediumsInUse.add(value);
+                                      
+                                      const updatedMediums = Array.from(mediumsInUse);
                                       
                                       return {
                                         ...prev,
