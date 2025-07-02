@@ -44,6 +44,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
+  const [customSourceInput, setCustomSourceInput] = useState("");
+  const [showCustomSourceInput, setShowCustomSourceInput] = useState(false);
   
   // Section collapse states
   const [expandedSections, setExpandedSections] = useState({
@@ -423,6 +425,50 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     toast({
       title: "Copied!",
       description: `${sourceName} links copied to clipboard`,
+    });
+  };
+
+  const handleAddCustomSource = () => {
+    const sourceName = customSourceInput.trim();
+    if (!sourceName) return;
+    
+    // Check if source already exists
+    const existingSource = sourceTemplates.find((template: SourceTemplate) => 
+      template.sourceName.toLowerCase() === sourceName.toLowerCase()
+    );
+    
+    if (existingSource) {
+      toast({
+        title: "Source already exists",
+        description: `A source named "${sourceName}" already exists.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create new source template
+    createSourceTemplateMutation.mutate({
+      userId: user.id,
+      sourceName,
+      mediums: ["organic", "paid"],
+      isArchived: false
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+        setCustomSourceInput('');
+        setShowCustomSourceInput(false);
+        toast({
+          title: "Source added",
+          description: `Source "${sourceName}" has been added to your templates.`
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to add new source.",
+          variant: "destructive"
+        });
+      }
     });
   };
 
@@ -831,9 +877,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         {expandedSections.sources && (
           <div className="p-6">
             <div className="text-sm text-gray-600 mb-4">
-              Select sources for your campaign. You can choose mediums and add content in the next section.
+              Select sources for your campaign.
             </div>
-            <div className="space-y-6">
+            <div className="flex flex-wrap gap-2">
               {sourceTemplates
                 .filter((template: SourceTemplate) => editMode ? true : !template.isArchived)
                 .map((template: SourceTemplate) => {
@@ -845,306 +891,76 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   };
 
                   return (
-                    <Card key={template.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <Checkbox
-                            id={`source-${template.sourceName}`}
-                            checked={state.checked}
-                            onCheckedChange={(checked) => {
-                              setSourceStates(prev => ({
-                                ...prev,
-                                [template.sourceName]: {
-                                  ...state,
-                                  checked: !!checked
-                                }
-                              }));
-                            }}
-                          />
-                          <Label htmlFor={`source-${template.sourceName}`} className="text-lg font-medium">
-                            {template.sourceName}
-                          </Label>
-                        </div>
-
-                        {state.checked && (
-                          <div className="ml-6 space-y-4">
-                            <div>
-                              <Label className="text-sm font-medium mb-2 block">Select Mediums</Label>
-                              <div className="flex flex-wrap gap-2">
-                                {(template.mediums || []).map((medium: string) => (
-                                  <Button
-                                    key={medium}
-                                    variant={state.selectedMediums.includes(medium) ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => {
-                                      const newMediums = state.selectedMediums.includes(medium)
-                                        ? state.selectedMediums.filter(m => m !== medium)
-                                        : [...state.selectedMediums, medium];
-                                      
-                                      setSourceStates(prev => ({
-                                        ...prev,
-                                        [template.sourceName]: {
-                                          ...state,
-                                          selectedMediums: newMediums
-                                        }
-                                      }));
-                                    }}
-                                  >
-                                    {medium}
-                                  </Button>
-                                ))}
-                                
-                                {/* Add Medium Button */}
-                                {customMediumInputs[template.sourceName]?.show ? (
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      value={customMediumInputs[template.sourceName]?.value || ''}
-                                      onChange={(e) => {
-                                        setCustomMediumInputs(prev => ({
-                                          ...prev,
-                                          [template.sourceName]: {
-                                            ...prev[template.sourceName],
-                                            value: e.target.value
-                                          }
-                                        }));
-                                      }}
-                                      placeholder="New medium name..."
-                                      className="w-32"
-                                      onKeyPress={(e) => {
-                                        if (e.key === 'Enter') {
-                                          const mediumValue = customMediumInputs[template.sourceName]?.value?.trim();
-                                          if (mediumValue && !template.mediums?.includes(mediumValue)) {
-                                            const shouldAddToLibrary = customMediumInputs[template.sourceName]?.addToLibrary || false;
-                                            
-                                            if (shouldAddToLibrary) {
-                                              // Add to template in database
-                                              updateSourceTemplateMutation.mutate({
-                                                templateId: template.id,
-                                                updates: {
-                                                  mediums: [...(template.mediums || []), mediumValue]
-                                                }
-                                              }, {
-                                                onSuccess: () => {
-                                                  // Invalidate source templates cache to refresh the UI
-                                                  queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
-                                                }
-                                              });
-                                            }
-                                            
-                                            // Add to current selection
-                                            setSourceStates(prev => ({
-                                              ...prev,
-                                              [template.sourceName]: {
-                                                ...state,
-                                                selectedMediums: [...state.selectedMediums, mediumValue]
-                                              }
-                                            }));
-                                            
-                                            // Reset input
-                                            setCustomMediumInputs(prev => ({
-                                              ...prev,
-                                              [template.sourceName]: {
-                                                value: '',
-                                                addToLibrary: false,
-                                                show: false
-                                              }
-                                            }));
-                                          }
-                                        }
-                                      }}
-                                    />
-                                    <Button
-                                      size="sm"
-                                      onClick={() => {
-                                        const mediumValue = customMediumInputs[template.sourceName]?.value?.trim();
-                                        if (mediumValue && !template.mediums?.includes(mediumValue)) {
-                                          const shouldAddToLibrary = customMediumInputs[template.sourceName]?.addToLibrary || false;
-                                          
-                                          if (shouldAddToLibrary) {
-                                            // Add to template in database
-                                            updateSourceTemplateMutation.mutate({
-                                              templateId: template.id,
-                                              updates: {
-                                                mediums: [...(template.mediums || []), mediumValue]
-                                              }
-                                            }, {
-                                              onSuccess: () => {
-                                                // Invalidate source templates cache to refresh the UI
-                                                queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
-                                              }
-                                            });
-                                          }
-                                          
-                                          // Add to current selection
-                                          setSourceStates(prev => ({
-                                            ...prev,
-                                            [template.sourceName]: {
-                                              ...state,
-                                              selectedMediums: [...state.selectedMediums, mediumValue]
-                                            }
-                                          }));
-                                          
-                                          // Reset input
-                                          setCustomMediumInputs(prev => ({
-                                            ...prev,
-                                            [template.sourceName]: {
-                                              value: '',
-                                              addToLibrary: false,
-                                              show: false
-                                            }
-                                          }));
-                                        }
-                                      }}
-                                    >
-                                      Add
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setCustomMediumInputs(prev => ({
-                                          ...prev,
-                                          [template.sourceName]: {
-                                            value: '',
-                                            addToLibrary: false,
-                                            show: false
-                                          }
-                                        }));
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setCustomMediumInputs(prev => ({
-                                        ...prev,
-                                        [template.sourceName]: {
-                                          value: '',
-                                          addToLibrary: false,
-                                          show: true
-                                        }
-                                      }));
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    Add Medium
-                                  </Button>
-                                )}
-                              </div>
-                              
-                              {/* Checkbox for adding to library */}
-                              {customMediumInputs[template.sourceName]?.show && (
-                                <div className="flex items-center space-x-2 mt-2">
-                                  <Checkbox
-                                    id={`add-to-library-${template.sourceName}`}
-                                    checked={customMediumInputs[template.sourceName]?.addToLibrary || false}
-                                    onCheckedChange={(checked) => {
-                                      setCustomMediumInputs(prev => ({
-                                        ...prev,
-                                        [template.sourceName]: {
-                                          ...prev[template.sourceName],
-                                          addToLibrary: !!checked
-                                        }
-                                      }));
-                                    }}
-                                  />
-                                  <Label htmlFor={`add-to-library-${template.sourceName}`} className="text-sm">
-                                    Add to source library
-                                  </Label>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                    <Button
+                      key={template.id}
+                      variant={state.checked ? "default" : "outline"}
+                      size="sm"
+                      className={state.checked ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                      onClick={() => {
+                        setSourceStates(prev => ({
+                          ...prev,
+                          [template.sourceName]: {
+                            ...state,
+                            checked: !state.checked,
+                            selectedMediums: !state.checked ? template.mediums || [] : []
+                          }
+                        }));
+                      }}
+                    >
+                      {template.sourceName}
+                    </Button>
                   );
                 })}
-            </div>
-            
-            {/* Next Button at bottom of section */}
-            {!editMode && (
-              <div className="flex justify-end pt-4 border-t">
+              
+              {/* Add Source Button */}
+              {showCustomSourceInput ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={customSourceInput}
+                    onChange={(e) => setCustomSourceInput(e.target.value)}
+                    placeholder="New source name..."
+                    className="w-32"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddCustomSource();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAddCustomSource}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowCustomSourceInput(false);
+                      setCustomSourceInput('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
                 <Button
-                  onClick={() => handleNext('sources', 'mediums')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomSourceInput(true)}
                 >
-                  Next
+                  + Add Source
                 </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Section 3: Mediums and Content */}
-      <Card>
-        <SectionHeader 
-          title="Mediums and Content" 
-          sectionKey="mediums"
-        />
-        {expandedSections.mediums && (
-          <div className="p-6">
-            <div className="text-sm text-gray-600 mb-4">
-              Select mediums and add content for your selected sources.
+              )}
             </div>
-            
-            {Object.entries(sourceStates)
-              .filter(([, state]) => state.checked)
-              .map(([sourceName, state]) => {
-                const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
-                  template.sourceName === sourceName
-                );
-                
-                return (
-                  <Card key={sourceName} className="mb-4">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold mb-4">{sourceName}</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-medium mb-2 block">Select Mediums</Label>
-                          <div className="flex flex-wrap gap-2">
-                            {(sourceTemplate?.mediums || []).map((medium: string) => (
-                              <Button
-                                key={medium}
-                                variant={state.selectedMediums.includes(medium) ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  const newMediums = state.selectedMediums.includes(medium)
-                                    ? state.selectedMediums.filter(m => m !== medium)
-                                    : [...state.selectedMediums, medium];
-                                  
-                                  setSourceStates(prev => ({
-                                    ...prev,
-                                    [sourceName]: {
-                                      ...state,
-                                      selectedMediums: newMediums
-                                    }
-                                  }));
-                                }}
-                              >
-                                {medium}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
             
             {/* Next Button */}
             {!editMode && (
-              <div className="flex justify-end pt-4 border-t">
+              <div className="flex justify-end pt-4 border-t mt-6">
                 <Button
-                  onClick={() => handleNext('mediums', 'output')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => handleNext('sources', 'output')}
+                  disabled={!isSectionValid('sources')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300"
                 >
                   Next
                 </Button>
