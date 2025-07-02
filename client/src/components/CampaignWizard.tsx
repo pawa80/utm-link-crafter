@@ -69,7 +69,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Landing page management functions
   const addLandingPage = () => {
     const newId = `lp-${Date.now()}`;
-    setLandingPages(prev => [...prev, { id: newId, url: "", label: "" }]);
+    setLandingPages(prev => [...prev, { id: newId, url: "", label: "" }]); // Keep label for backward compatibility
   };
 
   const removeLandingPage = (id: string) => {
@@ -668,7 +668,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       className="w-full"
                     />
                     <p className="text-xs text-gray-500">
-                      You can use a single URL here, or add multiple labeled URLs below for more control.
+                      You can use a single URL here, or add multiple URLs below for more control.
                     </p>
                   </div>
                 )}
@@ -677,23 +677,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 {landingPages.length > 0 && (
                   <div className="space-y-3">
                     {landingPages.map((landingPage) => (
-                      <div key={landingPage.id} className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                      <div key={landingPage.id} className="flex items-center gap-3">
                         <div className="flex-1">
-                          <Label className="text-xs text-gray-600">Label</Label>
-                          <Input
-                            value={landingPage.label}
-                            onChange={(e) => updateLandingPage(landingPage.id, 'label', e.target.value)}
-                            placeholder="e.g., Homepage, Product Page"
-                            className="mt-1"
-                          />
-                        </div>
-                        <div className="flex-[2]">
-                          <Label className="text-xs text-gray-600">URL</Label>
                           <Input
                             value={landingPage.url}
                             onChange={(e) => updateLandingPage(landingPage.id, 'url', e.target.value)}
                             placeholder="https://example.com/page"
-                            className="mt-1"
                           />
                         </div>
                         <Button
@@ -701,10 +690,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           onClick={() => removeLandingPage(landingPage.id)}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 sm:flex-shrink-0"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <X size={16} />
-                          <span className="ml-1 sm:hidden">Remove</span>
                         </Button>
                       </div>
                     ))}
@@ -1180,7 +1168,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                     <SelectContent>
                                       {landingPages.map((lp) => (
                                         <SelectItem key={lp.id} value={lp.id}>
-                                          {lp.label}
+                                          {lp.url}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -1270,7 +1258,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 <SelectContent>
                                   {landingPages.map((lp) => (
                                     <SelectItem key={lp.id} value={lp.id}>
-                                      {lp.label}
+                                      {lp.url}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1372,11 +1360,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           
                           // Save new landing pages
                           for (const landingPage of landingPages) {
-                            if (landingPage.url.trim() && landingPage.label.trim()) {
+                            if (landingPage.url.trim()) {
                               await apiRequest("POST", "/api/campaign-landing-pages", {
                                 campaignName,
                                 url: landingPage.url,
-                                label: landingPage.label
+                                label: landingPage.url // Use URL as label for simplicity
                               });
                             }
                           }
