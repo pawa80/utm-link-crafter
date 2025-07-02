@@ -332,6 +332,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         // Get selected landing page for this specific row (unique by source-medium-variantId)
         const rowKey = `${sourceName}-${medium}-${variant.id}`;
         const selectedLandingPageId = state.landingPageSelections[rowKey];
+        console.log(`Looking for landing page selection with key: ${rowKey}, found: ${selectedLandingPageId}`);
         const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
         // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
         const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
@@ -596,7 +597,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             const rowKey = `${sourceName}-${medium}-${variantId}`;
             
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
-            console.log(`Mapped ${sourceName}-${medium} to landing page: ${matchingLandingPage.label} (${matchingLandingPage.id})`);
+            console.log(`SET: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} for ${sourceName}-${medium}`);
             console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
             console.log(`  Landing URL: ${matchingLandingPage.url} -> ${normalizeUrl(matchingLandingPage.url)}`);
           } else {
@@ -1105,10 +1106,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       setContentVariants(prev => {
                                         const currentVariant = prev[oldKey]?.find(v => v.id === row.variant.id);
                                         if (currentVariant) {
-                                          const newVariant = { ...currentVariant, id: newKey + '-0' };
+                                          // Keep existing variants for the new medium key
+                                          const existingVariants = prev[newKey] || [];
+                                          const newVariantId = `${newKey}-${existingVariants.length}`;
+                                          const newVariant = { ...currentVariant, id: newVariantId };
+                                          
+                                          // Remove the old variant
+                                          const updatedOldVariants = prev[oldKey]?.filter(v => v.id !== row.variant.id) || [];
+                                          
                                           return {
                                             ...prev,
-                                            [newKey]: [newVariant]
+                                            [oldKey]: updatedOldVariants,
+                                            [newKey]: [...existingVariants, newVariant]
                                           };
                                         }
                                         return prev;
