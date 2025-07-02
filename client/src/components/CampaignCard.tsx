@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, ChevronUp, Edit, Copy } from "lucide-react";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 
 interface CampaignCardProps {
@@ -29,7 +30,7 @@ export default function CampaignCard({
   const { data: landingPages = [] } = useQuery<CampaignLandingPage[]>({
     queryKey: ["/api/campaign-landing-pages", campaignName],
     queryFn: async () => {
-      const response = await fetch(`/api/campaign-landing-pages?campaignName=${encodeURIComponent(campaignName)}`);
+      const response = await apiRequest("GET", `/api/campaign-landing-pages?campaignName=${encodeURIComponent(campaignName)}`);
       return response.json();
     },
   });
