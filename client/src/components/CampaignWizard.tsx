@@ -319,8 +319,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           return variants
             .filter(variant => variant.content.trim() !== '')
             .map(variant => {
-              // Get selected landing page for this medium
-              const selectedLandingPageId = state.landingPageSelections[medium];
+              // Get selected landing page for this specific row using the correct rowKey
+              const rowKey = `${sourceName}-${medium}-${variant.id}`;
+              const selectedLandingPageId = state.landingPageSelections[rowKey];
               const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
               // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
               const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
