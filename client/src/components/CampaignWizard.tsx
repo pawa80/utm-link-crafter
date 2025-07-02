@@ -25,6 +25,7 @@ interface SourceState {
   selectedMediums: string[];
   contentInputs: { [medium: string]: string };
   landingPageSelections: { [rowKey: string]: string }; // rowKey (source-medium-variantId) -> landing page ID
+  rows?: Array<{ id: string; medium: string; content: string; landingPageId: string }>;
 }
 
 interface ContentVariant {
@@ -897,14 +898,24 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       size="sm"
                       className={state.checked ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
                       onClick={() => {
+                        const newChecked = !state.checked;
                         setSourceStates(prev => ({
                           ...prev,
                           [template.sourceName]: {
                             ...state,
-                            checked: !state.checked,
-                            selectedMediums: !state.checked ? template.mediums || [] : []
+                            checked: newChecked,
+                            selectedMediums: newChecked ? [""] : [] // Start with one empty medium slot
                           }
                         }));
+                        
+                        // Initialize content variant for the empty medium
+                        if (newChecked) {
+                          const variantKey = getVariantKey(template.sourceName, "");
+                          setContentVariants(prev => ({
+                            ...prev,
+                            [variantKey]: [{ id: `${variantKey}-0`, content: '' }]
+                          }));
+                        }
                       }}
                     >
                       {template.sourceName}
@@ -959,7 +970,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               <div className="flex justify-end pt-4 border-t mt-6">
                 <Button
                   onClick={() => handleNext('sources', 'output')}
-                  disabled={!isSectionValid('sources')}
+                  disabled={!validateSection('sources')}
                   className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300"
                 >
                   Next
@@ -1070,41 +1081,42 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 <Select
                                   value={row.medium}
                                   onValueChange={(value) => {
-                                    // Update the medium for this specific row/variant
-                                    const oldKey = getVariantKey(sourceName, row.medium);
-                                    const newKey = getVariantKey(sourceName, value);
+                                    // Simply update the medium in the selectedMediums array at the correct index
+                                    const currentMediums = sourceStates[sourceName].selectedMediums;
+                                    const mediumIndex = currentMediums.findIndex(m => m === row.medium);
                                     
-                                    // Move the content variant to the new medium
-                                    setContentVariants(prev => {
-                                      const oldVariants = prev[oldKey] || [];
-                                      const newVariants = prev[newKey] || [];
-                                      const variantToMove = oldVariants.find(v => v.id === row.variant.id);
+                                    if (mediumIndex !== -1) {
+                                      const newMediums = [...currentMediums];
+                                      newMediums[mediumIndex] = value;
                                       
-                                      if (variantToMove) {
-                                        const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
-                                        const updatedNewVariants = [...newVariants, variantToMove];
-                                        
-                                        return {
-                                          ...prev,
-                                          [oldKey]: updatedOldVariants,
-                                          [newKey]: updatedNewVariants
-                                        };
-                                      }
-                                      return prev;
-                                    });
-                                    
-                                    // Update the source state to include the new medium
-                                    setSourceStates(prev => ({
-                                      ...prev,
-                                      [sourceName]: {
-                                        ...prev[sourceName],
-                                        selectedMediums: [...new Set([...prev[sourceName].selectedMediums, value])]
-                                      }
-                                    }));
+                                      setSourceStates(prev => ({
+                                        ...prev,
+                                        [sourceName]: {
+                                          ...prev[sourceName],
+                                          selectedMediums: newMediums
+                                        }
+                                      }));
+                                      
+                                      // Update content variant with new medium
+                                      const oldKey = getVariantKey(sourceName, row.medium);
+                                      const newKey = getVariantKey(sourceName, value);
+                                      
+                                      setContentVariants(prev => {
+                                        const currentVariant = prev[oldKey]?.find(v => v.id === row.variant.id);
+                                        if (currentVariant) {
+                                          const newVariant = { ...currentVariant, id: newKey + '-0' };
+                                          return {
+                                            ...prev,
+                                            [newKey]: [newVariant]
+                                          };
+                                        }
+                                        return prev;
+                                      });
+                                    }
                                   }}
                                 >
                                   <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Choose medium" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {sourceTemplates
@@ -1268,6 +1280,37 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           )}
                         </div>
                       ))}
+                    </div>
+                    
+                    {/* Add Row Button */}
+                    <div className="mt-4 flex justify-start">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Add a new row for this source
+                          setSourceStates(prev => ({
+                            ...prev,
+                            [sourceName]: {
+                              ...prev[sourceName],
+                              selectedMediums: [...prev[sourceName].selectedMediums, ""]
+                            }
+                          }));
+                          
+                          // Initialize content variant for the new empty medium
+                          const variantKey = getVariantKey(sourceName, "");
+                          const existingVariants = contentVariants[variantKey] || [];
+                          const newVariantId = `${variantKey}-${existingVariants.length}`;
+                          
+                          setContentVariants(prev => ({
+                            ...prev,
+                            [variantKey]: [...existingVariants, { id: newVariantId, content: '' }]
+                          }));
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Row
+                      </Button>
                     </div>
                   </div>
                 ))}
