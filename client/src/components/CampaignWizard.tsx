@@ -346,6 +346,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     if (editMode && existingCampaignData.length > 0 && sourceTemplates.length > 0) {
       console.log('Initializing edit mode with data:', existingCampaignData);
       console.log('Existing landing pages:', existingLandingPages);
+      console.log('Source templates:', sourceTemplates);
       
       const firstLink = existingCampaignData[0];
       setCampaignName(firstLink.utm_campaign);
@@ -419,10 +420,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         newContentVariants[key] = variants;
       });
       
-      setSourceStates(newSourceStates);
-      setContentVariants(newContentVariants);
-      
-      // Initialize landing pages if they exist
+      // Initialize landing pages if they exist and map selections BEFORE setting source states
       if (existingLandingPages.length > 0) {
         const formattedLandingPages = existingLandingPages.map(lp => ({
           id: lp.id.toString(),
@@ -450,6 +448,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           }
         });
       }
+      
+      console.log('Final newSourceStates with landing page selections:', newSourceStates);
+      
+      setSourceStates(newSourceStates);
+      setContentVariants(newContentVariants);
       
       // Expand all sections when in edit mode
       setExpandedSections({
