@@ -24,7 +24,7 @@ interface SourceState {
   checked: boolean;
   selectedMediums: string[];
   contentInputs: { [medium: string]: string };
-  landingPageSelections: { [medium: string]: string }; // medium -> landing page ID
+  landingPageSelections: { [rowKey: string]: string }; // rowKey (source-medium-variantId) -> landing page ID
 }
 
 interface ContentVariant {
@@ -323,8 +323,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     const allRows = state.selectedMediums.flatMap((medium: string) => {
       const variants = getContentVariantsForMedium(sourceName, medium);
       return variants.map((variant: any) => {
-        // Get selected landing page for this medium
-        const selectedLandingPageId = state.landingPageSelections[medium];
+        // Get selected landing page for this specific row (unique by source-medium-variantId)
+        const rowKey = `${sourceName}-${medium}-${variant.id}`;
+        const selectedLandingPageId = state.landingPageSelections[rowKey];
         const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
         // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
         const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
@@ -511,7 +512,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         setLandingPages(formattedLandingPages);
         
         // Map landing page selections based on existing UTM link target URLs
-        existingCampaignData.forEach(link => {
+        // We need to match each individual link to its landing page, not just by medium
+        existingCampaignData.forEach((link, linkIndex) => {
           const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
             template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
           );
@@ -530,7 +532,19 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           );
           
           if (matchingLandingPage && newSourceStates[sourceName]) {
-            newSourceStates[sourceName].landingPageSelections[medium] = matchingLandingPage.id;
+            // Create unique row key using source-medium and variant index based on link position
+            const key = `${sourceName}-${medium}`;
+            const linksForThisMedium = existingCampaignData.filter(l => {
+              const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+                template.sourceName.toLowerCase() === l.utm_source.toLowerCase()
+              );
+              const lSourceName = lSourceTemplate ? lSourceTemplate.sourceName : l.utm_source;
+              return lSourceName === sourceName && l.utm_medium === medium;
+            });
+            const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
+            const rowKey = `${sourceName}-${medium}-${key}-${variantIndex}`;
+            
+            newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
             console.log(`Mapped ${sourceName}-${medium} to landing page: ${matchingLandingPage.label} (${matchingLandingPage.id})`);
             console.log(`  Target URL: ${link.targetUrl} -> ${normalizedTargetUrl}`);
             console.log(`  Landing URL: ${matchingLandingPage.url} -> ${normalizeUrl(matchingLandingPage.url)}`);
@@ -1150,13 +1164,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                   <Select
                                     value={row.selectedLandingPageId || ""}
                                     onValueChange={(value) => {
+                                      const rowKey = `${sourceName}-${row.medium}-${row.variant.id}`;
                                       setSourceStates(prev => ({
                                         ...prev,
                                         [sourceName]: {
                                           ...prev[sourceName],
                                           landingPageSelections: {
                                             ...prev[sourceName].landingPageSelections,
-                                            [row.medium]: value
+                                            [rowKey]: value
                                           }
                                         }
                                       }));
@@ -1240,13 +1255,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               <Select
                                 value={row.selectedLandingPageId || ""}
                                 onValueChange={(value) => {
+                                  const rowKey = `${sourceName}-${row.medium}-${row.variant.id}`;
                                   setSourceStates(prev => ({
                                     ...prev,
                                     [sourceName]: {
                                       ...prev[sourceName],
                                       landingPageSelections: {
                                         ...prev[sourceName].landingPageSelections,
-                                        [row.medium]: value
+                                        [rowKey]: value
                                       }
                                     }
                                   }));
