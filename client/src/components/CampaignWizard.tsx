@@ -582,7 +582,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           );
           
           if (matchingLandingPage && newSourceStates[sourceName]) {
-            // Create unique row key using source-medium and variant index based on link position
+            // Create unique row key using source-medium and variant ID for consistency with getSortedTableRows
             const key = `${sourceName}-${medium}`;
             const linksForThisMedium = existingCampaignData.filter(l => {
               const lSourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
@@ -592,7 +592,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               return lSourceName === sourceName && l.utm_medium === medium;
             });
             const variantIndex = linksForThisMedium.findIndex(l => l.id === link.id);
-            const rowKey = `${sourceName}-${medium}-${key}-${variantIndex}`;
+            const variantId = `${key}-${variantIndex}`;
+            const rowKey = `${sourceName}-${medium}-${variantId}`;
             
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
             console.log(`Mapped ${sourceName}-${medium} to landing page: ${matchingLandingPage.label} (${matchingLandingPage.id})`);
@@ -1280,37 +1281,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           )}
                         </div>
                       ))}
-                    </div>
-                    
-                    {/* Add Row Button */}
-                    <div className="mt-4 flex justify-start">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Add a new row for this source
-                          setSourceStates(prev => ({
-                            ...prev,
-                            [sourceName]: {
-                              ...prev[sourceName],
-                              selectedMediums: [...prev[sourceName].selectedMediums, ""]
-                            }
-                          }));
-                          
-                          // Initialize content variant for the new empty medium
-                          const variantKey = getVariantKey(sourceName, "");
-                          const existingVariants = contentVariants[variantKey] || [];
-                          const newVariantId = `${variantKey}-${existingVariants.length}`;
-                          
-                          setContentVariants(prev => ({
-                            ...prev,
-                            [variantKey]: [...existingVariants, { id: newVariantId, content: '' }]
-                          }));
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Row
-                      </Button>
                     </div>
                   </div>
                 ))}
