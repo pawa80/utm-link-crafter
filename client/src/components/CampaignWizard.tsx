@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
-import { Plus, Copy, X } from "lucide-react";
+import { Plus, Copy, X, GripVertical } from "lucide-react";
 import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
 
 interface CampaignWizardProps {
@@ -45,6 +45,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [customMediumInputs, setCustomMediumInputs] = useState<{ [sourceName: string]: { value: string; addToLibrary: boolean; show: boolean } }>({});
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
+  const [customRowOrder, setCustomRowOrder] = useState<{ [sourceName: string]: string[] }>({});
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   const [customSourceInput, setCustomSourceInput] = useState("");
   const [showCustomSourceInput, setShowCustomSourceInput] = useState(false);
@@ -328,7 +329,34 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       });
     });
     
-    // Sort by landing page order, then by medium, then by variant content
+    // Apply custom row ordering if it exists for this source
+    const customOrder = customRowOrder[sourceName];
+    if (customOrder && customOrder.length > 0) {
+      // Sort by custom order first
+      return allRows.sort((a: any, b: any) => {
+        const indexA = customOrder.indexOf(a.key);
+        const indexB = customOrder.indexOf(b.key);
+        
+        // If both items have custom order positions, use those
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        // If only one has a custom position, prioritize it
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // Fall back to default sorting for items without custom order
+        if (a.landingPageOrder !== b.landingPageOrder) {
+          return a.landingPageOrder - b.landingPageOrder;
+        }
+        if (a.medium !== b.medium) {
+          return a.medium.localeCompare(b.medium);
+        }
+        return a.variant.content.localeCompare(b.variant.content);
+      });
+    }
+    
+    // Default sorting by landing page order, then by medium, then by variant content
     return allRows.sort((a: any, b: any) => {
       if (a.landingPageOrder !== b.landingPageOrder) {
         return a.landingPageOrder - b.landingPageOrder;
@@ -338,6 +366,49 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       }
       return a.variant.content.localeCompare(b.variant.content);
     });
+  };
+
+  // Drag and drop handlers for manual sorting
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, rowKey: string) => {
+    e.dataTransfer.setData('text/plain', rowKey);
+    e.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
+    e.currentTarget.style.opacity = '1';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetRowKey: string, sourceName: string) => {
+    e.preventDefault();
+    const draggedRowKey = e.dataTransfer.getData('text/plain');
+    
+    if (draggedRowKey === targetRowKey) return;
+
+    // Get current rows for this source
+    const sourceState = sourceStates[sourceName];
+    if (!sourceState) return;
+
+    const currentRows = getSortedTableRows(sourceName, sourceState);
+    const currentOrder = customRowOrder[sourceName] || currentRows.map(row => row.key);
+    
+    // Remove dragged item and insert at new position
+    const draggedIndex = currentOrder.indexOf(draggedRowKey);
+    const targetIndex = currentOrder.indexOf(targetRowKey);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedRowKey);
+
+    setCustomRowOrder(prev => ({
+      ...prev,
+      [sourceName]: newOrder
+    }));
   };
 
   const copyAllCampaignLinks = () => {
@@ -940,6 +1011,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           <Copy className="w-4 h-4 mr-1" />
                           Copy Source Links
                         </Button>
+                        {customRowOrder[sourceName] && customRowOrder[sourceName].length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCustomRowOrder(prev => ({
+                                ...prev,
+                                [sourceName]: []
+                              }));
+                            }}
+                            className="text-xs"
+                          >
+                            Reset Sort Order
+                          </Button>
+                        )}
                       </div>
                     </div>
                     {/* Desktop Table View */}
@@ -947,6 +1033,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       <table className="w-full">
                         <thead>
                           <tr className="bg-gray-50 border-b">
+                            <th className="text-center p-3 text-sm font-medium text-gray-700 w-12">Sort</th>
                             {landingPages.length > 0 && (
                               <th className="text-left p-3 text-sm font-medium text-gray-700 w-40">Landing Page</th>
                             )}
@@ -959,7 +1046,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         </thead>
                         <tbody>
                           {getSortedTableRows(sourceName, state).map((row) => (
-                            <tr key={row.key} className="border-b last:border-b-0 hover:bg-gray-50">
+                            <tr 
+                              key={row.key} 
+                              className="border-b last:border-b-0 hover:bg-gray-50 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, row.key)}
+                              onDragEnd={handleDragEnd}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, row.key, sourceName)}
+                            >
+                              <td className="p-3 text-center">
+                                <GripVertical className="w-4 h-4 text-gray-400 mx-auto cursor-move" />
+                              </td>
                               {landingPages.length > 0 && (
                                 <td className="p-3">
                                   <Select
@@ -1161,7 +1259,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     {/* Mobile Card View */}
                     <div className="md:hidden space-y-4">
                       {getSortedTableRows(sourceName, state).map((row) => (
-                        <div key={row.key} className="bg-white border rounded-lg p-4 space-y-3">
+                        <div 
+                          key={row.key} 
+                          className="bg-white border rounded-lg p-4 space-y-3 cursor-move"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e as any, row.key)}
+                          onDragEnd={handleDragEnd as any}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e as any, row.key, sourceName)}
+                        >
+                          <div className="flex justify-center mb-2">
+                            <GripVertical className="w-4 h-4 text-gray-400" />
+                          </div>
                           {landingPages.length > 0 && (
                             <div>
                               <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>

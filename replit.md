@@ -118,6 +118,12 @@ Changelog:
   - Adjusted Landing Page URL fields and Add Landing Page button to use proper width (w-96) for better visual alignment
   - Fixed critical edit mode bug: changing campaign name now properly updates the existing campaign instead of creating a new one
   - Added originalCampaignName tracking to ensure proper deletion of existing UTM links and landing pages during campaign updates
+- July 2, 2025. Step 8 completed - Manual sorting functionality:
+  - Added drag-and-drop sorting for Campaign Links table rows in both desktop and mobile views
+  - Implemented custom row ordering state to preserve manual sort order per source
+  - Added Sort column with GripVertical icons to indicate draggable rows
+  - Added Reset Sort Order button to return to default ordering
+  - Enhanced user control over link organization within campaigns
 
 ## User Preferences
 
