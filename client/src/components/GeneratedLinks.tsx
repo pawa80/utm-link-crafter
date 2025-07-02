@@ -363,7 +363,8 @@ export default function GeneratedLinks() {
                           </div>
                       
                           {/* Desktop: Headers */}
-                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
+                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '160px 120px 120px 200px 1fr 80px' }}>
+                            <span className="text-sm font-medium">Landing Page</span>
                             <span className="text-sm font-medium">Medium</span>
                             <span className="text-sm font-medium">Content</span>
                             <span className="text-sm font-medium">Link name</span>
@@ -377,7 +378,12 @@ export default function GeneratedLinks() {
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                               
                               return (
-                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '120px 120px 200px 1fr 80px' }}>
+                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '160px 120px 120px 200px 1fr 80px' }}>
+                                  <input 
+                                    value={link.targetUrl} 
+                                    readOnly 
+                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full" 
+                                  />
                                   <input 
                                     value={link.utm_medium} 
                                     readOnly 
@@ -416,6 +422,16 @@ export default function GeneratedLinks() {
                               
                               return (
                                 <div key={link.id} className="border rounded-lg p-3 space-y-3">
+                                  {/* Landing Page full width */}
+                                  <div>
+                                    <span className="text-xs text-gray-600 mb-1 block">Landing Page</span>
+                                    <input 
+                                      value={link.targetUrl} 
+                                      readOnly 
+                                      className="bg-gray-50 border rounded px-2 py-1 text-sm w-full" 
+                                    />
+                                  </div>
+                                  
                                   {/* Medium and Content on same line */}
                                   <div className="grid grid-cols-2 gap-2">
                                     <div>
