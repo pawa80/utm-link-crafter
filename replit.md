@@ -128,8 +128,10 @@ Changelog:
   - Step 1: Added landing page URLs display under each campaign name in headers
   - Step 2: Implemented UTM Links count display between landing pages and tags
   - Step 3: Added Archive Campaign functionality with confirmation dialog
+  - Step 4: Removed refresh button and debug info section for cleaner interface
   - Removed "Campaign" text from all buttons for cleaner interface (Edit, Copy Links, Archive)
   - Archive button styled in red to indicate destructive action
+  - Simplified query client by removing cache-bypassing refresh logic
 
 ## User Preferences
 

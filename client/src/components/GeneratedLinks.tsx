@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc, RefreshCw } from "lucide-react";
+import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc } from "lucide-react";
 import { Link } from "wouter";
 import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -50,16 +50,9 @@ export default function GeneratedLinks() {
     return collapsedCampaigns.has(campaignName);
   };
 
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const { data: links = [], isLoading, refetch } = useQuery<UtmLink[]>({
-    queryKey: ["/api/utm-links", refreshKey],
+  const { data: links = [], isLoading } = useQuery<UtmLink[]>({
+    queryKey: ["/api/utm-links"],
   });
-
-  // Force fresh data by changing the query key
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
   
   // Debug logging
   console.log("GeneratedLinks - Links data:", links);
@@ -266,17 +259,6 @@ export default function GeneratedLinks() {
           </CardTitle>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
-            
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
               <SortAsc className="text-gray-500" size={16} />

@@ -91,11 +91,6 @@ export default function CampaignManagement() {
 
           {/* Generated Links Section */}
           <GeneratedLinks />
-          
-          {/* Debug Info */}
-          <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-            <strong>Debug Info:</strong> Check browser console for data details. Last refresh: {new Date().toLocaleTimeString()}
-          </div>
         </div>
       </div>
     </div>
