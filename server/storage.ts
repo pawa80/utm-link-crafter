@@ -12,7 +12,7 @@ export interface IStorage {
   // UTM Link operations
   createUtmLink(utmLink: InsertUtmLink): Promise<UtmLink>;
   getUserUtmLinks(userId: number, limit?: number, offset?: number, includeArchived?: boolean): Promise<UtmLink[]>;
-  getUtmLink(id: number): Promise<UtmLink | undefined>;
+  getUtmLink(id: number, userId?: number): Promise<UtmLink | undefined>;
   deleteUtmLinksByCampaign(userId: number, campaignName: string): Promise<boolean>;
   archiveCampaign(userId: number, campaignName: string): Promise<boolean>;
   unarchiveCampaign(userId: number, campaignName: string): Promise<boolean>;
@@ -20,8 +20,8 @@ export interface IStorage {
   // Source Template operations
   createSourceTemplate(sourceTemplate: InsertSourceTemplate): Promise<SourceTemplate>;
   getUserSourceTemplates(userId: number): Promise<SourceTemplate[]>;
-  updateSourceTemplate(id: number, updates: Partial<InsertSourceTemplate>): Promise<SourceTemplate | undefined>;
-  deleteSourceTemplate(id: number): Promise<boolean>;
+  updateSourceTemplate(id: number, userId: number, updates: Partial<InsertSourceTemplate>): Promise<SourceTemplate | undefined>;
+  deleteSourceTemplate(id: number, userId: number): Promise<boolean>;
   
   // Tag operations
   createTag(tag: InsertTag): Promise<Tag>;
@@ -87,8 +87,12 @@ export class DatabaseStorage implements IStorage {
     return userLinks;
   }
 
-  async getUtmLink(id: number): Promise<UtmLink | undefined> {
-    const [utmLink] = await db.select().from(utmLinks).where(eq(utmLinks.id, id));
+  async getUtmLink(id: number, userId?: number): Promise<UtmLink | undefined> {
+    const conditions = userId 
+      ? and(eq(utmLinks.id, id), eq(utmLinks.userId, userId))
+      : eq(utmLinks.id, id);
+    
+    const [utmLink] = await db.select().from(utmLinks).where(conditions);
     return utmLink || undefined;
   }
 
@@ -186,17 +190,17 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(sourceTemplates).where(eq(sourceTemplates.userId, userId));
   }
 
-  async updateSourceTemplate(id: number, updates: Partial<InsertSourceTemplate>): Promise<SourceTemplate | undefined> {
+  async updateSourceTemplate(id: number, userId: number, updates: Partial<InsertSourceTemplate>): Promise<SourceTemplate | undefined> {
     const [sourceTemplate] = await db
       .update(sourceTemplates)
       .set(updates)
-      .where(eq(sourceTemplates.id, id))
+      .where(and(eq(sourceTemplates.id, id), eq(sourceTemplates.userId, userId)))
       .returning();
     return sourceTemplate || undefined;
   }
 
-  async deleteSourceTemplate(id: number): Promise<boolean> {
-    const result = await db.delete(sourceTemplates).where(eq(sourceTemplates.id, id));
+  async deleteSourceTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(sourceTemplates).where(and(eq(sourceTemplates.id, id), eq(sourceTemplates.userId, userId)));
     return (result.rowCount ?? 0) > 0;
   }
 

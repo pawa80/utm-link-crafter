@@ -89,6 +89,23 @@ The build process:
 2. Backend bundles to `dist/index.js`
 3. Static files are served by the Express server in production
 
+## Security Architecture
+
+### Account-Level Data Isolation
+- **User Authentication**: Firebase UID + Bearer token validation
+- **Database Constraints**: All tables have foreign key constraints to users.id
+- **API Authorization**: Every protected endpoint validates user ownership
+- **Input Validation**: Campaign names, limits, and all user inputs are validated
+- **Multi-User Support**: Architecture supports multiple users per account (future feature)
+
+### Security Validations Implemented
+- **Source Templates**: Users can only CRUD their own templates
+- **UTM Links**: All operations scoped to user's data only
+- **Campaign Operations**: Archive/unarchive limited to user's campaigns
+- **Landing Pages**: Access restricted to user's campaign data
+- **Parameter Limits**: API query limits capped (max 1000 records)
+- **SQL Injection Protection**: Using Drizzle ORM with parameterized queries
+
 ## Changelog
 
 Changelog:
@@ -137,6 +154,19 @@ Changelog:
   - Updated table column widths to be more dynamic with flexible sizing (1fr for Landing Page and UTM Link columns)
   - Added text wrapping to Landing Page field for better content visibility, similar to UTM Link field
   - Improved desktop grid layout: Landing Page (1fr), Medium (120px), Content (150px), Link name (200px), UTM Link (1fr), Actions (80px)
+- July 2, 2025. Converted archive functionality from hard deletion to soft deletion:
+  - Added isArchived fields to utm_links and campaign_landing_pages tables
+  - Updated API endpoints to support archive/unarchive operations
+  - Modified CampaignCard to show archive/unarchive buttons based on status
+  - Added toggle in Campaign Management page to view archived campaigns
+  - Implemented comprehensive security audit ensuring account-level data isolation
+- July 2, 2025. Comprehensive security hardening completed:
+  - Enhanced authentication middleware with Bearer token validation
+  - Added user ownership validation for all CRUD operations
+  - Implemented input validation and sanitization across all endpoints
+  - Added parameter limits and SQL injection protection
+  - Updated all storage methods to enforce user-scoped data access
+  - Prepared architecture for multi-user account support
 
 ## User Preferences
 

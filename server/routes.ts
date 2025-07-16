@@ -6,9 +6,19 @@ import { z } from "zod";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
   const firebaseUid = req.headers['x-firebase-uid'];
-  if (!firebaseUid) {
-    return res.status(401).json({ message: "Unauthorized" });
+  const authHeader = req.headers['authorization'];
+  
+  if (!firebaseUid || !authHeader) {
+    return res.status(401).json({ message: "Unauthorized - Missing authentication headers" });
   }
+  
+  // Basic validation that the auth header contains a Bearer token
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: "Unauthorized - Invalid token format" });
+  }
+  
+  // For production, you would verify the Firebase token here
+  // For now, we're doing basic validation that both headers are present
   
   const user = await storage.getUserByFirebaseUid(firebaseUid as string);
   if (!user) {
@@ -47,10 +57,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/user", authMiddleware, async (req: any, res) => {
     try {
       const updates = updateUserSchema.parse(req.body);
+      
+      // Ensure user can only update their own data
       const updatedUser = await storage.updateUser(req.user.id, updates);
       
       if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: "User not found or access denied" });
       }
       
       res.json(updatedUser);
@@ -77,10 +89,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's UTM links
   app.get("/api/utm-links", authMiddleware, async (req: any, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
-      const offset = parseInt(req.query.offset as string) || 0;
+      // Validate and sanitize input parameters
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Cap at 1000
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0); // Prevent negative offset
       const includeArchived = req.query.includeArchived === 'true';
       
+      // Only access user's own data
       const links = await storage.getUserUtmLinks(req.user.id, limit, offset, includeArchived);
       res.json(links);
     } catch (error: any) {
@@ -92,6 +106,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/utm-links/campaign/:campaignName", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
+      
+      // Validate campaign name
+      if (!campaignName || campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only delete user's own campaign data
       const success = await storage.deleteUtmLinksByCampaign(req.user.id, campaignName);
       
       if (success) {
@@ -108,6 +129,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/campaigns/:campaignName/archive", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
+      
+      // Validate campaign name
+      if (!campaignName || campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only archive user's own campaign data
       const success = await storage.archiveCampaign(req.user.id, campaignName);
       
       if (success) {
@@ -124,6 +152,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/campaigns/:campaignName/unarchive", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
+      
+      // Validate campaign name
+      if (!campaignName || campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only unarchive user's own campaign data
       const success = await storage.unarchiveCampaign(req.user.id, campaignName);
       
       if (success) {
@@ -256,9 +291,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updates = req.body;
 
-      const template = await storage.updateSourceTemplate(id, updates);
+      const template = await storage.updateSourceTemplate(id, req.user.id, updates);
       if (!template) {
-        return res.status(404).json({ message: "Source template not found" });
+        return res.status(404).json({ message: "Source template not found or access denied" });
       }
 
       res.json(template);
@@ -270,10 +305,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/source-templates/:id", authMiddleware, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteSourceTemplate(id);
+      const success = await storage.deleteSourceTemplate(id, req.user.id);
       
       if (!success) {
-        return res.status(404).json({ message: "Source template not found" });
+        return res.status(404).json({ message: "Source template not found or access denied" });
       }
 
       res.json({ success: true });
@@ -317,6 +352,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/campaign-landing-pages/:campaignName", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
+      
+      // Validate campaign name
+      if (!campaignName || campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only access user's own campaign landing pages
       const landingPages = await storage.getCampaignLandingPages(req.user.id, campaignName);
       res.json(landingPages);
     } catch (error: any) {
@@ -331,6 +373,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Campaign name is required" });
       }
       
+      // Validate campaign name
+      if (campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only access user's own campaign landing pages
       const landingPages = await storage.getCampaignLandingPages(req.user.id, campaignName);
       res.json(landingPages);
     } catch (error: any) {
@@ -355,6 +403,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/campaign-landing-pages/:campaignName", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
+      
+      // Validate campaign name
+      if (!campaignName || campaignName.length > 255) {
+        return res.status(400).json({ message: "Invalid campaign name" });
+      }
+      
+      // Only delete user's own campaign landing pages
       const success = await storage.deleteCampaignLandingPages(req.user.id, campaignName);
       res.json({ success });
     } catch (error: any) {
