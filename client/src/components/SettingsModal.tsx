@@ -50,6 +50,7 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
   const [newTemplateMedium, setNewTemplateMedium] = useState("");
   const [newTemplateFormat, setNewTemplateFormat] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedMedium, setSelectedMedium] = useState<string | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -272,6 +273,8 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
         });
       }
       setNewTemplateFormat("");
+      setSelectedTemplateId(null);
+      setSelectedMedium(null);
     }
   };
 
@@ -686,11 +689,11 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
                   </Button>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Mediums Section */}
+                <div className="space-y-4">
+                  {/* Add Medium Section */}
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Mediums</Label>
-                    <div className="flex items-center space-x-2 mb-2">
+                    <Label className="text-sm font-medium mb-2 block">Add Medium</Label>
+                    <div className="flex items-center space-x-2">
                       <Input
                         value={selectedTemplateId === template.id ? newTemplateMedium : ""}
                         onChange={(e) => {
@@ -716,10 +719,15 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
                         <Plus size={14} />
                       </Button>
                     </div>
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
-                      {(template.mediums || []).map((medium) => (
-                        <div key={medium} className="flex items-center justify-between">
-                          <Badge variant="secondary" className="text-xs">
+                  </div>
+
+                  {/* Mediums and Content Section */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Mediums & Content</Label>
+                    {(template.mediums || []).map((medium) => (
+                      <div key={medium} className="border rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge variant="secondary" className="text-sm font-medium">
                             {medium}
                           </Badge>
                           <Button
@@ -731,56 +739,87 @@ export default function SettingsModal({ isOpen, onClose, user }: SettingsModalPr
                             <X size={12} />
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Formats Section */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Formats/Sizes</Label>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Input
-                        value={selectedTemplateId === template.id ? newTemplateFormat : ""}
-                        onChange={(e) => {
-                          setSelectedTemplateId(template.id);
-                          setNewTemplateFormat(e.target.value);
-                        }}
-                        placeholder="Add format (e.g., 300x250, video)"
-                        className="flex-1 text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addFormatToTemplate(template.id);
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addFormatToTemplate(template.id)}
-                        disabled={!newTemplateFormat.trim()}
-                      >
-                        <Plus size={14} />
-                      </Button>
-                    </div>
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
-                      {(template.formats || []).map((format) => (
-                        <div key={format} className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-xs">
-                            {format}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFormatFromTemplate(template.id, format)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                          >
-                            <X size={12} />
-                          </Button>
+                        
+                        {/* Content items for this medium */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {(template.formats || []).map((format) => (
+                              <div key={format} className="flex items-center gap-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {format}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFormatFromTemplate(template.id, format)}
+                                  className="text-gray-400 hover:text-red-500 p-0 h-4 w-4"
+                                >
+                                  <X size={10} />
+                                </Button>
+                              </div>
+                            ))}
+                            
+                            {/* Add Content Button */}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTemplateId(template.id);
+                                setSelectedMedium(medium);
+                              }}
+                              className="h-6 text-xs"
+                            >
+                              <Plus size={12} className="mr-1" />
+                              Add Content
+                            </Button>
+                          </div>
+                          
+                          {/* Add content input - shown when this template and medium is selected */}
+                          {selectedTemplateId === template.id && selectedMedium === medium && (
+                            <div className="flex items-center space-x-2 mt-2">
+                              <Input
+                                value={newTemplateFormat}
+                                onChange={(e) => setNewTemplateFormat(e.target.value)}
+                                placeholder="Add content (e.g., text-ad, banner, video)"
+                                className="flex-1 text-sm"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addFormatToTemplate(template.id);
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addFormatToTemplate(template.id)}
+                                disabled={!newTemplateFormat.trim()}
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedTemplateId(null);
+                                  setSelectedMedium(null);
+                                  setNewTemplateFormat("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
+                    
+                    {(template.mediums || []).length === 0 && (
+                      <p className="text-sm text-gray-500 italic">No mediums added yet. Add a medium above to get started.</p>
+                    )}
                   </div>
                 </div>
               </div>
