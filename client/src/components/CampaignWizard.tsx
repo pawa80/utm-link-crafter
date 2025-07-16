@@ -134,6 +134,17 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  // Function to fetch UTM content suggestions for source and medium
+  const fetchUtmContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
+    try {
+      const response = await apiRequest("GET", `/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching UTM content suggestions:', error);
+      return [];
+    }
+  };
+
   // Rest of the existing mutations and functions...
   const createUtmLinkMutation = useMutation({
     mutationFn: async (linkData: any) => {
@@ -869,7 +880,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       variant={state.checked ? "default" : "outline"}
                       size="sm"
                       className={state.checked ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                      onClick={() => {
+                      onClick={async () => {
                         const newChecked = !state.checked;
                         setSourceStates(prev => ({
                           ...prev,
@@ -887,6 +898,43 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             ...prev,
                             [variantKey]: [{ id: `${variantKey}-0`, content: '' }]
                           }));
+                          
+                          // Auto-populate UTM content for the first medium of this source if available
+                          if (template.mediums && template.mediums.length > 0) {
+                            const firstMedium = template.mediums[0];
+                            const contentSuggestions = await fetchUtmContentSuggestions(template.sourceName.toLowerCase(), firstMedium);
+                            
+                            if (contentSuggestions.length > 0) {
+                              const firstMediumKey = getVariantKey(template.sourceName, firstMedium);
+                              const newVariants = contentSuggestions.map((content, index) => ({
+                                id: `${firstMediumKey}-${index}`,
+                                content: content
+                              }));
+                              
+                              // Update to use first medium instead of empty string
+                              setSourceStates(prev => ({
+                                ...prev,
+                                [template.sourceName]: {
+                                  ...prev[template.sourceName],
+                                  selectedMediums: [firstMedium]
+                                }
+                              }));
+                              
+                              // Replace empty content variant with populated ones
+                              setContentVariants(prev => {
+                                const updatedVariants = { ...prev };
+                                delete updatedVariants[variantKey]; // Remove empty medium entry
+                                updatedVariants[firstMediumKey] = newVariants;
+                                return updatedVariants;
+                              });
+                              
+                              // Show toast to inform user
+                              toast({
+                                title: "UTM Content Added",
+                                description: `Auto-populated ${contentSuggestions.length} content suggestions for ${template.sourceName} ${firstMedium}. Remove unwanted rows if needed.`,
+                              });
+                            }
+                          }
                         }
                       }}
                     >
@@ -1073,12 +1121,15 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               <td className="p-3">
                                 <Select
                                   value={row.medium}
-                                  onValueChange={(value) => {
+                                  onValueChange={async (value) => {
                                     // Update the medium for this specific variant only
                                     const oldMedium = row.medium;
                                     const oldKey = getVariantKey(sourceName, oldMedium);
                                     const newKey = getVariantKey(sourceName, value);
                                     const oldRowKey = `${sourceName}-${oldMedium}-${row.variant.id}`;
+                                    
+                                    // Fetch UTM content suggestions for the new source and medium combination
+                                    const contentSuggestions = await fetchUtmContentSuggestions(sourceName.toLowerCase(), value);
                                     
                                     // Update content variants - move this specific variant to new medium key
                                     setContentVariants(prev => {
@@ -1087,24 +1138,51 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       
                                       if (currentVariant) {
                                         const existingNewVariants = prev[newKey] || [];
-                                        const newVariantId = `${newKey}-${existingNewVariants.length}`;
-                                        const newVariant = { ...currentVariant, id: newVariantId };
                                         
-                                        // Remove the specific variant from old key
-                                        const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
-                                        
-                                        const result = {
-                                          ...prev,
-                                          [oldKey]: updatedOldVariants,
-                                          [newKey]: [...existingNewVariants, newVariant]
-                                        };
-                                        
-                                        // Clean up empty keys
-                                        if (result[oldKey].length === 0) {
-                                          delete result[oldKey];
+                                        // If there are no existing variants for this new medium and we have content suggestions,
+                                        // populate them automatically
+                                        if (existingNewVariants.length === 0 && contentSuggestions.length > 0) {
+                                          const newVariants = contentSuggestions.map((content, index) => ({
+                                            id: `${newKey}-${index}`,
+                                            content: content
+                                          }));
+                                          
+                                          // Remove the specific variant from old key
+                                          const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
+                                          
+                                          const result = {
+                                            ...prev,
+                                            [oldKey]: updatedOldVariants,
+                                            [newKey]: newVariants
+                                          };
+                                          
+                                          // Clean up empty keys
+                                          if (result[oldKey].length === 0) {
+                                            delete result[oldKey];
+                                          }
+                                          
+                                          return result;
+                                        } else {
+                                          // No suggestions or variants already exist, just move the current variant
+                                          const newVariantId = `${newKey}-${existingNewVariants.length}`;
+                                          const newVariant = { ...currentVariant, id: newVariantId };
+                                          
+                                          // Remove the specific variant from old key
+                                          const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
+                                          
+                                          const result = {
+                                            ...prev,
+                                            [oldKey]: updatedOldVariants,
+                                            [newKey]: [...existingNewVariants, newVariant]
+                                          };
+                                          
+                                          // Clean up empty keys
+                                          if (result[oldKey].length === 0) {
+                                            delete result[oldKey];
+                                          }
+                                          
+                                          return result;
                                         }
-                                        
-                                        return result;
                                       }
                                       return prev;
                                     });

@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, utmTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type UtmTemplate, type InsertUtmTemplate } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -32,6 +32,10 @@ export interface IStorage {
   createCampaignLandingPage(landingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage>;
   getCampaignLandingPages(userId: number, campaignName: string, includeArchived?: boolean): Promise<CampaignLandingPage[]>;
   deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean>;
+  
+  // UTM Template operations
+  getUtmTemplates(): Promise<UtmTemplate[]>;
+  getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -242,6 +246,24 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(campaignLandingPages)
       .where(and(eq(campaignLandingPages.userId, userId), eq(campaignLandingPages.campaignName, campaignName)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getUtmTemplates(): Promise<UtmTemplate[]> {
+    return await db.select().from(utmTemplates);
+  }
+
+  async getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]> {
+    const templates = await db
+      .select({ utmContent: utmTemplates.utmContent })
+      .from(utmTemplates)
+      .where(
+        and(
+          eq(utmTemplates.utmSource, utmSource),
+          eq(utmTemplates.utmMedium, utmMedium)
+        )
+      );
+    
+    return templates.map(t => t.utmContent);
   }
 }
 

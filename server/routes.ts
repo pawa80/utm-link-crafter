@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema } from "@shared/schema";
 import { z } from "zod";
+import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
   const firebaseUid = req.headers['x-firebase-uid'];
@@ -30,6 +31,9 @@ const authMiddleware = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Seed UTM templates on startup
+  await seedUtmTemplates();
+  
   // Create or get user
   app.post("/api/users", async (req, res) => {
     try {
@@ -42,6 +46,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = await storage.createUser(userData);
+      
+      // Create default source templates for new users
+      const defaultSources = getUniqueSourcesAndMediums();
+      for (const sourceData of defaultSources) {
+        await storage.createSourceTemplate({
+          ...sourceData,
+          userId: user.id
+        });
+      }
+      
       res.json(user);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -412,6 +426,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only delete user's own campaign landing pages
       const success = await storage.deleteCampaignLandingPages(req.user.id, campaignName);
       res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // UTM Templates API routes
+  app.get("/api/utm-templates", async (req, res) => {
+    try {
+      const templates = await storage.getUtmTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/utm-content/:source/:medium", async (req, res) => {
+    try {
+      const { source, medium } = req.params;
+      
+      // Validate parameters
+      if (!source || !medium) {
+        return res.status(400).json({ message: "Source and medium are required" });
+      }
+      
+      const contentOptions = await storage.getUtmContentsBySourceMedium(source, medium);
+      res.json(contentOptions);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
