@@ -880,62 +880,16 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       variant={state.checked ? "default" : "outline"}
                       size="sm"
                       className={state.checked ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                      onClick={async () => {
+                      onClick={() => {
                         const newChecked = !state.checked;
                         setSourceStates(prev => ({
                           ...prev,
                           [template.sourceName]: {
                             ...state,
                             checked: newChecked,
-                            selectedMediums: newChecked ? [""] : [] // Start with one empty medium slot
+                            selectedMediums: [] // Don't auto-select mediums anymore
                           }
                         }));
-                        
-                        // Initialize content variant for the empty medium
-                        if (newChecked) {
-                          const variantKey = getVariantKey(template.sourceName, "");
-                          setContentVariants(prev => ({
-                            ...prev,
-                            [variantKey]: [{ id: `${variantKey}-0`, content: '' }]
-                          }));
-                          
-                          // Auto-populate UTM content for the first medium of this source if available
-                          if (template.mediums && template.mediums.length > 0) {
-                            const firstMedium = template.mediums[0];
-                            const contentSuggestions = await fetchUtmContentSuggestions(template.sourceName.toLowerCase(), firstMedium);
-                            
-                            if (contentSuggestions.length > 0) {
-                              const firstMediumKey = getVariantKey(template.sourceName, firstMedium);
-                              const newVariants = contentSuggestions.map((content, index) => ({
-                                id: `${firstMediumKey}-${index}`,
-                                content: content
-                              }));
-                              
-                              // Update to use first medium instead of empty string
-                              setSourceStates(prev => ({
-                                ...prev,
-                                [template.sourceName]: {
-                                  ...prev[template.sourceName],
-                                  selectedMediums: [firstMedium]
-                                }
-                              }));
-                              
-                              // Replace empty content variant with populated ones
-                              setContentVariants(prev => {
-                                const updatedVariants = { ...prev };
-                                delete updatedVariants[variantKey]; // Remove empty medium entry
-                                updatedVariants[firstMediumKey] = newVariants;
-                                return updatedVariants;
-                              });
-                              
-                              // Show toast to inform user
-                              toast({
-                                title: "UTM Content Added",
-                                description: `Auto-populated ${contentSuggestions.length} content suggestions for ${template.sourceName} ${firstMedium}. Remove unwanted rows if needed.`,
-                              });
-                            }
-                          }
-                        }
                       }}
                     >
                       {template.sourceName}
@@ -984,10 +938,98 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 </Button>
               )}
             </div>
-            
-
           </div>
       </Card>
+
+      {/* Section 3: Mediums */}
+      {Object.entries(sourceStates).some(([, state]) => state.checked) && (
+        <Card>
+          <SectionHeader title="Mediums" />
+          <div className="p-6">
+            <div className="text-sm text-gray-600 mb-4">
+              Select mediums for each chosen source.
+            </div>
+            <div className="space-y-6">
+              {Object.entries(sourceStates)
+                .filter(([, state]) => state.checked)
+                .map(([sourceName, state]) => {
+                  const template = sourceTemplates.find((t: SourceTemplate) => t.sourceName === sourceName);
+                  return (
+                    <div key={sourceName} className="border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{sourceName}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {template?.mediums?.map((medium: string) => {
+                          const isMediumSelected = state.selectedMediums.includes(medium);
+                          return (
+                            <Button
+                              key={medium}
+                              variant={isMediumSelected ? "default" : "outline"}
+                              size="sm"
+                              className={isMediumSelected ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                              onClick={async () => {
+                                const newSelectedMediums = isMediumSelected
+                                  ? state.selectedMediums.filter(m => m !== medium)
+                                  : [...state.selectedMediums, medium];
+                                
+                                setSourceStates(prev => ({
+                                  ...prev,
+                                  [sourceName]: {
+                                    ...state,
+                                    selectedMediums: newSelectedMediums
+                                  }
+                                }));
+
+                                // If medium is being selected for the first time, auto-populate content
+                                if (!isMediumSelected) {
+                                  const contentSuggestions = await fetchUtmContentSuggestions(sourceName.toLowerCase(), medium);
+                                  
+                                  if (contentSuggestions.length > 0) {
+                                    const mediumKey = getVariantKey(sourceName, medium);
+                                    const newVariants = contentSuggestions.map((content, index) => ({
+                                      id: `${mediumKey}-${index}`,
+                                      content: content
+                                    }));
+                                    
+                                    setContentVariants(prev => ({
+                                      ...prev,
+                                      [mediumKey]: newVariants
+                                    }));
+                                    
+                                    toast({
+                                      title: "UTM Content Added",
+                                      description: `Auto-populated ${contentSuggestions.length} content suggestions for ${sourceName} ${medium}. Remove unwanted rows if needed.`,
+                                    });
+                                  } else {
+                                    // No suggestions available, create empty content variant
+                                    const mediumKey = getVariantKey(sourceName, medium);
+                                    setContentVariants(prev => ({
+                                      ...prev,
+                                      [mediumKey]: [{ id: `${mediumKey}-0`, content: '' }]
+                                    }));
+                                  }
+                                } else {
+                                  // Medium is being deselected, remove content variants
+                                  const mediumKey = getVariantKey(sourceName, medium);
+                                  setContentVariants(prev => {
+                                    const updatedVariants = { ...prev };
+                                    delete updatedVariants[mediumKey];
+                                    return updatedVariants;
+                                  });
+                                }
+                              }}
+                            >
+                              {medium}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Section 4: Campaign Links */}
       <Card>
@@ -1119,135 +1161,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 </td>
                               )}
                               <td className="p-3">
-                                <Select
-                                  value={row.medium}
-                                  onValueChange={async (value) => {
-                                    // Update the medium for this specific variant only
-                                    const oldMedium = row.medium;
-                                    const oldKey = getVariantKey(sourceName, oldMedium);
-                                    const newKey = getVariantKey(sourceName, value);
-                                    const oldRowKey = `${sourceName}-${oldMedium}-${row.variant.id}`;
-                                    
-                                    // Fetch UTM content suggestions for the new source and medium combination
-                                    const contentSuggestions = await fetchUtmContentSuggestions(sourceName.toLowerCase(), value);
-                                    
-                                    // Update content variants - move this specific variant to new medium key
-                                    setContentVariants(prev => {
-                                      const oldVariants = prev[oldKey] || [];
-                                      const currentVariant = oldVariants.find(v => v.id === row.variant.id);
-                                      
-                                      if (currentVariant) {
-                                        const existingNewVariants = prev[newKey] || [];
-                                        
-                                        // If there are no existing variants for this new medium and we have content suggestions,
-                                        // populate them automatically
-                                        if (existingNewVariants.length === 0 && contentSuggestions.length > 0) {
-                                          const newVariants = contentSuggestions.map((content, index) => ({
-                                            id: `${newKey}-${index}`,
-                                            content: content
-                                          }));
-                                          
-                                          // Remove the specific variant from old key
-                                          const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
-                                          
-                                          const result = {
-                                            ...prev,
-                                            [oldKey]: updatedOldVariants,
-                                            [newKey]: newVariants
-                                          };
-                                          
-                                          // Clean up empty keys
-                                          if (result[oldKey].length === 0) {
-                                            delete result[oldKey];
-                                          }
-                                          
-                                          return result;
-                                        } else {
-                                          // No suggestions or variants already exist, just move the current variant
-                                          const newVariantId = `${newKey}-${existingNewVariants.length}`;
-                                          const newVariant = { ...currentVariant, id: newVariantId };
-                                          
-                                          // Remove the specific variant from old key
-                                          const updatedOldVariants = oldVariants.filter(v => v.id !== row.variant.id);
-                                          
-                                          const result = {
-                                            ...prev,
-                                            [oldKey]: updatedOldVariants,
-                                            [newKey]: [...existingNewVariants, newVariant]
-                                          };
-                                          
-                                          // Clean up empty keys
-                                          if (result[oldKey].length === 0) {
-                                            delete result[oldKey];
-                                          }
-                                          
-                                          return result;
-                                        }
-                                      }
-                                      return prev;
-                                    });
-                                    
-                                    // Update landing page selections and selectedMediums array
-                                    setSourceStates(prev => {
-                                      const currentSelection = prev[sourceName].landingPageSelections[oldRowKey];
-                                      const newLandingPageSelections = { ...prev[sourceName].landingPageSelections };
-                                      
-                                      // Remove old selection
-                                      delete newLandingPageSelections[oldRowKey];
-                                      
-                                      // Add new selection with updated key
-                                      const existingNewKeys = Object.keys(newLandingPageSelections).filter(k => k.startsWith(`${sourceName}-${value}-`)).length;
-                                      const newRowKey = `${sourceName}-${value}-${newKey}-${existingNewKeys}`;
-                                      if (currentSelection) {
-                                        newLandingPageSelections[newRowKey] = currentSelection;
-                                      }
-                                      
-                                      // Calculate what mediums will be in use after this change
-                                      // We need to look at contentVariants state directly since we're in a callback
-                                      const mediumsInUse = new Set<string>();
-                                      
-                                      // Examine current contentVariants and predict what will be left
-                                      Object.keys(contentVariants).forEach(key => {
-                                        const [source, medium] = key.split('-');
-                                        if (source === sourceName && contentVariants[key].length > 0) {
-                                          // Skip the old key if it will be empty after removing our variant
-                                          if (key === oldKey && contentVariants[key].length === 1) {
-                                            // This key will be empty after removing our variant
-                                            return;
-                                          }
-                                          mediumsInUse.add(medium);
-                                        }
-                                      });
-                                      
-                                      // Add the new medium
-                                      mediumsInUse.add(value);
-                                      
-                                      const updatedMediums = Array.from(mediumsInUse);
-                                      
-                                      return {
-                                        ...prev,
-                                        [sourceName]: {
-                                          ...prev[sourceName],
-                                          selectedMediums: updatedMediums,
-                                          landingPageSelections: newLandingPageSelections
-                                        }
-                                      };
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Choose medium" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sourceTemplates
-                                      .find((template: SourceTemplate) => template.sourceName === sourceName)
-                                      ?.mediums?.map((medium: string) => (
-                                        <SelectItem key={medium} value={medium}>
-                                          {medium}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
+                                <span className="text-sm font-medium text-gray-700">{row.medium}</span>
                               </td>
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
