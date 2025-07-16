@@ -10,6 +10,11 @@ export interface UTMParams {
   utm_custom3?: string;
 }
 
+// Helper function to replace spaces with dashes and clean UTM parameters
+const cleanUTMParam = (value: string): string => {
+  return value.trim().replace(/\s+/g, '-');
+};
+
 export const generateUTMLink = (params: UTMParams): string => {
   // Validate the target URL first
   if (!params.targetUrl || !params.targetUrl.trim()) {
@@ -26,28 +31,29 @@ export const generateUTMLink = (params: UTMParams): string => {
     
     const url = new URL(targetUrl);
     
-    url.searchParams.set('utm_campaign', params.utm_campaign);
-    url.searchParams.set('utm_source', params.utm_source);
-    url.searchParams.set('utm_medium', params.utm_medium);
+    // Clean UTM parameters by replacing spaces with dashes
+    url.searchParams.set('utm_campaign', cleanUTMParam(params.utm_campaign));
+    url.searchParams.set('utm_source', cleanUTMParam(params.utm_source));
+    url.searchParams.set('utm_medium', cleanUTMParam(params.utm_medium));
     
     if (params.utm_content) {
-      url.searchParams.set('utm_content', params.utm_content);
+      url.searchParams.set('utm_content', cleanUTMParam(params.utm_content));
     }
     
     if (params.utm_term) {
-      url.searchParams.set('utm_term', params.utm_term);
+      url.searchParams.set('utm_term', cleanUTMParam(params.utm_term));
     }
     
     if (params.utm_custom1) {
-      url.searchParams.set('utm_custom1', params.utm_custom1);
+      url.searchParams.set('utm_custom1', cleanUTMParam(params.utm_custom1));
     }
     
     if (params.utm_custom2) {
-      url.searchParams.set('utm_custom2', params.utm_custom2);
+      url.searchParams.set('utm_custom2', cleanUTMParam(params.utm_custom2));
     }
     
     if (params.utm_custom3) {
-      url.searchParams.set('utm_custom3', params.utm_custom3);
+      url.searchParams.set('utm_custom3', cleanUTMParam(params.utm_custom3));
     }
     
     return url.toString();
