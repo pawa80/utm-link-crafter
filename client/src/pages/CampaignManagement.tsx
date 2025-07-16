@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import GeneratedLinks from "@/components/GeneratedLinks";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus, ArrowLeft, Archive } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -16,6 +16,7 @@ export default function CampaignManagement() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -78,19 +79,34 @@ export default function CampaignManagement() {
           {/* Header with New Campaign button */}
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Campaign Management</h1>
-              <p className="text-gray-600">View and manage your UTM campaigns</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {showArchived ? "Archived Campaigns" : "Campaign Management"}
+              </h1>
+              <p className="text-gray-600">
+                {showArchived ? "View and manage archived campaigns" : "View and manage your UTM campaigns"}
+              </p>
             </div>
-            <Link href="/new-campaign">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                New Campaign
+            <div className="flex gap-2">
+              <Button
+                variant={showArchived ? "default" : "outline"}
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                {showArchived ? "Show Active" : "Show Archived"}
               </Button>
-            </Link>
+              {!showArchived && (
+                <Link href="/new-campaign">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Campaign
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Generated Links Section */}
-          <GeneratedLinks />
+          <GeneratedLinks showArchived={showArchived} />
         </div>
       </div>
     </div>

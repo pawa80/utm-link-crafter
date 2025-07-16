@@ -7,13 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/utm";
 import { formatDistanceToNow } from "date-fns";
-import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc } from "lucide-react";
+import { List, Copy, Download, ChevronDown, ChevronUp, Edit, Filter, SortAsc, Archive, ArchiveRestore } from "lucide-react";
 import { Link } from "wouter";
 import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import CampaignCard from "./CampaignCard";
 
-export default function GeneratedLinks() {
+interface GeneratedLinksProps {
+  showArchived?: boolean;
+}
+
+export default function GeneratedLinks({ showArchived = false }: GeneratedLinksProps) {
   const { toast } = useToast();
   const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set());
   const [initializedCollapse, setInitializedCollapse] = useState(false);
@@ -51,7 +55,17 @@ export default function GeneratedLinks() {
   };
 
   const { data: links = [], isLoading } = useQuery<UtmLink[]>({
-    queryKey: ["/api/utm-links"],
+    queryKey: ["/api/utm-links", showArchived],
+    queryFn: async () => {
+      const response = await fetch(`/api/utm-links?includeArchived=${showArchived}`, {
+        headers: {
+          'x-firebase-uid': localStorage.getItem('firebase-uid') || '',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch UTM links');
+      const data = await response.json();
+      return showArchived ? data.filter((link: UtmLink) => link.isArchived) : data.filter((link: UtmLink) => !link.isArchived);
+    },
   });
   
   // Debug logging
@@ -318,6 +332,7 @@ export default function GeneratedLinks() {
                     sources={sources}
                     isCollapsed={isCollapsed}
                     onToggleCollapse={() => toggleCampaignCollapse(campaignName)}
+                    isArchived={sources.some(source => source.links.some(link => link.isArchived))}
                   />
 
                   {/* Sources for this campaign - only show when not collapsed */}

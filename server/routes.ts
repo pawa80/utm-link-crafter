@@ -79,8 +79,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const offset = parseInt(req.query.offset as string) || 0;
+      const includeArchived = req.query.includeArchived === 'true';
       
-      const links = await storage.getUserUtmLinks(req.user.id, limit, offset);
+      const links = await storage.getUserUtmLinks(req.user.id, limit, offset, includeArchived);
       res.json(links);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -97,6 +98,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ message: "Campaign links deleted successfully" });
       } else {
         res.status(500).json({ message: "Failed to delete campaign links" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Archive campaign
+  app.post("/api/campaigns/:campaignName/archive", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = decodeURIComponent(req.params.campaignName);
+      const success = await storage.archiveCampaign(req.user.id, campaignName);
+      
+      if (success) {
+        res.json({ message: "Campaign archived successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to archive campaign" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Unarchive campaign
+  app.post("/api/campaigns/:campaignName/unarchive", authMiddleware, async (req: any, res) => {
+    try {
+      const campaignName = decodeURIComponent(req.params.campaignName);
+      const success = await storage.unarchiveCampaign(req.user.id, campaignName);
+      
+      if (success) {
+        res.json({ message: "Campaign unarchived successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to unarchive campaign" });
       }
     } catch (error: any) {
       res.status(400).json({ message: error.message });

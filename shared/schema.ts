@@ -52,6 +52,7 @@ export const campaignLandingPages = pgTable("campaign_landing_pages", {
   campaignName: text("campaign_name").notNull(),
   url: text("url").notNull(),
   label: text("label").notNull(), // User-friendly name for the URL
+  isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -71,6 +72,7 @@ export const utmLinks = pgTable("utm_links", {
   customField2Value: text("custom_field_2_value"),
   customField3Value: text("custom_field_3_value"),
   tags: text("tags").array().default([]), // Array of tag names associated with this campaign
+  isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

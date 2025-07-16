@@ -11,9 +11,11 @@ export interface IStorage {
   
   // UTM Link operations
   createUtmLink(utmLink: InsertUtmLink): Promise<UtmLink>;
-  getUserUtmLinks(userId: number, limit?: number, offset?: number): Promise<UtmLink[]>;
+  getUserUtmLinks(userId: number, limit?: number, offset?: number, includeArchived?: boolean): Promise<UtmLink[]>;
   getUtmLink(id: number): Promise<UtmLink | undefined>;
   deleteUtmLinksByCampaign(userId: number, campaignName: string): Promise<boolean>;
+  archiveCampaign(userId: number, campaignName: string): Promise<boolean>;
+  unarchiveCampaign(userId: number, campaignName: string): Promise<boolean>;
   
   // Source Template operations
   createSourceTemplate(sourceTemplate: InsertSourceTemplate): Promise<SourceTemplate>;
@@ -28,7 +30,7 @@ export interface IStorage {
   
   // Campaign Landing Page operations
   createCampaignLandingPage(landingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage>;
-  getCampaignLandingPages(userId: number, campaignName: string): Promise<CampaignLandingPage[]>;
+  getCampaignLandingPages(userId: number, campaignName: string, includeArchived?: boolean): Promise<CampaignLandingPage[]>;
   deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean>;
 }
 
@@ -68,11 +70,16 @@ export class DatabaseStorage implements IStorage {
     return utmLink;
   }
 
-  async getUserUtmLinks(userId: number, limit = 100, offset = 0): Promise<UtmLink[]> {
+  async getUserUtmLinks(userId: number, limit = 100, offset = 0, includeArchived = false): Promise<UtmLink[]> {
     const userLinks = await db
       .select()
       .from(utmLinks)
-      .where(eq(utmLinks.userId, userId))
+      .where(
+        and(
+          eq(utmLinks.userId, userId),
+          includeArchived ? undefined : eq(utmLinks.isArchived, false)
+        )
+      )
       .limit(limit)
       .offset(offset)
       .orderBy(desc(utmLinks.id)); // Order by ID descending to show newest first
@@ -98,6 +105,68 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error deleting UTM links by campaign:', error);
+      return false;
+    }
+  }
+
+  async archiveCampaign(userId: number, campaignName: string): Promise<boolean> {
+    try {
+      // Archive UTM links
+      await db
+        .update(utmLinks)
+        .set({ isArchived: true })
+        .where(
+          and(
+            eq(utmLinks.userId, userId),
+            eq(utmLinks.utm_campaign, campaignName)
+          )
+        );
+      
+      // Archive landing pages
+      await db
+        .update(campaignLandingPages)
+        .set({ isArchived: true })
+        .where(
+          and(
+            eq(campaignLandingPages.userId, userId),
+            eq(campaignLandingPages.campaignName, campaignName)
+          )
+        );
+      
+      return true;
+    } catch (error) {
+      console.error('Error archiving campaign:', error);
+      return false;
+    }
+  }
+
+  async unarchiveCampaign(userId: number, campaignName: string): Promise<boolean> {
+    try {
+      // Unarchive UTM links
+      await db
+        .update(utmLinks)
+        .set({ isArchived: false })
+        .where(
+          and(
+            eq(utmLinks.userId, userId),
+            eq(utmLinks.utm_campaign, campaignName)
+          )
+        );
+      
+      // Unarchive landing pages
+      await db
+        .update(campaignLandingPages)
+        .set({ isArchived: false })
+        .where(
+          and(
+            eq(campaignLandingPages.userId, userId),
+            eq(campaignLandingPages.campaignName, campaignName)
+          )
+        );
+      
+      return true;
+    } catch (error) {
+      console.error('Error unarchiving campaign:', error);
       return false;
     }
   }
@@ -156,9 +225,13 @@ export class DatabaseStorage implements IStorage {
     return landingPage;
   }
 
-  async getCampaignLandingPages(userId: number, campaignName: string): Promise<CampaignLandingPage[]> {
+  async getCampaignLandingPages(userId: number, campaignName: string, includeArchived = false): Promise<CampaignLandingPage[]> {
     return await db.select().from(campaignLandingPages)
-      .where(and(eq(campaignLandingPages.userId, userId), eq(campaignLandingPages.campaignName, campaignName)));
+      .where(and(
+        eq(campaignLandingPages.userId, userId), 
+        eq(campaignLandingPages.campaignName, campaignName),
+        includeArchived ? undefined : eq(campaignLandingPages.isArchived, false)
+      ));
   }
 
   async deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean> {

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Edit, Copy, Archive } from "lucide-react";
+import { ChevronDown, ChevronUp, Edit, Copy, Archive, ArchiveRestore } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -26,13 +26,15 @@ interface CampaignCardProps {
   }>;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isArchived?: boolean;
 }
 
 export default function CampaignCard({ 
   campaignName, 
   sources, 
   isCollapsed, 
-  onToggleCollapse 
+  onToggleCollapse,
+  isArchived = false
 }: CampaignCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -62,8 +64,7 @@ export default function CampaignCard({
   // Archive campaign mutation
   const archiveCampaignMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
-      await apiRequest("DELETE", `/api/campaign-landing-pages/${encodeURIComponent(campaignName)}`);
+      await apiRequest("POST", `/api/campaigns/${encodeURIComponent(campaignName)}/archive`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
@@ -82,9 +83,35 @@ export default function CampaignCard({
     },
   });
 
+  // Unarchive campaign mutation
+  const unarchiveCampaignMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/campaigns/${encodeURIComponent(campaignName)}/unarchive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
+      toast({
+        title: "Campaign unarchived",
+        description: `Campaign "${campaignName}" has been successfully unarchived.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Unarchive failed",
+        description: error.message || "Could not unarchive campaign",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleArchiveCampaign = () => {
     archiveCampaignMutation.mutate();
     setShowArchiveDialog(false);
+  };
+
+  const handleUnarchiveCampaign = () => {
+    unarchiveCampaignMutation.mutate();
   };
 
   const handleCopyAllCampaignLinks = async () => {
@@ -159,16 +186,18 @@ export default function CampaignCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-primary hover:text-primary/80"
-            >
-              <Edit className="mr-2" size={16} />
-              Edit
-            </Button>
-          </Link>
+          {!isArchived && (
+            <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-primary hover:text-primary/80"
+              >
+                <Edit className="mr-2" size={16} />
+                Edit
+              </Button>
+            </Link>
+          )}
           <Button
             onClick={onToggleCollapse}
             variant="outline"
@@ -196,15 +225,28 @@ export default function CampaignCard({
             <Copy className="mr-2" size={16} />
             Copy Links
           </Button>
-          <Button
-            onClick={() => setShowArchiveDialog(true)}
-            variant="outline"
-            size="sm"
-            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-          >
-            <Archive className="mr-2" size={16} />
-            Archive
-          </Button>
+          {isArchived ? (
+            <Button
+              onClick={handleUnarchiveCampaign}
+              variant="outline"
+              size="sm"
+              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+              disabled={unarchiveCampaignMutation.isPending}
+            >
+              <ArchiveRestore className="mr-2" size={16} />
+              {unarchiveCampaignMutation.isPending ? "Unarchiving..." : "Unarchive"}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowArchiveDialog(true)}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+            >
+              <Archive className="mr-2" size={16} />
+              Archive
+            </Button>
+          )}
         </div>
       </div>
 
@@ -240,16 +282,18 @@ export default function CampaignCard({
         {/* Mobile Action Buttons */}
         <div className="flex flex-col gap-2 mt-3">
           <div className="flex gap-2">
-            <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-primary hover:text-primary/80 flex-1"
-              >
-                <Edit className="mr-2" size={16} />
-                Edit
-              </Button>
-            </Link>
+            {!isArchived && (
+              <Link to={`/new-campaign?edit=${encodeURIComponent(campaignName)}`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-primary hover:text-primary/80 flex-1"
+                >
+                  <Edit className="mr-2" size={16} />
+                  Edit
+                </Button>
+              </Link>
+            )}
             <Button
               onClick={onToggleCollapse}
               variant="outline"
@@ -278,15 +322,28 @@ export default function CampaignCard({
             <Copy className="mr-2" size={16} />
             Copy Links
           </Button>
-          <Button
-            onClick={() => setShowArchiveDialog(true)}
-            variant="outline"
-            size="sm"
-            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-          >
-            <Archive className="mr-2" size={16} />
-            Archive
-          </Button>
+          {isArchived ? (
+            <Button
+              onClick={handleUnarchiveCampaign}
+              variant="outline"
+              size="sm"
+              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+              disabled={unarchiveCampaignMutation.isPending}
+            >
+              <ArchiveRestore className="mr-2" size={16} />
+              {unarchiveCampaignMutation.isPending ? "Unarchiving..." : "Unarchive"}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowArchiveDialog(true)}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+            >
+              <Archive className="mr-2" size={16} />
+              Archive
+            </Button>
+          )}
         </div>
       </div>
 
@@ -296,7 +353,7 @@ export default function CampaignCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Campaign</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive the campaign "{campaignName}"? This will permanently delete all UTM links and landing pages associated with this campaign. This action cannot be undone.
+              Are you sure you want to archive the campaign "{campaignName}"? This will hide the campaign from your active campaigns view. You can unarchive it later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
