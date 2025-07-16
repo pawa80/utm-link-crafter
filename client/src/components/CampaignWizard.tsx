@@ -1109,7 +1109,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               </div>
                             </th>
                             <th 
-                              className="text-left p-3 text-sm font-medium text-gray-700 w-40 cursor-pointer hover:bg-gray-100 select-none"
+                              className="text-left p-3 text-sm font-medium text-gray-700 w-56 cursor-pointer hover:bg-gray-100 select-none"
                               onClick={() => handleColumnSort(sourceName, 'content')}
                             >
                               <div className="flex items-center">

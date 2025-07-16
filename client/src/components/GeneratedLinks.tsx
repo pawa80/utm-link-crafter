@@ -403,7 +403,7 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
                           </div>
                       
                           {/* Desktop: Headers */}
-                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '1fr 120px 150px 200px 1fr 80px' }}>
+                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '1fr 120px 220px 180px 1fr 80px' }}>
                             <span className="text-sm font-medium">Landing Page</span>
                             <span className="text-sm font-medium">Medium</span>
                             <span className="text-sm font-medium">Content</span>
@@ -418,7 +418,7 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
                               
                               return (
-                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 120px 150px 200px 1fr 80px' }}>
+                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 120px 220px 180px 1fr 80px' }}>
                                   <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
                                     {link.targetUrl}
                                   </div>
