@@ -12,6 +12,25 @@ import { Link } from "wouter";
 import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import CampaignCard from "./CampaignCard";
+import { auth } from "@/lib/firebase";
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const user = auth.currentUser;
+  if (!user) {
+    return {};
+  }
+  
+  try {
+    const token = await user.getIdToken();
+    const headers: Record<string, string> = {};
+    headers['x-firebase-uid'] = user.uid;
+    headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  } catch (error) {
+    console.error("Error getting auth token:", error);
+    return {};
+  }
+}
 
 interface GeneratedLinksProps {
   showArchived?: boolean;
@@ -57,12 +76,18 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
   const { data: links = [], isLoading } = useQuery<UtmLink[]>({
     queryKey: ["/api/utm-links", showArchived],
     queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
+      
       const response = await fetch(`/api/utm-links?includeArchived=${showArchived}`, {
-        headers: {
-          'x-firebase-uid': localStorage.getItem('firebase-uid') || '',
-        },
+        credentials: "include",
+        headers: authHeaders,
       });
-      if (!response.ok) throw new Error('Failed to fetch UTM links');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch UTM links: ${response.status} ${errorText}`);
+      }
+      
       const data = await response.json();
       return showArchived ? data.filter((link: UtmLink) => link.isArchived) : data.filter((link: UtmLink) => !link.isArchived);
     },
