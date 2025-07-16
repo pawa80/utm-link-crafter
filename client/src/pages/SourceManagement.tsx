@@ -26,6 +26,9 @@ export default function SourceManagement() {
   const [showArchived, setShowArchived] = useState(false);
   const [newSourceName, setNewSourceName] = useState("");
   const [newMediums, setNewMediums] = useState<{ [sourceId: number]: string }>({});
+  const [newFormats, setNewFormats] = useState<{ [sourceId: number]: string }>({});
+  const [selectedTemplateForContent, setSelectedTemplateForContent] = useState<number | null>(null);
+  const [selectedMediumForContent, setSelectedMediumForContent] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "alphabetic-az" | "alphabetic-za">("updated");
 
   const { toast } = useToast();
@@ -182,6 +185,40 @@ export default function SourceManagement() {
     toast({
       title: "Success",
       description: "Medium added successfully",
+    });
+  };
+
+  const addFormatToSource = async (template: SourceTemplate) => {
+    const newFormat = newFormats[template.id]?.trim();
+    if (!newFormat) return;
+
+    const updatedFormats = [...(template.formats || []), newFormat];
+    
+    await updateSourceMutation.mutateAsync({
+      id: template.id,
+      updates: { formats: updatedFormats }
+    });
+
+    setNewFormats(prev => ({ ...prev, [template.id]: "" }));
+    setSelectedTemplateForContent(null);
+    setSelectedMediumForContent(null);
+    toast({
+      title: "Success", 
+      description: "Content added successfully",
+    });
+  };
+
+  const removeFormatFromSource = async (template: SourceTemplate, formatToRemove: string) => {
+    const updatedFormats = (template.formats || []).filter(format => format !== formatToRemove);
+    
+    await updateSourceMutation.mutateAsync({
+      id: template.id,
+      updates: { formats: updatedFormats }
+    });
+
+    toast({
+      title: "Success",
+      description: "Content removed successfully", 
     });
   };
 
@@ -352,61 +389,161 @@ export default function SourceManagement() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {/* Mediums */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Mediums:</Label>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="space-y-4">
+                      {/* Add Medium Section */}
+                      {!template.isArchived && (
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Add Medium</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={newMediums[template.id] || ""}
+                              onChange={(e) => setNewMediums(prev => ({ ...prev, [template.id]: e.target.value }))}
+                              placeholder="Add new medium"
+                              className="w-48"
+                              onKeyPress={(e) => e.key === 'Enter' && addMediumToSource(template)}
+                            />
+                            <Button
+                              onClick={() => addMediumToSource(template)}
+                              disabled={!newMediums[template.id]?.trim() || updateSourceMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Plus size={16} className="mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mediums and Content Section */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Mediums & Content</Label>
                         {mediumsToShow.map((medium) => {
                           const isArchived = archivedMediums.includes(medium);
                           const inUse = isMediumInUse(template.sourceName, medium);
                           
                           return (
-                            <div key={medium} className="flex items-center gap-2">
-                              <Badge 
-                                variant={isArchived ? "secondary" : "default"}
-                                className={`${isArchived ? 'text-gray-500 bg-gray-200' : ''}`}
-                              >
-                                {medium}
-                                {inUse && <span className="ml-1 text-xs">•</span>}
-                              </Badge>
-                              <Button
-                                onClick={() => toggleMediumArchive(template, medium)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                              >
-                                {isArchived ? (
-                                  <ArchiveRestore size={12} className="text-green-600" />
-                                ) : (
-                                  <Archive size={12} className="text-orange-600" />
+                            <div key={medium} className="border rounded-lg p-3 bg-gray-50">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant={isArchived ? "secondary" : "default"}
+                                    className={`text-sm font-medium ${isArchived ? 'text-gray-500 bg-gray-200' : ''}`}
+                                  >
+                                    {medium}
+                                    {inUse && <span className="ml-1 text-xs">•</span>}
+                                  </Badge>
+                                  {isArchived && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Archived
+                                    </Badge>
+                                  )}
+                                  {inUse && (
+                                    <Badge variant="outline" className="text-xs text-blue-600">
+                                      In Use
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Button
+                                  onClick={() => toggleMediumArchive(template, medium)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  {isArchived ? (
+                                    <ArchiveRestore size={12} className="text-green-600" />
+                                  ) : (
+                                    <Archive size={12} className="text-orange-600" />
+                                  )}
+                                </Button>
+                              </div>
+                              
+                              {/* Content items for this medium */}
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {(template.formats || []).map((format) => (
+                                    <div key={format} className="flex items-center gap-1">
+                                      <Badge variant="outline" className="text-xs">
+                                        {format}
+                                      </Badge>
+                                      {!template.isArchived && (
+                                        <Button
+                                          onClick={() => removeFormatFromSource(template, format)}
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-gray-400 hover:text-red-500 p-0 h-4 w-4"
+                                        >
+                                          <Trash2 size={10} />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Add Content Button */}
+                                  {!template.isArchived && !isArchived && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedTemplateForContent(template.id);
+                                        setSelectedMediumForContent(medium);
+                                      }}
+                                      className="h-6 text-xs"
+                                    >
+                                      <Plus size={12} className="mr-1" />
+                                      Add Content
+                                    </Button>
+                                  )}
+                                </div>
+                                
+                                {/* Add content input - shown when this template and medium is selected */}
+                                {selectedTemplateForContent === template.id && selectedMediumForContent === medium && (
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <Input
+                                      value={newFormats[template.id] || ""}
+                                      onChange={(e) => setNewFormats(prev => ({ ...prev, [template.id]: e.target.value }))}
+                                      placeholder="Add content (e.g., text-ad, banner, video)"
+                                      className="flex-1 text-sm"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          addFormatToSource(template);
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => addFormatToSource(template)}
+                                      disabled={!newFormats[template.id]?.trim()}
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedTemplateForContent(null);
+                                        setSelectedMediumForContent(null);
+                                        setNewFormats(prev => ({ ...prev, [template.id]: "" }));
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 )}
-                              </Button>
+                              </div>
                             </div>
                           );
                         })}
+                        
+                        {mediumsToShow.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">No mediums added yet. Add a medium above to get started.</p>
+                        )}
                       </div>
-
-                      {/* Add new medium */}
-                      {!template.isArchived && (
-                        <div className="flex items-center gap-2 pt-2">
-                          <Input
-                            value={newMediums[template.id] || ""}
-                            onChange={(e) => setNewMediums(prev => ({ ...prev, [template.id]: e.target.value }))}
-                            placeholder="Add new medium"
-                            className="w-48"
-                            onKeyPress={(e) => e.key === 'Enter' && addMediumToSource(template)}
-                          />
-                          <Button
-                            onClick={() => addMediumToSource(template)}
-                            disabled={!newMediums[template.id]?.trim() || updateSourceMutation.isPending}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Plus size={16} className="mr-1" />
-                            Add
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
