@@ -27,6 +27,7 @@ export interface IStorage {
   createTag(tag: InsertTag): Promise<Tag>;
   getUserTags(userId: number): Promise<Tag[]>;
   getTagByName(userId: number, name: string): Promise<Tag | undefined>;
+  deleteTag(id: number, userId: number): Promise<boolean>;
   
   // Campaign Landing Page operations
   createCampaignLandingPage(landingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage>;
@@ -226,6 +227,28 @@ export class DatabaseStorage implements IStorage {
   async getTagByName(userId: number, name: string): Promise<Tag | undefined> {
     const [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name)));
     return tag || undefined;
+  }
+
+  async deleteTag(id: number, userId: number): Promise<boolean> {
+    // First, remove the tag from all UTM links
+    const userUtmLinks = await db.select().from(utmLinks).where(eq(utmLinks.userId, userId));
+    
+    for (const link of userUtmLinks) {
+      if (link.tags && link.tags.length > 0) {
+        // Get the tag name to remove
+        const [tagToDelete] = await db.select().from(tags).where(and(eq(tags.id, id), eq(tags.userId, userId)));
+        if (tagToDelete) {
+          const updatedTags = link.tags.filter(tag => tag !== tagToDelete.name);
+          await db.update(utmLinks)
+            .set({ tags: updatedTags })
+            .where(eq(utmLinks.id, link.id));
+        }
+      }
+    }
+
+    // Then delete the tag itself
+    const result = await db.delete(tags).where(and(eq(tags.id, id), eq(tags.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async createCampaignLandingPage(insertLandingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage> {

@@ -362,6 +362,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/tags/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteTag(id, req.user.id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Tag not found or access denied" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Campaign Landing Pages API routes
   app.get("/api/campaign-landing-pages/:campaignName", authMiddleware, async (req: any, res) => {
     try {
