@@ -408,9 +408,39 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }));
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
+    // Update the last bot message to reflect the new selection
     setTimeout(() => {
-      showSourceSelection(); // Show updated source selection with new source added
-    }, 500);
+      const updatedCount = campaignData.selectedSources.length + 1; // +1 because state update is async
+      const updatedSources = [...campaignData.selectedSources, source];
+      const updatedMessage = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
+      
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage && lastMessage.step === 'sources') {
+          // Update the options to remove the selected source and add continue button if needed
+          const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
+          const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
+          
+          const sourceOptions = unselectedSources.map(src => ({
+            label: src.charAt(0).toUpperCase() + src.slice(1),
+            value: src,
+            action: () => selectSource(src)
+          }));
+
+          const options = [
+            ...sourceOptions,
+            { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
+          ];
+
+          if (updatedCount > 0) {
+            options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() });
+          }
+
+          return [...prev.slice(0, -1), { ...lastMessage, content: updatedMessage, options }];
+        }
+        return prev;
+      });
+    }, 100);
   };
 
   const showMediumSelectionForFirstSource = () => {
