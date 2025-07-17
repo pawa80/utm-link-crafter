@@ -407,16 +407,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       });
     }
     
-    // Default sorting by landing page order, then by medium, then by variant content
-    return allRows.sort((a: any, b: any) => {
-      if (a.landingPageOrder !== b.landingPageOrder) {
-        return a.landingPageOrder - b.landingPageOrder;
-      }
-      if (a.medium !== b.medium) {
-        return a.medium.localeCompare(b.medium);
-      }
-      return a.variant.content.localeCompare(b.variant.content);
-    });
+    // No default sorting - return rows in their natural order
+    // Only sort when user explicitly clicks column headers
+    return allRows;
   };
 
   // Column sorting handlers
