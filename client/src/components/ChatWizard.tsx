@@ -385,8 +385,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     const currentCount = campaignData.selectedSources.length;
     const message = currentCount === 0 
-      ? "Perfect! Now let's choose your traffic sources. Which platforms will you be promoting on?"
-      : `You currently have ${currentCount} source(s): ${campaignData.selectedSources.join(', ')}. Choose more sources:`;
+      ? "Perfect! Now let's choose your traffic sources. Select all the platforms you'll be promoting on:"
+      : `✅ Selected sources: ${campaignData.selectedSources.join(', ')}. Select additional sources or continue:`;
 
     const options = [
       ...sourceOptions,
@@ -409,22 +409,25 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
     setTimeout(() => {
-      addBotMessage(
-        `✅ Added "${source}" to your sources! Would you like to add another source or continue to select mediums?`,
-        [
-          { label: "Add Another Source", value: "add-another", action: () => showSourceSelection() },
-          { label: "Continue to Mediums", value: "continue-mediums", action: () => showMediumSelectionForFirstSource() }
-        ]
-      );
+      showSourceSelection(); // Show updated source selection with new source added
     }, 500);
   };
 
   const showMediumSelectionForFirstSource = () => {
     const firstSource = campaignData.selectedSources[0];
+    
+    if (!firstSource) {
+      addBotMessage(
+        "No sources selected. Please go back and select at least one source.",
+        [{ label: "Back to Sources", value: "back", action: () => showSourceSelection() }]
+      );
+      return;
+    }
+
     const sourceMediums = sourceTemplates
       .filter(template => template.sourceName === firstSource)
       .map(template => template.mediumName)
-      .filter(medium => medium); // Filter out undefined/null values
+      .filter(medium => medium && medium.trim()); // Filter out undefined/null/empty values
 
     if (sourceMediums.length > 0) {
       const mediumOptions = sourceMediums.map(medium => ({
