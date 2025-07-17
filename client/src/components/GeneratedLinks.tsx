@@ -44,23 +44,6 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
   const [sortBy, setSortBy] = useState<string>("created-newest");
   const [filterByTag, setFilterByTag] = useState<string>("all");
 
-  // Auto-expand specific campaign when expandCampaign prop is provided
-  useEffect(() => {
-    if (expandCampaign && links.length > 0) {
-      console.log("Auto-expanding campaign:", expandCampaign);
-      const campaignExists = links.some(link => link.utm_campaign === expandCampaign);
-      console.log("Campaign exists:", campaignExists);
-      if (campaignExists) {
-        setInitializedCollapse(true);
-        // Expand the specified campaign, collapse all others
-        const allCampaignNames = [...new Set(links.map(link => link.utm_campaign))];
-        const otherCampaigns = allCampaignNames.filter(name => name !== expandCampaign);
-        setCollapsedCampaigns(new Set(otherCampaigns));
-        console.log("Campaign auto-expanded:", expandCampaign);
-      }
-    }
-  }, [expandCampaign, links]);
-
 
 
   const toggleCampaignCollapse = (campaignName: string) => {
@@ -110,6 +93,20 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
       return showArchived ? data.filter((link: UtmLink) => link.isArchived) : data.filter((link: UtmLink) => !link.isArchived);
     },
   });
+
+  // Auto-expand specific campaign when expandCampaign prop is provided
+  useEffect(() => {
+    if (expandCampaign && links.length > 0) {
+      const campaignExists = links.some(link => link.utm_campaign === expandCampaign);
+      if (campaignExists) {
+        setInitializedCollapse(true);
+        // Expand the specified campaign, collapse all others
+        const allCampaignNames = [...new Set(links.map(link => link.utm_campaign))];
+        const otherCampaigns = allCampaignNames.filter(name => name !== expandCampaign);
+        setCollapsedCampaigns(new Set(otherCampaigns));
+      }
+    }
+  }, [expandCampaign, links]);
 
   // Fetch all campaign landing pages to show URLs per campaign
   const { data: allLandingPages = [] } = useQuery<CampaignLandingPage[]>({
