@@ -87,29 +87,40 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     mutationFn: async (data: { utmLinks: any[], landingPages: any[] }) => {
       const results = [];
       
+      console.log("Creating campaign with data:", data);
+      
       // Create landing pages first
       for (const landingPage of data.landingPages) {
         try {
+          console.log("Creating landing page:", landingPage);
           const response = await apiRequest("POST", "/api/campaign-landing-pages", landingPage);
-          results.push(await response.json());
+          const result = await response.json();
+          console.log("Landing page created:", result);
+          results.push(result);
         } catch (error) {
           console.error("Failed to create landing page:", error);
+          throw error; // Re-throw to trigger onError
         }
       }
       
       // Create UTM links
       for (const utmLink of data.utmLinks) {
         try {
+          console.log("Creating UTM link:", utmLink);
           const response = await apiRequest("POST", "/api/utm-links", utmLink);
-          results.push(await response.json());
+          const result = await response.json();
+          console.log("UTM link created:", result);
+          results.push(result);
         } catch (error) {
           console.error("Failed to create UTM link:", error);
+          throw error; // Re-throw to trigger onError
         }
       }
       
       return results;
     },
-    onSuccess: () => {
+    onSuccess: (results) => {
+      console.log("Campaign creation successful:", results);
       setIsCreatingCampaign(false);
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
@@ -118,6 +129,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }, 500);
     },
     onError: (error: any) => {
+      console.error("Campaign creation failed:", error);
       setIsCreatingCampaign(false);
       addBotMessage(`❌ Sorry, there was an error creating your campaign: ${error.message}. Would you like to try again?`, [
         { label: "Try Again", value: "retry", action: () => createCampaign() },
