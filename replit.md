@@ -229,6 +229,12 @@ Changelog:
   - Added proper URL validation and landing page management through chat interface
   - Created dedicated /chat-wizard route with full authentication and navigation
   - Chat interface includes typing indicators, message history, and seamless campaign creation
+  - Enhanced Chat Wizard with campaign type selection (existing vs new campaign)
+  - Added display of 10 latest existing campaigns as clickable options for adding links
+  - Implemented multiple landing page URL selection with top 10 most-used URLs as suggestions
+  - Fixed medium selection error handling to prevent undefined charAt errors
+  - Added support for multiple source selection with progress tracking
+  - Enhanced user experience with clear progress indicators and option management
 
 ## User Preferences
 

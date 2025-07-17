@@ -29,6 +29,8 @@ interface ChatMessage {
 
 interface CampaignData {
   name: string;
+  isExistingCampaign: boolean;
+  existingCampaignName?: string;
   landingPages: Array<{ id: string; url: string; label: string }>;
   selectedSources: string[];
   selectedMediums: { [source: string]: string[] };
@@ -38,9 +40,10 @@ interface CampaignData {
 
 export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'campaign-name' | 'landing-pages' | 'sources' | 'mediums' | 'content' | 'tags' | 'review' | 'complete'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'campaign-type' | 'campaign-name' | 'existing-campaign' | 'landing-pages' | 'sources' | 'mediums' | 'content' | 'tags' | 'review' | 'complete'>('welcome');
   const [campaignData, setCampaignData] = useState<CampaignData>({
     name: '',
+    isExistingCampaign: false,
     landingPages: [],
     selectedSources: [],
     selectedMediums: {},
@@ -67,6 +70,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   // Fetch unique URLs for autocomplete
   const { data: uniqueUrls = [] } = useQuery<string[]>({
     queryKey: ["/api/unique-urls"],
+  });
+
+  // Fetch existing campaigns
+  const { data: existingCampaigns = [] } = useQuery({
+    queryKey: ["/api/utm-links"],
+    select: (data: any[]) => {
+      const campaignNames = [...new Set(data.map(link => link.utm_campaign))];
+      return campaignNames.slice(0, 10); // Get 10 latest campaigns
+    }
   });
 
   // Create campaign mutation
@@ -103,11 +115,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     if (messages.length === 0) {
       setTimeout(() => {
         addBotMessage(
-          "👋 Hi! I'm your UTM Campaign Assistant. I'll help you create a new campaign step by step. Let's start with a name for your campaign.",
-          [],
-          'campaign-name',
-          true,
-          "Enter campaign name (e.g., 'Summer Sale 2025')"
+          "👋 Hi! I'm your UTM Campaign Assistant. Would you like to add links to an existing campaign or create a brand new one?",
+          [
+            { label: "Existing Campaign", value: "existing", action: () => showExistingCampaigns() },
+            { label: "New Campaign", value: "new", action: () => startNewCampaign() }
+          ],
+          'campaign-type'
         );
       }, 500);
     }
@@ -154,13 +167,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       case 'campaign-name':
         setCampaignData(prev => ({ ...prev, name: value }));
         setTimeout(() => {
-          addBotMessage(
-            `Great! Your campaign "${value}" is set up. Now let's add some landing pages. What's the main URL you want to promote?`,
-            [],
-            'landing-pages',
-            true,
-            "Enter landing page URL (e.g., 'https://example.com')"
-          );
+          showLandingPageSelection();
         }, 500);
         break;
 
@@ -176,13 +183,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
             landingPages: [...prev.landingPages, newLandingPage]
           }));
           setTimeout(() => {
-            addBotMessage(
-              `✅ Landing page added! Would you like to add another landing page, or shall we move on to selecting traffic sources?`,
-              [
-                { label: "Add Another Landing Page", value: "add-another", action: () => promptForAnotherLandingPage() },
-                { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
-              ]
-            );
+            showLandingPageSelection();
           }, 500);
         } else {
           setTimeout(() => {
@@ -240,29 +241,145 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   };
 
-  const promptForAnotherLandingPage = () => {
+  const showExistingCampaigns = () => {
+    setCampaignData(prev => ({ ...prev, isExistingCampaign: true }));
+    
+    if (existingCampaigns.length > 0) {
+      const campaignOptions = existingCampaigns.map(campaignName => ({
+        label: campaignName,
+        value: campaignName,
+        action: () => selectExistingCampaign(campaignName)
+      }));
+
+      addBotMessage(
+        "Here are your recent campaigns. Which one would you like to add links to?",
+        campaignOptions,
+        'existing-campaign'
+      );
+    } else {
+      addBotMessage(
+        "You don't have any existing campaigns yet. Let's create your first one!",
+        [{ label: "Create New Campaign", value: "new", action: () => startNewCampaign() }],
+        'campaign-type'
+      );
+    }
+  };
+
+  const selectExistingCampaign = (campaignName: string) => {
+    setCampaignData(prev => ({ ...prev, name: campaignName, existingCampaignName: campaignName }));
+    addUserMessage(campaignName);
+    setTimeout(() => {
+      showLandingPageSelection();
+    }, 500);
+  };
+
+  const startNewCampaign = () => {
+    setCampaignData(prev => ({ ...prev, isExistingCampaign: false }));
     addBotMessage(
-      "What's the next landing page URL you'd like to add?",
+      "Perfect! Let's create a new campaign. What would you like to name it?",
+      [],
+      'campaign-name',
+      true,
+      "Enter campaign name (e.g., 'Summer Sale 2025')"
+    );
+  };
+
+  const showLandingPageSelection = () => {
+    // Get top 10 most used URLs
+    const urlCounts = uniqueUrls.reduce((acc: {[key: string]: number}, url: string) => {
+      acc[url] = (acc[url] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const topUrls = Object.entries(urlCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10)
+      .map(([url]) => url);
+
+    const urlOptions = topUrls.map(url => ({
+      label: url,
+      value: url,
+      action: () => selectLandingPageUrl(url)
+    }));
+
+    const currentCount = campaignData.landingPages.length;
+    const message = currentCount === 0 
+      ? "Great! Now let's add landing pages. You can choose from your most-used URLs or add a new one:"
+      : `You have ${currentCount} landing page(s) selected. Add more or continue to sources:`;
+
+    addBotMessage(
+      message,
+      [
+        ...urlOptions,
+        { label: "Add Custom URL", value: "custom", action: () => promptForCustomUrl() },
+        ...(currentCount > 0 ? [{ label: "Continue to Sources", value: "continue", action: () => showSourceSelection() }] : [])
+      ],
+      'landing-pages'
+    );
+  };
+
+  const selectLandingPageUrl = (url: string) => {
+    // Check if URL is already selected
+    if (campaignData.landingPages.find(lp => lp.url === url)) {
+      setTimeout(() => {
+        addBotMessage(
+          "That URL is already selected. Please choose a different one or continue to sources.",
+          [],
+          undefined,
+          false
+        );
+        showLandingPageSelection();
+      }, 500);
+      return;
+    }
+
+    const newLandingPage = {
+      id: `lp-${Date.now()}`,
+      url: url,
+      label: url
+    };
+    setCampaignData(prev => ({
+      ...prev,
+      landingPages: [...prev.landingPages, newLandingPage]
+    }));
+    addUserMessage(url);
+    
+    setTimeout(() => {
+      showLandingPageSelection();
+    }, 500);
+  };
+
+  const promptForCustomUrl = () => {
+    addBotMessage(
+      "Enter the custom landing page URL you'd like to add:",
       [],
       'landing-pages',
       true,
-      "Enter another landing page URL"
+      "Enter landing page URL (e.g., 'https://example.com')"
     );
   };
 
   const showSourceSelection = () => {
     const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
-    const sourceOptions = availableSources.map(source => ({
+    const unselectedSources = availableSources.filter(source => !campaignData.selectedSources.includes(source));
+    
+    const sourceOptions = unselectedSources.map(source => ({
       label: source.charAt(0).toUpperCase() + source.slice(1),
       value: source,
       action: () => selectSource(source)
     }));
 
+    const currentCount = campaignData.selectedSources.length;
+    const message = currentCount === 0 
+      ? "Perfect! Now let's choose your traffic sources. Which platforms will you be promoting on?"
+      : `You have ${currentCount} source(s) selected: ${campaignData.selectedSources.join(', ')}. Add more or continue to mediums:`;
+
     addBotMessage(
-      "Perfect! Now let's choose your traffic sources. Which platforms will you be promoting on?",
+      message,
       [
         ...sourceOptions,
-        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
+        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
+        ...(currentCount > 0 ? [{ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }] : [])
       ],
       'sources'
     );
@@ -276,29 +393,35 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
     setTimeout(() => {
-      const sourceMediums = sourceTemplates
-        .filter(template => template.sourceName === source)
-        .map(template => template.mediumName);
-
-      if (sourceMediums.length > 0) {
-        const mediumOptions = sourceMediums.map(medium => ({
-          label: medium.charAt(0).toUpperCase() + medium.slice(1),
-          value: medium,
-          action: () => selectMedium(source, medium)
-        }));
-
-        addBotMessage(
-          `Great choice! For ${source}, which type of marketing medium will you use?`,
-          [
-            ...mediumOptions,
-            { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(source) }
-          ],
-          'mediums'
-        );
-      } else {
-        promptForCustomMedium(source);
-      }
+      showSourceSelection(); // Continue showing source selection for multiple sources
     }, 500);
+  };
+
+  const showMediumSelectionForFirstSource = () => {
+    const firstSource = campaignData.selectedSources[0];
+    const sourceMediums = sourceTemplates
+      .filter(template => template.sourceName === firstSource)
+      .map(template => template.mediumName)
+      .filter(medium => medium); // Filter out undefined/null values
+
+    if (sourceMediums.length > 0) {
+      const mediumOptions = sourceMediums.map(medium => ({
+        label: medium.charAt(0).toUpperCase() + medium.slice(1),
+        value: medium,
+        action: () => selectMedium(firstSource, medium)
+      }));
+
+      addBotMessage(
+        `Great! For ${firstSource}, which type of marketing medium will you use?`,
+        [
+          ...mediumOptions,
+          { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(firstSource) }
+        ],
+        'mediums'
+      );
+    } else {
+      promptForCustomMedium(firstSource);
+    }
   };
 
   const selectMedium = (source: string, medium: string) => {
@@ -442,12 +565,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const summary = `
 📋 **Campaign Summary:**
 
+**Type:** ${campaignData.isExistingCampaign ? 'Adding to existing campaign' : 'New campaign'}
 **Name:** ${campaignData.name}
 **Landing Pages:** ${campaignData.landingPages.map(lp => lp.url).join(', ')}
 **Sources:** ${campaignData.selectedSources.join(', ')}
 **Tags:** ${campaignData.selectedTags.length > 0 ? campaignData.selectedTags.join(', ') : 'None'}
 
-This will create ${campaignData.selectedSources.length} UTM link(s) for your campaign.
+This will create ${campaignData.selectedSources.length * campaignData.landingPages.length} UTM link(s) for your campaign.
     `;
 
     addBotMessage(
@@ -514,6 +638,7 @@ This will create ${campaignData.selectedSources.length} UTM link(s) for your cam
     setCurrentStep('welcome');
     setCampaignData({
       name: '',
+      isExistingCampaign: false,
       landingPages: [],
       selectedSources: [],
       selectedMediums: {},
