@@ -33,6 +33,7 @@ export interface IStorage {
   // Campaign Landing Page operations
   createCampaignLandingPage(landingPage: InsertCampaignLandingPage): Promise<CampaignLandingPage>;
   getCampaignLandingPages(userId: number, campaignName: string, includeArchived?: boolean): Promise<CampaignLandingPage[]>;
+  getAllCampaignLandingPages(userId: number, includeArchived?: boolean): Promise<CampaignLandingPage[]>;
   deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean>;
   
   // UTM Template operations
@@ -296,6 +297,15 @@ export class DatabaseStorage implements IStorage {
         eq(campaignLandingPages.campaignName, campaignName),
         includeArchived ? undefined : eq(campaignLandingPages.isArchived, false)
       ));
+  }
+
+  async getAllCampaignLandingPages(userId: number, includeArchived = false): Promise<CampaignLandingPage[]> {
+    return await db.select().from(campaignLandingPages)
+      .where(and(
+        eq(campaignLandingPages.userId, userId),
+        includeArchived ? undefined : eq(campaignLandingPages.isArchived, false)
+      ))
+      .orderBy(desc(campaignLandingPages.createdAt));
   }
 
   async deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean> {

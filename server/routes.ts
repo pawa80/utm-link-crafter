@@ -437,8 +437,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
     try {
       const campaignName = req.query.campaignName as string;
+      
+      // If no campaign name provided, return all campaign landing pages for the user
       if (!campaignName) {
-        return res.status(400).json({ message: "Campaign name is required" });
+        const allLandingPages = await storage.getAllCampaignLandingPages(req.user.id);
+        return res.json(allLandingPages);
       }
       
       // Validate campaign name
