@@ -356,7 +356,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectExistingCampaign = (campaignName: string) => {
-    setCampaignData(prev => ({ ...prev, name: campaignName, existingCampaignName: campaignName }));
+    setCampaignData(prev => ({ ...prev, name: campaignName, existingCampaignName: campaignName, isExistingCampaign: true }));
     addUserMessage(campaignName);
     setTimeout(() => {
       showLandingPageSelection();
