@@ -411,13 +411,20 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Update the last bot message to reflect the new selection
     setTimeout(() => {
       const updatedSources = [...campaignData.selectedSources, source];
-      const updatedMessage = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
+      const updatedContent = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
       
       setMessages(prev => {
-        const lastBotMessageIndex = prev.length - 1;
-        const lastMessage = prev[lastBotMessageIndex];
+        // Find the last bot message with step 'sources'
+        let lastBotMessageIndex = -1;
+        for (let i = prev.length - 1; i >= 0; i--) {
+          if (prev[i].isBot && prev[i].step === 'sources') {
+            lastBotMessageIndex = i;
+            break;
+          }
+        }
         
-        if (lastMessage && lastMessage.step === 'sources') {
+        if (lastBotMessageIndex >= 0) {
+          const lastMessage = prev[lastBotMessageIndex];
           // Update the options to remove the selected source and add continue button
           const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
           const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
@@ -434,13 +441,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
             { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }
           ];
 
-          const updatedMessage = {
+          const updatedBotMessage = {
             ...lastMessage,
-            content: updatedMessage,
+            content: updatedContent,
             options: options
           };
 
-          return [...prev.slice(0, lastBotMessageIndex), updatedMessage];
+          return [...prev.slice(0, lastBotMessageIndex), updatedBotMessage];
         }
         return prev;
       });
