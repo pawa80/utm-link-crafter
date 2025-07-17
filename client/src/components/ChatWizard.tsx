@@ -183,7 +183,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
             landingPages: [...prev.landingPages, newLandingPage]
           }));
           setTimeout(() => {
-            showLandingPageSelection();
+            addBotMessage(
+              `✅ Added "${value}" to your landing pages! Would you like to add another landing page or continue to sources?`,
+              [
+                { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
+                { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
+              ]
+            );
           }, 500);
         } else {
           setTimeout(() => {
@@ -269,7 +275,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     setCampaignData(prev => ({ ...prev, name: campaignName, existingCampaignName: campaignName }));
     addUserMessage(campaignName);
     setTimeout(() => {
-      showLandingPageSelection();
+      addBotMessage(
+        `✅ Added "${url}" to your landing pages! Would you like to add another landing page or continue to sources?`,
+        [
+          { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
+          { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
+        ]
+      );
     }, 500);
   };
 
@@ -294,7 +306,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const topUrls = Object.entries(urlCounts)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 10)
-      .map(([url]) => url);
+      .map(([url]) => url)
+      .filter(url => !campaignData.landingPages.find(lp => lp.url === url)); // Filter out already selected URLs
 
     const urlOptions = topUrls.map(url => ({
       label: url,
@@ -305,17 +318,19 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const currentCount = campaignData.landingPages.length;
     const message = currentCount === 0 
       ? "Great! Now let's add landing pages. You can choose from your most-used URLs or add a new one:"
-      : `You have ${currentCount} landing page(s) selected. Add more or continue to sources:`;
+      : `You currently have ${currentCount} landing page(s): ${campaignData.landingPages.map(lp => lp.url).join(', ')}. Choose more URLs:`;
 
-    addBotMessage(
-      message,
-      [
-        ...urlOptions,
-        { label: "Add Custom URL", value: "custom", action: () => promptForCustomUrl() },
-        ...(currentCount > 0 ? [{ label: "Continue to Sources", value: "continue", action: () => showSourceSelection() }] : [])
-      ],
-      'landing-pages'
-    );
+    const options = [
+      ...urlOptions,
+      { label: "Add Custom URL", value: "custom", action: () => promptForCustomUrl() }
+    ];
+
+    // Only show continue option if we have at least one landing page
+    if (currentCount > 0) {
+      options.push({ label: "Continue to Sources", value: "continue", action: () => showSourceSelection() });
+    }
+
+    addBotMessage(message, options, 'landing-pages');
   };
 
   const selectLandingPageUrl = (url: string) => {
@@ -328,7 +343,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           undefined,
           false
         );
-        showLandingPageSelection();
       }, 500);
       return;
     }
@@ -345,7 +359,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage(url);
     
     setTimeout(() => {
-      showLandingPageSelection();
+      addBotMessage(
+        `✅ Added "${url}" to your landing pages! Would you like to add another landing page or continue to sources?`,
+        [
+          { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
+          { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
+        ]
+      );
     }, 500);
   };
 
