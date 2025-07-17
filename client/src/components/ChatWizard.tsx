@@ -596,23 +596,30 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const proceedToContentForSource = (source: string) => {
-    const selectedMediums = campaignData.selectedMediums[source];
-    
-    if (!selectedMediums || selectedMediums.length === 0) {
-      addBotMessage(
-        "No mediums selected. Please select at least one medium.",
-        [{ label: "Back to Mediums", value: "back", action: () => showMediumSelectionForFirstSource() }]
-      );
-      return;
-    }
-
-    // Add user message showing selected mediums
-    addUserMessage(`Selected mediums for ${source}: ${selectedMediums.join(', ')}`);
-    
-    // Check if there are more sources to process
+    // Use a timeout to ensure state is updated
     setTimeout(() => {
-      proceedToNextSource(source);
-    }, 500);
+      const selectedMediums = campaignData.selectedMediums[source];
+      
+      console.log('proceedToContentForSource - source:', source);
+      console.log('proceedToContentForSource - selectedMediums:', selectedMediums);
+      console.log('proceedToContentForSource - all selectedMediums:', campaignData.selectedMediums);
+      
+      if (!selectedMediums || selectedMediums.length === 0) {
+        addBotMessage(
+          "No mediums selected. Please select at least one medium.",
+          [{ label: "Back to Mediums", value: "back", action: () => showMediumSelectionForFirstSource() }]
+        );
+        return;
+      }
+
+      // Add user message showing selected mediums
+      addUserMessage(`Selected mediums for ${source}: ${selectedMediums.join(', ')}`);
+      
+      // Check if there are more sources to process
+      setTimeout(() => {
+        proceedToNextSource(source);
+      }, 500);
+    }, 200);
   };
 
   const proceedToNextSource = (currentSource: string) => {
