@@ -397,7 +397,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     // Always show continue option if we have at least one source
     if (currentCount > 0) {
-      options.push({ label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true });
+      options.push({ label: "Continue to Mediums", value: "continue", action: () => {
+        // Use the current selected sources to avoid state timing issues
+        proceedToMediumsWithSources(campaignData.selectedSources);
+      }, isPrimary: true });
     }
 
     addBotMessage(message, options, 'sources');
@@ -433,7 +436,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           ...selectedOptions,
           ...sourceOptions,
           { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-          { label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true }
+          { label: "Continue to Mediums", value: "continue", action: () => {
+            // Pass the current selected sources to avoid state timing issues
+            proceedToMediumsWithSources(newSelectedSources);
+          }, isPrimary: true }
         ];
 
         // Find and update the last sources message
@@ -463,7 +469,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const proceedToMediums = () => {
-    if (campaignData.selectedSources.length === 0) {
+    // Get the current selected sources from the state
+    const currentSelectedSources = campaignData.selectedSources;
+    
+    if (currentSelectedSources.length === 0) {
       addBotMessage(
         "No sources selected. Please go back and select at least one source.",
         [{ label: "Back to Sources", value: "back", action: () => showSourceSelection() }]
@@ -472,10 +481,30 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
 
     // Add user message showing selected sources
-    addUserMessage(`Selected sources: ${campaignData.selectedSources.join(', ')}`);
+    addUserMessage(`Selected sources: ${currentSelectedSources.join(', ')}`);
     
     // Proceed to medium selection
-    showMediumSelectionForFirstSource();
+    setTimeout(() => {
+      showMediumSelectionForFirstSource();
+    }, 500);
+  };
+
+  const proceedToMediumsWithSources = (selectedSources: string[]) => {
+    if (selectedSources.length === 0) {
+      addBotMessage(
+        "No sources selected. Please go back and select at least one source.",
+        [{ label: "Back to Sources", value: "back", action: () => showSourceSelection() }]
+      );
+      return;
+    }
+
+    // Add user message showing selected sources
+    addUserMessage(`Selected sources: ${selectedSources.join(', ')}`);
+    
+    // Proceed to medium selection
+    setTimeout(() => {
+      showMediumSelectionForFirstSource();
+    }, 500);
   };
 
   const showMediumSelectionForFirstSource = () => {
