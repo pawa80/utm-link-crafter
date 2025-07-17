@@ -1003,49 +1003,61 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
 
   const createCampaign = () => {
     console.log("createCampaign called, isCreatingCampaign:", isCreatingCampaign);
-    console.log("Campaign data:", campaignData);
     
     if (isCreatingCampaign) {
       console.log("Already creating campaign, returning early");
       return; // Prevent duplicate campaign creation
     }
     
-    // Validate campaign data before proceeding
-    if (!campaignData.name || campaignData.name.trim() === '') {
-      addBotMessage("❌ Campaign name is required. Please provide a campaign name first.", [
-        { label: "Start Over", value: "restart", action: () => restartWizard() }
-      ]);
-      return;
-    }
-    
-    if (campaignData.landingPages.length === 0) {
-      addBotMessage("❌ At least one landing page is required. Please add a landing page first.", [
-        { label: "Start Over", value: "restart", action: () => restartWizard() }
-      ]);
-      return;
-    }
-    
-    if (campaignData.selectedSources.length === 0) {
-      addBotMessage("❌ At least one source is required. Please select a source first.", [
-        { label: "Start Over", value: "restart", action: () => restartWizard() }
-      ]);
-      return;
-    }
-    
-    setIsCreatingCampaign(true);
-    addBotMessage("Creating your campaign... 🚀");
+    // Use functional update to get the most current campaign data
+    setCampaignData(currentCampaignData => {
+      console.log("Current campaign data in createCampaign:", currentCampaignData);
+      
+      // Validate campaign data before proceeding
+      if (!currentCampaignData.name || currentCampaignData.name.trim() === '') {
+        addBotMessage("❌ Campaign name is required. Please provide a campaign name first.", [
+          { label: "Start Over", value: "restart", action: () => restartWizard() }
+        ]);
+        return currentCampaignData;
+      }
+      
+      if (currentCampaignData.landingPages.length === 0) {
+        addBotMessage("❌ At least one landing page is required. Please add a landing page first.", [
+          { label: "Start Over", value: "restart", action: () => restartWizard() }
+        ]);
+        return currentCampaignData;
+      }
+      
+      if (currentCampaignData.selectedSources.length === 0) {
+        addBotMessage("❌ At least one source is required. Please select a source first.", [
+          { label: "Start Over", value: "restart", action: () => restartWizard() }
+        ]);
+        return currentCampaignData;
+      }
+      
+      setIsCreatingCampaign(true);
+      addBotMessage("Creating your campaign... 🚀");
+      
+      // Proceed with campaign creation using the current data
+      proceedWithCampaignCreation(currentCampaignData);
+      
+      return currentCampaignData;
+    });
+  };
+  
+  const proceedWithCampaignCreation = (currentCampaignData: CampaignData) => {
 
     // Transform campaign data to match API format
     const utmLinks = [];
-    for (const source of campaignData.selectedSources) {
-      const mediums = campaignData.selectedMediums[source] || ['cpc'];
+    for (const source of currentCampaignData.selectedSources) {
+      const mediums = currentCampaignData.selectedMediums[source] || ['cpc'];
       for (const medium of mediums) {
         const contentKey = `${source}-${medium}`;
-        const content = campaignData.contentInputs[contentKey] || 'default';
+        const content = currentCampaignData.contentInputs[contentKey] || 'default';
         
-        for (const landingPage of campaignData.landingPages) {
+        for (const landingPage of currentCampaignData.landingPages) {
           const utmParams = {
-            utm_campaign: campaignData.name,
+            utm_campaign: currentCampaignData.name,
             utm_source: source,
             utm_medium: medium,
             utm_content: content,
@@ -1058,21 +1070,21 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
             userId: user.id,
             targetUrl: landingPage.url,
             fullUtmLink,
-            utm_campaign: campaignData.name,
+            utm_campaign: currentCampaignData.name,
             utm_source: source,
             utm_medium: medium,
             utm_content: content,
             utm_term: '',
-            tags: campaignData.selectedTags
+            tags: currentCampaignData.selectedTags
           });
         }
       }
     }
 
     // Also create landing pages
-    const landingPagesToCreate = campaignData.landingPages.map(lp => ({
+    const landingPagesToCreate = currentCampaignData.landingPages.map(lp => ({
       userId: user.id,
-      campaignName: campaignData.name,
+      campaignName: currentCampaignData.name,
       url: lp.url,
       label: lp.label
     }));
