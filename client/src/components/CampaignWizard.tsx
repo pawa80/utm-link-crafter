@@ -61,10 +61,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   // Landing page management functions
   const addLandingPage = () => {
-    // If this is the first landing page and we have a single URL, convert it to the first landing page
+    // If this is the first landing page and we have a single URL, convert it to the first landing page AND add a new empty one
     if (landingPages.length === 0 && targetUrl.trim()) {
       const firstId = `lp-${Date.now()}`;
-      setLandingPages([{ id: firstId, url: targetUrl.trim(), label: targetUrl.trim() }]);
+      const secondId = `lp-${Date.now() + 1}`;
+      setLandingPages([
+        { id: firstId, url: targetUrl.trim(), label: targetUrl.trim() },
+        { id: secondId, url: "", label: "" }
+      ]);
       setTargetUrl(""); // Clear the single URL field
     } else {
       // Add a new empty landing page
