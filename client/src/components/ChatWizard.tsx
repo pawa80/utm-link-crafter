@@ -393,7 +393,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
     ];
 
-    // Only show continue option if we have at least one source
+    // Always show continue option if we have at least one source
     if (currentCount > 0) {
       options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() });
     }
@@ -410,14 +410,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     // Update the last bot message to reflect the new selection
     setTimeout(() => {
-      const updatedCount = campaignData.selectedSources.length + 1; // +1 because state update is async
       const updatedSources = [...campaignData.selectedSources, source];
       const updatedMessage = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
       
       setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
+        const lastBotMessageIndex = prev.length - 1;
+        const lastMessage = prev[lastBotMessageIndex];
+        
         if (lastMessage && lastMessage.step === 'sources') {
-          // Update the options to remove the selected source and add continue button if needed
+          // Update the options to remove the selected source and add continue button
           const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
           const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
           
@@ -429,14 +430,17 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
           const options = [
             ...sourceOptions,
-            { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
+            { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
+            { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }
           ];
 
-          if (updatedCount > 0) {
-            options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() });
-          }
+          const updatedMessage = {
+            ...lastMessage,
+            content: updatedMessage,
+            options: options
+          };
 
-          return [...prev.slice(0, -1), { ...lastMessage, content: updatedMessage, options }];
+          return [...prev.slice(0, lastBotMessageIndex), updatedMessage];
         }
         return prev;
       });
