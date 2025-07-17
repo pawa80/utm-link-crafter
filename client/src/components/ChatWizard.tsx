@@ -992,6 +992,28 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
       return; // Prevent duplicate campaign creation
     }
     
+    // Validate campaign data before proceeding
+    if (!campaignData.name || campaignData.name.trim() === '') {
+      addBotMessage("❌ Campaign name is required. Please provide a campaign name first.", [
+        { label: "Start Over", value: "restart", action: () => restartWizard() }
+      ]);
+      return;
+    }
+    
+    if (campaignData.landingPages.length === 0) {
+      addBotMessage("❌ At least one landing page is required. Please add a landing page first.", [
+        { label: "Start Over", value: "restart", action: () => restartWizard() }
+      ]);
+      return;
+    }
+    
+    if (campaignData.selectedSources.length === 0) {
+      addBotMessage("❌ At least one source is required. Please select a source first.", [
+        { label: "Start Over", value: "restart", action: () => restartWizard() }
+      ]);
+      return;
+    }
+    
     setIsCreatingCampaign(true);
     addBotMessage("Creating your campaign... 🚀");
 
