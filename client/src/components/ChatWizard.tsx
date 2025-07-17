@@ -404,62 +404,62 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectSource = (source: string) => {
-    setCampaignData(prev => ({
-      ...prev,
-      selectedSources: [...prev.selectedSources, source]
-    }));
-    
-    // Don't add user message here - just update the source selection UI
-    // The user message will be added when they click "Continue to Mediums"
-    
-    // Update the existing source selection message to show selected sources
-    setTimeout(() => {
-      const updatedSources = [...campaignData.selectedSources, source];
-      const message = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
+    setCampaignData(prev => {
+      const newSelectedSources = [...prev.selectedSources, source];
       
-      // Get available sources for remaining options
-      const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
-      const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
-      
-      const sourceOptions = unselectedSources.map(src => ({
-        label: src.charAt(0).toUpperCase() + src.slice(1),
-        value: src,
-        action: () => selectSource(src),
-        isSelected: false
-      }));
-
-      const selectedOptions = updatedSources.map(src => ({
-        label: src.charAt(0).toUpperCase() + src.slice(1),
-        value: src,
-        action: () => {}, // No action for selected sources
-        isSelected: true
-      }));
-
-      const options = [
-        ...selectedOptions,
-        ...sourceOptions,
-        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-        { label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true }
-      ];
-
-      // Find and update the last sources message
-      setMessages(prev => {
-        const lastSourcesIndex = prev.findLastIndex(msg => 
-          msg.type === 'bot' && msg.content && msg.content.includes('traffic sources')
-        );
+      // Update the UI immediately with the new state
+      setTimeout(() => {
+        const message = `✅ Selected sources: ${newSelectedSources.join(', ')}. Select additional sources or continue:`;
         
-        if (lastSourcesIndex >= 0) {
-          const updatedMessages = [...prev];
-          updatedMessages[lastSourcesIndex] = {
-            ...updatedMessages[lastSourcesIndex],
-            content: message,
-            options: options
-          };
-          return updatedMessages;
-        }
-        return prev;
-      });
-    }, 100);
+        // Get available sources for remaining options
+        const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
+        const unselectedSources = availableSources.filter(src => !newSelectedSources.includes(src));
+        
+        const sourceOptions = unselectedSources.map(src => ({
+          label: src.charAt(0).toUpperCase() + src.slice(1),
+          value: src,
+          action: () => selectSource(src),
+          isSelected: false
+        }));
+
+        const selectedOptions = newSelectedSources.map(src => ({
+          label: src.charAt(0).toUpperCase() + src.slice(1),
+          value: src,
+          action: () => {}, // No action for selected sources
+          isSelected: true
+        }));
+
+        const options = [
+          ...selectedOptions,
+          ...sourceOptions,
+          { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
+          { label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true }
+        ];
+
+        // Find and update the last sources message
+        setMessages(prevMessages => {
+          const lastSourcesIndex = prevMessages.findLastIndex(msg => 
+            msg.type === 'bot' && msg.content && (msg.content.includes('traffic sources') || msg.content.includes('Selected sources'))
+          );
+          
+          if (lastSourcesIndex >= 0) {
+            const updatedMessages = [...prevMessages];
+            updatedMessages[lastSourcesIndex] = {
+              ...updatedMessages[lastSourcesIndex],
+              content: message,
+              options: options
+            };
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+      }, 100);
+
+      return {
+        ...prev,
+        selectedSources: newSelectedSources
+      };
+    });
   };
 
   const proceedToMediums = () => {
