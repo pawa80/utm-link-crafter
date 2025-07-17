@@ -105,7 +105,7 @@ export default function Settings() {
               </CardHeader>
               <CardContent>
                 <Link href="/sources">
-                  <Button variant="outline" className="w-full h-12 text-lg">
+                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
                     Manage Sources & Mediums
                   </Button>
                 </Link>

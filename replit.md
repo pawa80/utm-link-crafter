@@ -192,6 +192,14 @@ Changelog:
   - Fixed edit campaign mode navigation: "Back to Home" link now reads "Back to Campaign Management" and navigates to campaigns page
   - Added visual filter section with clickable badges showing active filter states
   - Both desktop and mobile layouts support the new filtering and URL display features
+- July 17, 2025. Settings page implementation and navigation restructure:
+  - Removed Source & Medium Management card from main home page
+  - Added Settings dropdown menu option under user profile in top navigation
+  - Created dedicated Settings page (/settings) with proper authentication
+  - Moved Source & Medium Management functionality to Settings page with improved button sizing
+  - Updated home page layout from 3-column to 2-column grid for better visual balance
+  - Added placeholder cards for future Account Settings and Notifications features
+  - Enhanced button text accommodation for "Manage Sources & Mediums" with proper sizing and spacing
 
 ## User Preferences
 
