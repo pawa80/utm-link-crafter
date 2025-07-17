@@ -79,7 +79,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const { data: existingCampaigns = [] } = useQuery({
     queryKey: ["/api/utm-links"],
     select: (data: any[]) => {
-      const campaignNames = [...new Set(data.map(link => link.utm_campaign))];
+      // Filter out archived campaigns and get unique campaign names
+      const activeLinks = data.filter(link => !link.isArchived);
+      const campaignNames = [...new Set(activeLinks.map(link => link.utm_campaign))];
       return campaignNames.slice(0, 10); // Get 10 latest campaigns
     }
   });
