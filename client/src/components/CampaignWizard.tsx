@@ -49,6 +49,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   const [customSourceInput, setCustomSourceInput] = useState("");
   const [showCustomSourceInput, setShowCustomSourceInput] = useState(false);
+  const [showCustomMediumInput, setShowCustomMediumInput] = useState<{ [sourceName: string]: boolean }>({});
+  const [customMediumInput, setCustomMediumInput] = useState<{ [sourceName: string]: string }>({});
   
   // All sections are now always visible
 
@@ -172,6 +174,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       const response = await apiRequest("PATCH", `/api/source-templates/${templateId}`, updates);
       return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/source-templates"] });
+    },
   });
 
   const createTagMutation = useMutation({
@@ -180,6 +185,39 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       return response.json();
     },
   });
+
+  // Add Medium function
+  const handleAddMedium = async (sourceName: string, templateId?: number) => {
+    const newMedium = customMediumInput[sourceName]?.trim();
+    if (!newMedium || !templateId) return;
+
+    try {
+      const template = sourceTemplates.find((t: SourceTemplate) => t.id === templateId);
+      if (!template) return;
+
+      const updatedMediums = [...(template.mediums || []), newMedium];
+      
+      await updateSourceTemplateMutation.mutateAsync({
+        templateId,
+        updates: { mediums: updatedMediums }
+      });
+
+      // Clear the input and hide the form
+      setCustomMediumInput(prev => ({ ...prev, [sourceName]: '' }));
+      setShowCustomMediumInput(prev => ({ ...prev, [sourceName]: false }));
+
+      toast({
+        title: "Success",
+        description: "Medium added successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add medium",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Helper functions for content variants
   const getVariantKey = (sourceName: string, medium: string) => `${sourceName}-${medium}`;
@@ -957,7 +995,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   return (
                     <div key={sourceName} className="border rounded-lg p-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">{sourceName}</h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 items-center">
                         {template?.mediums?.map((medium: string) => {
                           const isMediumSelected = state.selectedMediums.includes(medium);
                           return (
@@ -1022,6 +1060,54 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             </Button>
                           );
                         })}
+                        
+                        {/* Add Medium Button */}
+                        {showCustomMediumInput[sourceName] ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={customMediumInput[sourceName] || ''}
+                              onChange={(e) => setCustomMediumInput(prev => ({
+                                ...prev,
+                                [sourceName]: e.target.value
+                              }))}
+                              placeholder="Enter medium name"
+                              className="px-3 py-1 border rounded text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddMedium(sourceName, template?.id);
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddMedium(sourceName, template?.id)}
+                              disabled={!customMediumInput[sourceName]?.trim()}
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setShowCustomMediumInput(prev => ({ ...prev, [sourceName]: false }));
+                                setCustomMediumInput(prev => ({ ...prev, [sourceName]: '' }));
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCustomMediumInput(prev => ({ ...prev, [sourceName]: true }))}
+                          >
+                            + Add Medium
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
