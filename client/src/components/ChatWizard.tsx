@@ -79,12 +79,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const existingCampaignsQuery = useQuery({
     queryKey: ["/api/utm-links"],
     select: (data: any[]) => {
-      console.log('ChatWizard - Raw UTM links data:', data);
       // Filter out archived campaigns and get unique campaign names
       const activeLinks = data.filter(link => !link.isArchived);
-      console.log('ChatWizard - Active links:', activeLinks);
       const campaignNames = [...new Set(activeLinks.map(link => link.utm_campaign))];
-      console.log('ChatWizard - Campaign names:', campaignNames);
       return campaignNames.slice(0, 10); // Get 10 latest campaigns
     }
   });
@@ -300,21 +297,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     
     const { data: existingCampaigns = [], isLoading: isLoadingCampaigns } = existingCampaignsQuery;
     
-    console.log('ChatWizard - existingCampaigns:', existingCampaigns);
-    console.log('ChatWizard - existingCampaigns.length:', existingCampaigns.length);
-    console.log('ChatWizard - isLoadingCampaigns:', isLoadingCampaigns);
-    
     if (isLoadingCampaigns) {
       addBotMessage(
-        "Loading your campaigns... ⏳",
+        "Loading your campaigns...",
         [],
         'existing-campaign'
       );
-      
-      // Wait for loading to complete and retry
-      setTimeout(() => {
-        showExistingCampaigns();
-      }, 500);
       return;
     }
     
