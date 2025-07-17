@@ -177,6 +177,14 @@ Changelog:
   - Added user-friendly toast notifications when content suggestions are populated
   - Users can now easily remove unwanted auto-populated content rows for streamlined workflow
   - Enhanced campaign creation efficiency by reducing manual UTM content entry
+- July 17, 2025. UI/UX fixes and Landing Page URL autocomplete:
+  - Fixed automatic column sorting bug - removed unwanted auto-sorting that triggered when changing fields
+  - Manual column header sorting functionality preserved for user-controlled organization
+  - Fixed "Add Landing Page" button bug where first click now properly adds new input field instead of just showing delete button
+  - Implemented Landing Page URL autocomplete functionality with unique URLs from user's account history
+  - Added /api/unique-urls endpoint that fetches all previously used URLs from campaign landing pages and UTM links
+  - Landing Page URL fields now show dropdown suggestions for easy reuse of previous URLs
+  - Enhanced user experience by eliminating need to retype commonly used landing page URLs
 
 ## User Preferences
 

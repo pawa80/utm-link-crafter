@@ -400,6 +400,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all unique URLs used by the user for autocomplete
+  app.get("/api/unique-urls", authMiddleware, async (req: any, res) => {
+    try {
+      // Only access user's own data
+      const uniqueUrls = await storage.getAllUniqueUrls(req.user.id);
+      res.json(uniqueUrls);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   app.post("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
     try {
       const landingPageData = insertCampaignLandingPageSchema.parse({
@@ -426,6 +437,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only delete user's own campaign landing pages
       const success = await storage.deleteCampaignLandingPages(req.user.id, campaignName);
       res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get all unique URLs used by the user for autocomplete
+  app.get("/api/unique-urls", authMiddleware, async (req: any, res) => {
+    try {
+      // Only access user's own data
+      const uniqueUrls = await storage.getAllUniqueUrls(req.user.id);
+      res.json(uniqueUrls);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

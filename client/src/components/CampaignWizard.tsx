@@ -140,6 +140,15 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  // Fetch unique URLs for autocomplete
+  const { data: uniqueUrls = [] } = useQuery({
+    queryKey: ["/api/unique-urls"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/unique-urls");
+      return response.json();
+    },
+  });
+
   // Function to fetch UTM content suggestions for source and medium
   const fetchUtmContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
     try {
@@ -838,24 +847,40 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="space-y-3">
                   {landingPages.length === 0 && (
                     <div className="flex items-center gap-3">
-                      <div className="w-96">
+                      <div className="w-96 relative">
                         <Input
                           value={targetUrl}
                           onChange={(e) => setTargetUrl(e.target.value)}
                           placeholder="https://example.com/page"
+                          list="url-suggestions"
                         />
+                        {uniqueUrls.length > 0 && (
+                          <datalist id="url-suggestions">
+                            {uniqueUrls.map((url: string, index: number) => (
+                              <option key={index} value={url} />
+                            ))}
+                          </datalist>
+                        )}
                       </div>
                     </div>
                   )}
                   
                   {landingPages.map((landingPage) => (
                     <div key={landingPage.id} className="flex items-center gap-3">
-                      <div className="w-96">
+                      <div className="w-96 relative">
                         <Input
                           value={landingPage.url}
                           onChange={(e) => updateLandingPage(landingPage.id, 'url', e.target.value)}
                           placeholder="https://example.com/page"
+                          list={`url-suggestions-${landingPage.id}`}
                         />
+                        {uniqueUrls.length > 0 && (
+                          <datalist id={`url-suggestions-${landingPage.id}`}>
+                            {uniqueUrls.map((url: string, index: number) => (
+                              <option key={index} value={url} />
+                            ))}
+                          </datalist>
+                        )}
                       </div>
                       <Button
                         type="button"

@@ -36,6 +36,9 @@ export interface IStorage {
   // UTM Template operations
   getUtmTemplates(): Promise<UtmTemplate[]>;
   getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]>;
+  
+  // Get all unique URLs that have been used across the account
+  getAllUniqueUrls(userId: number): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -264,6 +267,38 @@ export class DatabaseStorage implements IStorage {
       );
     
     return templates.map(t => t.utmContent);
+  }
+
+  async getAllUniqueUrls(userId: number): Promise<string[]> {
+    // Get URLs from campaign landing pages (user's own data)
+    const landingPageUrls = await db
+      .selectDistinct({ url: campaignLandingPages.url })
+      .from(campaignLandingPages)
+      .where(eq(campaignLandingPages.userId, userId));
+
+    // Get target URLs from UTM links (user's own data)  
+    const utmUrls = await db
+      .selectDistinct({ url: utmLinks.targetUrl })
+      .from(utmLinks)
+      .where(eq(utmLinks.userId, userId));
+
+    // Combine and deduplicate URLs
+    const allUrls = new Set<string>();
+    
+    landingPageUrls.forEach(row => {
+      if (row.url && row.url.trim()) {
+        allUrls.add(row.url.trim());
+      }
+    });
+    
+    utmUrls.forEach(row => {
+      if (row.url && row.url.trim()) {
+        allUrls.add(row.url.trim());
+      }
+    });
+
+    // Return as sorted array for consistent ordering
+    return Array.from(allUrls).sort();
   }
 }
 
