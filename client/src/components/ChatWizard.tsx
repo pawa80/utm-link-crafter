@@ -999,6 +999,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         for (const content of contentOptions) {
           for (const landingPage of campaignData.landingPages) {
             const utmParams = {
+              targetUrl: landingPage.url,
               utm_campaign: campaignData.name,
               utm_source: source,
               utm_medium: medium,
@@ -1006,7 +1007,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
               utm_term: ''
             };
 
-            const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+            const fullUtmLink = generateUTMLink(utmParams);
             utmLinks.push(fullUtmLink);
           }
         }
@@ -1128,6 +1129,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
         for (const content of contentOptions) {
           for (const landingPage of currentCampaignData.landingPages) {
             const utmParams = {
+              targetUrl: landingPage.url,
               utm_campaign: currentCampaignData.name,
               utm_source: source,
               utm_medium: medium,
@@ -1135,7 +1137,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
               utm_term: ''
             };
 
-            const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+            const fullUtmLink = generateUTMLink(utmParams);
             
             utmLinks.push({
               userId: user.id,
