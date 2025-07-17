@@ -700,7 +700,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       showMediumSelectionForSource(nextSource);
     } else {
       // All sources processed, proceed to content selection
-      showContentSelection();
+      showContentSelectionWithState(currentCampaignData);
     }
   };
 
@@ -715,7 +715,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       showMediumSelectionForSource(nextSource);
     } else {
       // All sources processed, proceed to content selection
-      showContentSelection();
+      showContentSelectionWithState(campaignData);
     }
   };
 
@@ -824,13 +824,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     );
   };
 
-  const showContentSelection = async () => {
+  const showContentSelectionWithState = async (currentCampaignData: CampaignData) => {
     setCurrentStep('content');
     
-    // Collect all source-medium combinations
+    // Collect all source-medium combinations from the passed campaign data
     const sourceMediumCombinations = [];
-    for (const source of campaignData.selectedSources) {
-      const mediums = campaignData.selectedMediums[source] || [];
+    for (const source of currentCampaignData.selectedSources) {
+      const mediums = currentCampaignData.selectedMediums[source] || [];
       for (const medium of mediums) {
         sourceMediumCombinations.push({ source, medium });
       }
@@ -889,6 +889,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       ],
       'content'
     );
+  };
+
+  const showContentSelection = async () => {
+    // Fallback for legacy calls, use current campaign data
+    showContentSelectionWithState(campaignData);
   };
 
   const showContentModification = () => {
