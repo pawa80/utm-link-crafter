@@ -343,7 +343,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tags", authMiddleware, async (req: any, res) => {
     try {
+      console.log("Received tag data:", req.body);
       const tagData = insertTagSchema.parse(req.body);
+      console.log("Parsed tag data:", tagData);
       
       // Check if tag already exists
       const existingTag = await storage.getTagByName(req.user.id, tagData.name);
@@ -358,6 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(tag);
     } catch (error: any) {
+      console.error("Tag creation error:", error);
       res.status(400).json({ message: error.message });
     }
   });
