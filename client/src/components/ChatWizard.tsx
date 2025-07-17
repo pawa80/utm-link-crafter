@@ -1132,7 +1132,11 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
     addBotMessage(
       summary,
       [
-        { label: "Create Campaign", value: "create", action: () => createCampaign() },
+        { 
+          label: campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign", 
+          value: "create", 
+          action: () => createCampaign() 
+        },
         { label: "Make Changes", value: "edit", action: () => restartWizard() }
       ],
       'review'

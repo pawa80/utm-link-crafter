@@ -268,6 +268,13 @@ Changelog:
   - Replaced manual content input with automated content template selection for better user experience
   - Fixed UTM link generation bug where Chat Wizard was passing incorrect parameters to generateUTMLink function
   - Updated Chat Wizard copy functionality to match Campaign Management page format with organized source sections and labeled links
+- July 17, 2025. Chat Wizard existing campaigns bug fixes:
+  - Fixed infinite loading loop caused by recursive setTimeout calls in showExistingCampaigns function
+  - Resolved React stale closure issues by accessing query data directly inside functions rather than destructuring at component level
+  - Added useEffect to monitor query completion and automatically display campaigns when data loads
+  - Eliminated timeout issues where existing campaigns would get stuck in loading state
+  - Fixed button text for existing campaign path: "Create Campaign" now shows "Add Links to Campaign" for better UX clarity
+  - Enhanced error handling and removed debug console logs for cleaner production code
 
 ## User Preferences
 
