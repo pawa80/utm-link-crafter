@@ -526,28 +526,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return;
     }
 
-    // Get all mediums for this source from the mediums array
-    const sourceTemplate = sourceTemplates.find(template => template.sourceName === firstSource);
-    const sourceMediums = sourceTemplate?.mediums || [];
-
-    if (sourceMediums.length > 0) {
-      const mediumOptions = sourceMediums.map(medium => ({
-        label: medium.charAt(0).toUpperCase() + medium.slice(1),
-        value: medium,
-        action: () => selectMediumForSource(firstSource, medium)
-      }));
-
-      addBotMessage(
-        `Great! For ${firstSource}, select the marketing mediums you'll use:`,
-        [
-          ...mediumOptions,
-          { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(firstSource) }
-        ],
-        'mediums'
-      );
-    } else {
-      promptForCustomMedium(firstSource);
-    }
+    // Use the generic function for the first source
+    showMediumSelectionForSource(firstSource);
   };
 
   const selectMediumForSource = (source: string, medium: string) => {
@@ -629,33 +609,50 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Add user message showing selected mediums
     addUserMessage(`Selected mediums for ${source}: ${selectedMediums.join(', ')}`);
     
-    // Check if there are auto-suggestions for this source-medium combo
+    // Check if there are more sources to process
     setTimeout(() => {
-      const firstMedium = selectedMediums[0];
-      // For now, we'll skip auto-suggestions as the schema doesn't have mediumName field
-      // We'll proceed to the next step or content selection
-      const matchingTemplate = null;
-
-      if (matchingTemplate && matchingTemplate.contentSuggestions && matchingTemplate.contentSuggestions.length > 0) {
-        const contentOptions = matchingTemplate.contentSuggestions.map(suggestion => ({
-          label: suggestion,
-          value: suggestion,
-          action: () => selectContent(source, firstMedium, suggestion)
-        }));
-
-        addBotMessage(
-          `Perfect! I found some content suggestions for ${source} ${firstMedium}. Select the ones you'd like to use:`,
-          [
-            ...contentOptions,
-            { label: "Skip Auto-suggestions", value: "skip", action: () => showTagSelection() }
-          ],
-          'content'
-        );
-      } else {
-        // For now, proceed to tag selection
-        showTagSelection();
-      }
+      proceedToNextSource(source);
     }, 500);
+  };
+
+  const proceedToNextSource = (currentSource: string) => {
+    const selectedSources = campaignData.selectedSources;
+    const currentIndex = selectedSources.indexOf(currentSource);
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex < selectedSources.length) {
+      // There's another source to process
+      const nextSource = selectedSources[nextIndex];
+      showMediumSelectionForSource(nextSource);
+    } else {
+      // All sources processed, proceed to tag selection
+      showTagSelection();
+    }
+  };
+
+  const showMediumSelectionForSource = (source: string) => {
+    // Get all mediums for this source from the mediums array
+    const sourceTemplate = sourceTemplates.find(template => template.sourceName === source);
+    const sourceMediums = sourceTemplate?.mediums || [];
+
+    if (sourceMediums.length > 0) {
+      const mediumOptions = sourceMediums.map(medium => ({
+        label: medium.charAt(0).toUpperCase() + medium.slice(1),
+        value: medium,
+        action: () => selectMediumForSource(source, medium)
+      }));
+
+      addBotMessage(
+        `Great! For ${source}, select the marketing mediums you'll use:`,
+        [
+          ...mediumOptions,
+          { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(source) }
+        ],
+        'mediums'
+      );
+    } else {
+      promptForCustomMedium(source);
+    }
   };
 
   const selectMedium = (source: string, medium: string) => {
