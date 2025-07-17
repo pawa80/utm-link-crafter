@@ -343,7 +343,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tags", authMiddleware, async (req: any, res) => {
     try {
-      console.log("Received tag data:", req.body);
+      console.log("Raw req.body:", req.body);
+      console.log("Type of req.body:", typeof req.body);
+      console.log("Full request object keys:", Object.keys(req));
+      
       const tagData = insertTagSchema.parse(req.body);
       console.log("Parsed tag data:", tagData);
       
