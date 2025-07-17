@@ -18,6 +18,9 @@ export default function CampaignManagement() {
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
   const [showArchived, setShowArchived] = useState(false);
+  
+  // Extract expandCampaign parameter from URL
+  const expandCampaign = new URLSearchParams(window.location.search).get('expand');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -110,7 +113,7 @@ export default function CampaignManagement() {
           </div>
 
           {/* Generated Links Section */}
-          <GeneratedLinks showArchived={showArchived} />
+          <GeneratedLinks showArchived={showArchived} expandCampaign={expandCampaign || undefined} />
         </div>
       </div>
     </div>

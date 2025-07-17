@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,14 +34,32 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 interface GeneratedLinksProps {
   showArchived?: boolean;
+  expandCampaign?: string; // Campaign name to auto-expand
 }
 
-export default function GeneratedLinks({ showArchived = false }: GeneratedLinksProps) {
+export default function GeneratedLinks({ showArchived = false, expandCampaign }: GeneratedLinksProps) {
   const { toast } = useToast();
   const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set());
   const [initializedCollapse, setInitializedCollapse] = useState(false);
   const [sortBy, setSortBy] = useState<string>("created-newest");
   const [filterByTag, setFilterByTag] = useState<string>("all");
+
+  // Auto-expand specific campaign when expandCampaign prop is provided
+  useEffect(() => {
+    if (expandCampaign && links.length > 0) {
+      console.log("Auto-expanding campaign:", expandCampaign);
+      const campaignExists = links.some(link => link.utm_campaign === expandCampaign);
+      console.log("Campaign exists:", campaignExists);
+      if (campaignExists) {
+        setInitializedCollapse(true);
+        // Expand the specified campaign, collapse all others
+        const allCampaignNames = [...new Set(links.map(link => link.utm_campaign))];
+        const otherCampaigns = allCampaignNames.filter(name => name !== expandCampaign);
+        setCollapsedCampaigns(new Set(otherCampaigns));
+        console.log("Campaign auto-expanded:", expandCampaign);
+      }
+    }
+  }, [expandCampaign, links]);
 
 
 

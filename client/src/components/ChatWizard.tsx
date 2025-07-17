@@ -883,7 +883,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage("View Campaign");
     addBotMessage("Taking you to the Campaign Management page...");
     setTimeout(() => {
-      window.location.href = '/campaigns';
+      // Pass the campaign name as a URL parameter for auto-expansion
+      const encodedCampaignName = encodeURIComponent(campaignData.name);
+      window.location.href = `/campaigns?expand=${encodedCampaignName}`;
     }, 1000);
   };
 

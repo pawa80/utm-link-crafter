@@ -250,6 +250,13 @@ Changelog:
   - Campaign creation now properly validates and uses populated data from conversation flow
   - Eliminated race condition between state updates and campaign creation button clicks
   - Chat Wizard now successfully creates campaigns with proper data from user interactions
+- July 17, 2025. Chat Wizard auto-expand functionality:
+  - Fixed "View Campaign" button to automatically expand created campaign in Campaign Management page
+  - Added expandCampaign prop to GeneratedLinks component for auto-expansion control
+  - Modified navigation to pass campaign name as URL parameter (?expand=campaignName)
+  - Added useEffect hook to detect and expand specified campaign when page loads
+  - Enhanced user experience by eliminating need to manually click "Show Links" after campaign creation
+  - Campaign Management page now reads URL parameters and automatically expands the relevant campaign
 
 ## User Preferences
 
