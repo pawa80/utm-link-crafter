@@ -207,6 +207,11 @@ Changelog:
   - Fixed schema validation issues for tag creation by correcting insertTagSchema structure
   - Added smart tag cleanup that removes deleted tags from all associated UTM links
   - Enhanced security with user-scoped operations and proper authentication validation
+  - Added tag editing functionality with inline editing interface
+  - Implemented PUT /api/tags/:id endpoint for updating tag names
+  - When tags are updated, all associated UTM links automatically reflect the new tag name
+  - Enhanced delete confirmation to explain that campaigns without remaining tags will be marked as "Untagged"
+  - Added proper validation to prevent duplicate tag names during editing
 - July 17, 2025. Brand identity and navigation enhancement:
   - Created UTM Builder logo component with gradient design and Zap icon
   - Added logo to top-left corner of all main pages (HomePage, CampaignManagement, Settings, TagManagement, NewCampaign)

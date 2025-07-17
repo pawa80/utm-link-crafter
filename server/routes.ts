@@ -374,6 +374,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/tags/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: "Tag name is required" });
+      }
+      
+      // Check if another tag with this name already exists
+      const existingTag = await storage.getTagByName(req.user.id, name.trim());
+      if (existingTag && existingTag.id !== id) {
+        return res.status(400).json({ message: "A tag with this name already exists" });
+      }
+      
+      const updatedTag = await storage.updateTag(id, req.user.id, name.trim());
+      
+      if (!updatedTag) {
+        return res.status(404).json({ message: "Tag not found or access denied" });
+      }
+
+      res.json(updatedTag);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/tags/:id", authMiddleware, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);

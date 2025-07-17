@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
 import Logo from "@/components/Logo";
-import { ArrowLeft, Plus, Trash2, Tag } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Tag, Edit2, Check, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -31,6 +31,7 @@ export default function TagManagement() {
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
   const [newTagName, setNewTagName] = useState("");
+  const [editingTag, setEditingTag] = useState<{ id: number; name: string } | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -125,6 +126,30 @@ export default function TagManagement() {
     },
   });
 
+  // Update tag mutation
+  const updateTagMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const response = await apiRequest("PUT", `/api/tags/${id}`, { name });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tags"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+      setEditingTag(null);
+      toast({
+        title: "Tag updated",
+        description: "Tag has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Could not update tag",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete tag mutation
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
@@ -135,7 +160,7 @@ export default function TagManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
       toast({
         title: "Tag deleted",
-        description: "Tag has been deleted successfully.",
+        description: "Tag has been deleted and removed from all campaigns.",
       });
     },
     onError: (error: any) => {
@@ -154,8 +179,22 @@ export default function TagManagement() {
     }
   };
 
+  const handleEditTag = (tag: TagType) => {
+    setEditingTag({ id: tag.id, name: tag.name });
+  };
+
+  const handleSaveEdit = () => {
+    if (editingTag && editingTag.name.trim()) {
+      updateTagMutation.mutate({ id: editingTag.id, name: editingTag.name.trim() });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTag(null);
+  };
+
   const handleDeleteTag = (tagId: number, tagName: string) => {
-    if (confirm(`Are you sure you want to delete the tag "${tagName}"? This will remove it from all campaigns and UTM links.`)) {
+    if (confirm(`Are you sure you want to delete the tag "${tagName}"? This will remove it from all campaigns and UTM links. Campaigns without any remaining tags will be marked as "Untagged".`)) {
       deleteTagMutation.mutate(tagId);
     }
   };
@@ -248,42 +287,99 @@ export default function TagManagement() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                {tagsWithStats.map((tagWithStats) => (
-                  <Card key={tagWithStats.id} className="hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-sm">
-                          {tagWithStats.name}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTag(tagWithStats.id, tagWithStats.name)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          disabled={deleteTagMutation.isPending}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex justify-between items-center">
-                          <span>Campaigns:</span>
-                          <Badge variant="outline" className="text-xs">
-                            {tagWithStats.campaignCount}
-                          </Badge>
+                {tagsWithStats.map((tagWithStats) => {
+                  const tag = tags.find(t => t.id === tagWithStats.id);
+                  const isEditing = editingTag?.id === tagWithStats.id;
+                  
+                  return (
+                    <Card key={tagWithStats.id} className="hover:shadow-lg transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          {isEditing ? (
+                            <div className="flex items-center space-x-2 flex-1">
+                              <Input
+                                value={editingTag.name}
+                                onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+                                className="text-sm"
+                                disabled={updateTagMutation.isPending}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveEdit();
+                                  if (e.key === 'Escape') handleCancelEdit();
+                                }}
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="text-sm">
+                              {tagWithStats.name}
+                            </Badge>
+                          )}
+                          <div className="flex space-x-1">
+                            {isEditing ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleSaveEdit}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  disabled={updateTagMutation.isPending || !editingTag.name.trim()}
+                                >
+                                  <Check size={16} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                                  disabled={updateTagMutation.isPending}
+                                >
+                                  <X size={16} />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditTag(tag!)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  disabled={deleteTagMutation.isPending || updateTagMutation.isPending}
+                                >
+                                  <Edit2 size={16} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteTag(tagWithStats.id, tagWithStats.name)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  disabled={deleteTagMutation.isPending || updateTagMutation.isPending}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>UTM Links:</span>
-                          <Badge variant="outline" className="text-xs">
-                            {tagWithStats.utmLinkCount}
-                          </Badge>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 text-sm text-gray-600">
+                          <div className="flex justify-between items-center">
+                            <span>Campaigns:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {tagWithStats.campaignCount}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>UTM Links:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {tagWithStats.utmLinkCount}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>

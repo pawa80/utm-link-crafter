@@ -27,6 +27,7 @@ export interface IStorage {
   createTag(tag: InsertTag): Promise<Tag>;
   getUserTags(userId: number): Promise<Tag[]>;
   getTagByName(userId: number, name: string): Promise<Tag | undefined>;
+  updateTag(id: number, userId: number, name: string): Promise<Tag | undefined>;
   deleteTag(id: number, userId: number): Promise<boolean>;
   
   // Campaign Landing Page operations
@@ -227,6 +228,35 @@ export class DatabaseStorage implements IStorage {
   async getTagByName(userId: number, name: string): Promise<Tag | undefined> {
     const [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name)));
     return tag || undefined;
+  }
+
+  async updateTag(id: number, userId: number, name: string): Promise<Tag | undefined> {
+    // Get the old tag to update UTM links
+    const [oldTag] = await db.select().from(tags).where(and(eq(tags.id, id), eq(tags.userId, userId)));
+    if (!oldTag) return undefined;
+
+    // Update the tag name
+    const [updatedTag] = await db
+      .update(tags)
+      .set({ name })
+      .where(and(eq(tags.id, id), eq(tags.userId, userId)))
+      .returning();
+
+    if (updatedTag) {
+      // Update all UTM links that use this tag
+      const userUtmLinks = await db.select().from(utmLinks).where(eq(utmLinks.userId, userId));
+      
+      for (const link of userUtmLinks) {
+        if (link.tags && link.tags.includes(oldTag.name)) {
+          const updatedTags = link.tags.map(tag => tag === oldTag.name ? name : tag);
+          await db.update(utmLinks)
+            .set({ tags: updatedTags })
+            .where(eq(utmLinks.id, link.id));
+        }
+      }
+    }
+
+    return updatedTag || undefined;
   }
 
   async deleteTag(id: number, userId: number): Promise<boolean> {
