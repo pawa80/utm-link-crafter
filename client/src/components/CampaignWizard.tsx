@@ -237,7 +237,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   
   const getContentVariantsForMedium = (sourceName: string, medium: string) => {
     const key = getVariantKey(sourceName, medium);
-    return contentVariants[key] || [{ id: `${key}-0`, content: '' }];
+    const variants = contentVariants[key] || [{ id: `${key}-0`, content: '' }];
+    
+    if (editMode) {
+      console.log(`getContentVariantsForMedium(${sourceName}, ${medium}): key=${key}, found ${variants.length} variants:`, variants.map(v => v.id));
+    }
+    
+    return variants;
   };
   
   const updateContentVariant = (sourceName: string, medium: string, variantId: string, content: string) => {
@@ -358,7 +364,41 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       return variants.map((variant: any) => {
         // Get selected landing page for this specific row (unique by source-medium-variantId)
         const rowKey = `${sourceName}-${medium}-${variant.id}`;
-        const selectedLandingPageId = state.landingPageSelections[rowKey];
+        let selectedLandingPageId = state.landingPageSelections[rowKey];
+        
+        // FALLBACK: In edit mode, if we can't find by rowKey, try to find by content match
+        if (editMode && !selectedLandingPageId && existingCampaignData) {
+          const matchingLink = existingCampaignData.find(link => {
+            const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+              template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
+            );
+            const linkSourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
+            return linkSourceName === sourceName && 
+                   link.utm_medium === medium && 
+                   (link.utm_content || '') === variant.content;
+          });
+          
+          if (matchingLink) {
+            // Find landing page that matches this link's target URL
+            const normalizeUrl = (url: string) => url.replace(/^https?:\/\/?/i, '').replace(/\/$/, '').toLowerCase();
+            const normalizedTargetUrl = normalizeUrl(matchingLink.targetUrl);
+            const matchingLandingPage = landingPages.find(lp => 
+              normalizeUrl(lp.url) === normalizedTargetUrl
+            );
+            
+            if (matchingLandingPage) {
+              selectedLandingPageId = matchingLandingPage.id;
+              console.log(`FALLBACK: Found landing page ${matchingLandingPage.id} for content="${variant.content}"`);
+            }
+          }
+        }
+        
+        // Debug logging
+        if (editMode) {
+          console.log(`RENDER: Looking for rowKey=${rowKey}, found=${selectedLandingPageId ? 'YES' : 'NO'}`);
+          console.log(`Available selections:`, Object.keys(state.landingPageSelections));
+          console.log(`Current contentVariants for ${sourceName}-${medium}:`, contentVariants[`${sourceName}-${medium}`]?.map(v => v.id));
+        }
 
         const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
         // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
@@ -614,6 +654,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           content: link.utm_content || ''
         }));
         newContentVariants[key] = variants;
+        console.log(`Created variants for ${key}:`, variants.map(v => ({ id: v.id, content: v.content })));
       });
       
       // Initialize landing pages if they exist and map selections BEFORE setting source states
@@ -673,7 +714,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           // Only set the landing page if we found an exact match
           if (matchingLandingPage && newSourceStates[sourceName]) {
             newSourceStates[sourceName].landingPageSelections[rowKey] = matchingLandingPage.id;
-            console.log(`EXACT MATCH: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} (${matchingLandingPage.url}) for link ${link.id}`);
+            console.log(`EDIT MODE INIT: rowKey=${rowKey} -> landingPageId=${matchingLandingPage.id} (${matchingLandingPage.url}) for link ${link.id}`);
+            console.log(`Available variants for ${key}:`, newContentVariants[key]?.map(v => v.id));
           } else {
             console.log(`NO MATCH: Could not find landing page for ${link.targetUrl} among available pages:`, formattedLandingPages.map(lp => lp.url));
           }
@@ -681,9 +723,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       }
       
       console.log('Final newSourceStates with landing page selections:', newSourceStates);
+      console.log('Final newContentVariants:', newContentVariants);
       
-      setSourceStates(newSourceStates);
       setContentVariants(newContentVariants);
+      setSourceStates(newSourceStates); // Set contentVariants first to ensure they're available when sourceStates change triggers renders
       
       // All sections are now always expanded - no state management needed
     }
