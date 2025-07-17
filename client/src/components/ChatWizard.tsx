@@ -882,7 +882,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
             utm_source: source,
             utm_medium: medium,
             utm_content: content,
-            utm_term: null
+            utm_term: ''
           };
 
           const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
@@ -893,21 +893,33 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     // Copy to clipboard
     const linksText = utmLinks.join('\n');
-    navigator.clipboard.writeText(linksText).then(() => {
-      addBotMessage(
-        `✅ Copied ${utmLinks.length} UTM links to clipboard! Taking you back to the home page...`,
-        [
-          { label: "Back to Home", value: "home", action: () => navigateToHome() }
-        ]
-      );
-    }).catch(() => {
+    
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(linksText).then(() => {
+        addBotMessage(
+          `✅ Copied ${utmLinks.length} UTM links to clipboard! Taking you back to the home page...`,
+          [
+            { label: "Back to Home", value: "home", action: () => navigateToHome() }
+          ]
+        );
+      }).catch((err) => {
+        console.error('Failed to copy to clipboard:', err);
+        addBotMessage(
+          `Here are your ${utmLinks.length} UTM links:\n\n${linksText}`,
+          [
+            { label: "Back to Home", value: "home", action: () => navigateToHome() }
+          ]
+        );
+      });
+    } else {
+      // Fallback for non-secure contexts
       addBotMessage(
         `Here are your ${utmLinks.length} UTM links:\n\n${linksText}`,
         [
           { label: "Back to Home", value: "home", action: () => navigateToHome() }
         ]
       );
-    });
+    }
   };
 
   const navigateToHome = () => {
@@ -958,7 +970,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
             utm_source: source,
             utm_medium: medium,
             utm_content: content,
-            utm_term: null
+            utm_term: ''
           };
 
           const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
@@ -970,7 +982,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
             utm_source: source,
             utm_medium: medium,
             utm_content: content,
-            utm_term: null,
+            utm_term: '',
             tags: campaignData.selectedTags
           });
         }
