@@ -275,13 +275,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     setCampaignData(prev => ({ ...prev, name: campaignName, existingCampaignName: campaignName }));
     addUserMessage(campaignName);
     setTimeout(() => {
-      addBotMessage(
-        `✅ Added "${url}" to your landing pages! Would you like to add another landing page or continue to sources?`,
-        [
-          { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
-          { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
-        ]
-      );
+      showLandingPageSelection();
     }, 500);
   };
 
@@ -392,17 +386,19 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const currentCount = campaignData.selectedSources.length;
     const message = currentCount === 0 
       ? "Perfect! Now let's choose your traffic sources. Which platforms will you be promoting on?"
-      : `You have ${currentCount} source(s) selected: ${campaignData.selectedSources.join(', ')}. Add more or continue to mediums:`;
+      : `You currently have ${currentCount} source(s): ${campaignData.selectedSources.join(', ')}. Choose more sources:`;
 
-    addBotMessage(
-      message,
-      [
-        ...sourceOptions,
-        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-        ...(currentCount > 0 ? [{ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }] : [])
-      ],
-      'sources'
-    );
+    const options = [
+      ...sourceOptions,
+      { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
+    ];
+
+    // Only show continue option if we have at least one source
+    if (currentCount > 0) {
+      options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() });
+    }
+
+    addBotMessage(message, options, 'sources');
   };
 
   const selectSource = (source: string) => {
@@ -413,7 +409,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
     setTimeout(() => {
-      showSourceSelection(); // Continue showing source selection for multiple sources
+      addBotMessage(
+        `✅ Added "${source}" to your sources! Would you like to add another source or continue to select mediums?`,
+        [
+          { label: "Add Another Source", value: "add-another", action: () => showSourceSelection() },
+          { label: "Continue to Mediums", value: "continue-mediums", action: () => showMediumSelectionForFirstSource() }
+        ]
+      );
     }, 500);
   };
 
