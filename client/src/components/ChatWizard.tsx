@@ -608,10 +608,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const proceedToContentForSourceWithState = (source: string, currentCampaignData: any) => {
     const selectedMediums = currentCampaignData.selectedMediums[source];
     
-    console.log('proceedToContentForSourceWithState - source:', source);
-    console.log('proceedToContentForSourceWithState - selectedMediums:', selectedMediums);
-    console.log('proceedToContentForSourceWithState - all selectedMediums:', currentCampaignData.selectedMediums);
-    
     if (!selectedMediums || selectedMediums.length === 0) {
       addBotMessage(
         "No mediums selected. Please select at least one medium.",
@@ -633,10 +629,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Use a timeout to ensure state is updated
     setTimeout(() => {
       const selectedMediums = campaignData.selectedMediums[source];
-      
-      console.log('proceedToContentForSource - source:', source);
-      console.log('proceedToContentForSource - selectedMediums:', selectedMediums);
-      console.log('proceedToContentForSource - all selectedMediums:', campaignData.selectedMediums);
       
       if (!selectedMediums || selectedMediums.length === 0) {
         addBotMessage(
@@ -804,7 +796,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         [
           ...tagOptions,
           { label: "Add Custom Tag", value: "custom-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip-tags", action: () => showReview() }
+          { label: "Skip Tags", value: "skip-tags", action: () => showFinalOptions() }
         ],
         'tags'
       );
@@ -813,7 +805,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         "Would you like to add tags to organize your campaign?",
         [
           { label: "Add Tag", value: "add-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip", action: () => showReview() }
+          { label: "Skip Tags", value: "skip", action: () => showFinalOptions() }
         ],
         'tags'
       );
@@ -829,10 +821,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     setTimeout(() => {
       addBotMessage(
-        `✅ Tag "${tagName}" added! Ready to review your campaign?`,
+        `✅ Tag "${tagName}" added! Ready to complete your campaign?`,
         [
           { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
-          { label: "Review Campaign", value: "review", action: () => showReview() }
+          { label: "Create Campaign", value: "create", action: () => showFinalOptions(), isPrimary: true }
         ]
       );
     }, 500);
@@ -846,6 +838,84 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       true,
       "Enter tag name (e.g., 'summer-campaign')"
     );
+  };
+
+  const showFinalOptions = () => {
+    // Create the campaign first
+    createCampaign();
+    
+    // Then show the final options
+    setTimeout(() => {
+      addBotMessage(
+        "🎉 Your campaign has been created successfully! What would you like to do next?",
+        [
+          { label: "View Campaign", value: "view", action: () => navigateToCampaignManagement(), isPrimary: true },
+          { label: "Copy Campaign Links", value: "copy", action: () => copyCampaignLinks() }
+        ],
+        'final'
+      );
+    }, 1000);
+  };
+
+  const navigateToCampaignManagement = () => {
+    addUserMessage("View Campaign");
+    addBotMessage("Taking you to the Campaign Management page...");
+    setTimeout(() => {
+      window.location.href = '/campaigns';
+    }, 1000);
+  };
+
+  const copyCampaignLinks = () => {
+    addUserMessage("Copy Campaign Links");
+    
+    // Generate all UTM links
+    const utmLinks = [];
+    for (const source of campaignData.selectedSources) {
+      const mediums = campaignData.selectedMediums[source] || ['cpc'];
+      for (const medium of mediums) {
+        const contentKey = `${source}-${medium}`;
+        const content = campaignData.contentInputs[contentKey] || 'default';
+        
+        for (const landingPage of campaignData.landingPages) {
+          const utmParams = {
+            utm_campaign: campaignData.name,
+            utm_source: source,
+            utm_medium: medium,
+            utm_content: content,
+            utm_term: null
+          };
+
+          const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+          utmLinks.push(fullUtmLink);
+        }
+      }
+    }
+
+    // Copy to clipboard
+    const linksText = utmLinks.join('\n');
+    navigator.clipboard.writeText(linksText).then(() => {
+      addBotMessage(
+        `✅ Copied ${utmLinks.length} UTM links to clipboard! Taking you back to the home page...`,
+        [
+          { label: "Back to Home", value: "home", action: () => navigateToHome() }
+        ]
+      );
+    }).catch(() => {
+      addBotMessage(
+        `Here are your ${utmLinks.length} UTM links:\n\n${linksText}`,
+        [
+          { label: "Back to Home", value: "home", action: () => navigateToHome() }
+        ]
+      );
+    });
+  };
+
+  const navigateToHome = () => {
+    addUserMessage("Back to Home");
+    addBotMessage("Taking you back to the home page...");
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1000);
   };
 
   const showReview = () => {
