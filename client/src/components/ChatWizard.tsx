@@ -987,9 +987,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const copyCampaignLinks = () => {
     addUserMessage("Copy Campaign Links");
     
-    // Generate all UTM links
-    const utmLinks = [];
+    // Generate all UTM links organized by source
+    const linksBySource: { [sourceName: string]: Array<{ fullUtmLink: string; utm_medium: string; utm_content: string; }> } = {};
+    
     for (const source of campaignData.selectedSources) {
+      linksBySource[source] = [];
       const mediums = campaignData.selectedMediums[source] || ['cpc'];
       for (const medium of mediums) {
         const contentKey = `${source}-${medium}`;
@@ -1008,19 +1010,39 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
             };
 
             const fullUtmLink = generateUTMLink(utmParams);
-            utmLinks.push(fullUtmLink);
+            linksBySource[source].push({
+              fullUtmLink,
+              utm_medium: medium,
+              utm_content: content
+            });
           }
         }
       }
     }
 
-    // Copy to clipboard
-    const linksText = utmLinks.join('\n');
+    // Format links to match Campaign Management page format
+    let copyText = `Campaign: ${campaignData.name}\n`;
+    
+    Object.entries(linksBySource).forEach(([sourceName, sourceLinks], index) => {
+      copyText += `Source: ${sourceName}\n\n`;
+      sourceLinks.forEach(link => {
+        const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+        copyText += `${linkName} - ${link.fullUtmLink}\n`;
+      });
+      
+      // Add extra line break between sources, but not after the last one
+      if (index < Object.entries(linksBySource).length - 1) {
+        copyText += '\n';
+      }
+    });
+
+    // Count total links
+    const totalLinks = Object.values(linksBySource).reduce((sum, links) => sum + links.length, 0);
     
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(linksText).then(() => {
+      navigator.clipboard.writeText(copyText).then(() => {
         addBotMessage(
-          `✅ Copied ${utmLinks.length} UTM links to clipboard! Taking you back to the home page...`,
+          `✅ Copied ${totalLinks} UTM links to clipboard! Taking you back to the home page...`,
           [
             { label: "Back to Home", value: "home", action: () => navigateToHome() }
           ]
@@ -1028,7 +1050,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }).catch((err) => {
         console.error('Failed to copy to clipboard:', err);
         addBotMessage(
-          `Here are your ${utmLinks.length} UTM links:\n\n${linksText}`,
+          `Here are your ${totalLinks} UTM links:\n\n${copyText}`,
           [
             { label: "Back to Home", value: "home", action: () => navigateToHome() }
           ]
@@ -1037,7 +1059,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     } else {
       // Fallback for non-secure contexts
       addBotMessage(
-        `Here are your ${utmLinks.length} UTM links:\n\n${linksText}`,
+        `Here are your ${totalLinks} UTM links:\n\n${copyText}`,
         [
           { label: "Back to Home", value: "home", action: () => navigateToHome() }
         ]

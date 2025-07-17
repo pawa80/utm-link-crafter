@@ -266,6 +266,8 @@ Changelog:
   - Enhanced campaign creation to support multiple content variations per source-medium pair
   - Updated both campaign creation and copy links functionality to use content templates
   - Replaced manual content input with automated content template selection for better user experience
+  - Fixed UTM link generation bug where Chat Wizard was passing incorrect parameters to generateUTMLink function
+  - Updated Chat Wizard copy functionality to match Campaign Management page format with organized source sections and labeled links
 
 ## User Preferences
 
