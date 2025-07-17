@@ -169,6 +169,33 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, []);
 
+  // Handle existing campaigns query completion
+  useEffect(() => {
+    const { data: existingCampaigns = [], isLoading: isLoadingCampaigns } = existingCampaignsQuery;
+    
+    // Check if we're in the loading state and the query has completed
+    if (currentStep === 'existing-campaign' && !isLoadingCampaigns && existingCampaigns.length > 0) {
+      // Find the loading message and replace it
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.content.includes('Loading your campaigns')) {
+        // Remove the loading message and add the campaigns
+        setMessages(prev => prev.slice(0, -1));
+        
+        const campaignOptions = existingCampaigns.map(campaignName => ({
+          label: campaignName,
+          value: campaignName,
+          action: () => selectExistingCampaign(campaignName)
+        }));
+
+        addBotMessage(
+          "Here are your recent campaigns. Which one would you like to add links to?",
+          campaignOptions,
+          'existing-campaign'
+        );
+      }
+    }
+  }, [existingCampaignsQuery.data, existingCampaignsQuery.isLoading, currentStep, messages]);
+
   const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", step?: string) => {
     setIsTyping(true);
     setTimeout(() => {
@@ -294,6 +321,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   const showExistingCampaigns = () => {
     setCampaignData(prev => ({ ...prev, isExistingCampaign: true }));
+    setCurrentStep('existing-campaign');
     
     const { data: existingCampaigns = [], isLoading: isLoadingCampaigns } = existingCampaignsQuery;
     
