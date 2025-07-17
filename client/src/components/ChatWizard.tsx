@@ -35,6 +35,7 @@ interface CampaignData {
   selectedSources: string[];
   selectedMediums: { [source: string]: string[] };
   contentInputs: { [key: string]: string };
+  selectedContent: { [key: string]: string[] }; // key: source-medium, value: array of selected content
   selectedTags: string[];
 }
 
@@ -48,6 +49,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     selectedSources: [],
     selectedMediums: {},
     contentInputs: {},
+    selectedContent: {},
     selectedTags: []
   });
   const [currentInput, setCurrentInput] = useState('');
@@ -81,6 +83,17 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return campaignNames.slice(0, 10); // Get 10 latest campaigns
     }
   });
+
+  // Function to fetch content suggestions for a source-medium combination
+  const fetchContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
+    try {
+      const response = await apiRequest("GET", `/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+      return response.json();
+    } catch (error) {
+      console.error(`Error fetching content suggestions for ${source}-${medium}:`, error);
+      return [];
+    }
+  };
 
   // Create campaign mutation
   const createCampaignMutation = useMutation({
@@ -686,8 +699,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const nextSource = selectedSources[nextIndex];
       showMediumSelectionForSource(nextSource);
     } else {
-      // All sources processed, proceed to tag selection
-      showTagSelection();
+      // All sources processed, proceed to content selection
+      showContentSelection();
     }
   };
 
@@ -701,8 +714,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const nextSource = selectedSources[nextIndex];
       showMediumSelectionForSource(nextSource);
     } else {
-      // All sources processed, proceed to tag selection
-      showTagSelection();
+      // All sources processed, proceed to content selection
+      showContentSelection();
     }
   };
 
@@ -811,6 +824,83 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     );
   };
 
+  const showContentSelection = async () => {
+    setCurrentStep('content');
+    
+    // Collect all source-medium combinations
+    const sourceMediumCombinations = [];
+    for (const source of campaignData.selectedSources) {
+      const mediums = campaignData.selectedMediums[source] || [];
+      for (const medium of mediums) {
+        sourceMediumCombinations.push({ source, medium });
+      }
+    }
+    
+    if (sourceMediumCombinations.length === 0) {
+      addBotMessage("No source-medium combinations found. Please go back and select sources and mediums.");
+      return;
+    }
+
+    // Fetch content suggestions for all combinations
+    const contentSuggestions = {};
+    for (const { source, medium } of sourceMediumCombinations) {
+      try {
+        const suggestions = await fetchContentSuggestions(source, medium);
+        const key = `${source}-${medium}`;
+        contentSuggestions[key] = suggestions;
+      } catch (error) {
+        console.error(`Error fetching content for ${source}-${medium}:`, error);
+        const key = `${source}-${medium}`;
+        contentSuggestions[key] = ['default'];
+      }
+    }
+
+    // Auto-select all content suggestions
+    const newSelectedContent = {};
+    for (const { source, medium } of sourceMediumCombinations) {
+      const key = `${source}-${medium}`;
+      const suggestions = contentSuggestions[key] || ['default'];
+      newSelectedContent[key] = suggestions;
+    }
+
+    // Update campaign data with selected content
+    setCampaignData(prev => ({
+      ...prev,
+      selectedContent: newSelectedContent
+    }));
+
+    // Show content selection summary
+    let contentSummary = "📝 Here are the content variations I've found for your campaign:\n\n";
+    
+    for (const { source, medium } of sourceMediumCombinations) {
+      const key = `${source}-${medium}`;
+      const suggestions = contentSuggestions[key] || ['default'];
+      contentSummary += `**${source.charAt(0).toUpperCase() + source.slice(1)} → ${medium.charAt(0).toUpperCase() + medium.slice(1)}:**\n`;
+      contentSummary += suggestions.map(content => `• ${content}`).join('\n') + '\n\n';
+    }
+
+    contentSummary += "All content variations have been automatically selected. Each will create a separate UTM link for tracking different ad variations.";
+
+    addBotMessage(
+      contentSummary,
+      [
+        { label: "Continue with Selected Content", value: "continue", action: () => showTagSelection(), isPrimary: true },
+        { label: "Modify Content Selection", value: "modify", action: () => showContentModification() }
+      ],
+      'content'
+    );
+  };
+
+  const showContentModification = () => {
+    // For now, just allow proceeding - future enhancement could add content modification
+    addBotMessage(
+      "Content modification will be available in a future update. For now, you can continue with the auto-selected content.",
+      [
+        { label: "Continue with Auto-Selected Content", value: "continue", action: () => showTagSelection(), isPrimary: true }
+      ]
+    );
+  };
+
   const showTagSelection = () => {
     if (tags.length > 0) {
       const tagOptions = tags.map(tag => ({
@@ -898,19 +988,22 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const mediums = campaignData.selectedMediums[source] || ['cpc'];
       for (const medium of mediums) {
         const contentKey = `${source}-${medium}`;
-        const content = campaignData.contentInputs[contentKey] || 'default';
+        const contentOptions = campaignData.selectedContent[contentKey] || ['default'];
         
-        for (const landingPage of campaignData.landingPages) {
-          const utmParams = {
-            utm_campaign: campaignData.name,
-            utm_source: source,
-            utm_medium: medium,
-            utm_content: content,
-            utm_term: ''
-          };
+        // Create UTM links for each content variation
+        for (const content of contentOptions) {
+          for (const landingPage of campaignData.landingPages) {
+            const utmParams = {
+              utm_campaign: campaignData.name,
+              utm_source: source,
+              utm_medium: medium,
+              utm_content: content,
+              utm_term: ''
+            };
 
-          const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
-          utmLinks.push(fullUtmLink);
+            const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+            utmLinks.push(fullUtmLink);
+          }
         }
       }
     }
@@ -1024,30 +1117,33 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
       const mediums = currentCampaignData.selectedMediums[source] || ['cpc'];
       for (const medium of mediums) {
         const contentKey = `${source}-${medium}`;
-        const content = currentCampaignData.contentInputs[contentKey] || 'default';
+        const contentOptions = currentCampaignData.selectedContent[contentKey] || ['default'];
         
-        for (const landingPage of currentCampaignData.landingPages) {
-          const utmParams = {
-            utm_campaign: currentCampaignData.name,
-            utm_source: source,
-            utm_medium: medium,
-            utm_content: content,
-            utm_term: ''
-          };
+        // Create UTM links for each content variation
+        for (const content of contentOptions) {
+          for (const landingPage of currentCampaignData.landingPages) {
+            const utmParams = {
+              utm_campaign: currentCampaignData.name,
+              utm_source: source,
+              utm_medium: medium,
+              utm_content: content,
+              utm_term: ''
+            };
 
-          const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
-          
-          utmLinks.push({
-            userId: user.id,
-            targetUrl: landingPage.url,
-            fullUtmLink,
-            utm_campaign: currentCampaignData.name,
-            utm_source: source,
-            utm_medium: medium,
-            utm_content: content,
-            utm_term: '',
-            tags: currentCampaignData.selectedTags
-          });
+            const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+            
+            utmLinks.push({
+              userId: user.id,
+              targetUrl: landingPage.url,
+              fullUtmLink,
+              utm_campaign: currentCampaignData.name,
+              utm_source: source,
+              utm_medium: medium,
+              utm_content: content,
+              utm_term: '',
+              tags: currentCampaignData.selectedTags
+            });
+          }
         }
       }
     }
@@ -1077,6 +1173,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
       selectedSources: [],
       selectedMediums: {},
       contentInputs: {},
+      selectedContent: {},
       selectedTags: []
     });
   };

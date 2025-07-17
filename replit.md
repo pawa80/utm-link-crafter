@@ -257,6 +257,15 @@ Changelog:
   - Added useEffect hook to detect and expand specified campaign when page loads
   - Enhanced user experience by eliminating need to manually click "Show Links" after campaign creation
   - Campaign Management page now reads URL parameters and automatically expands the relevant campaign
+- July 17, 2025. Chat Wizard content template integration:
+  - Added content template selection step after medium selection in Chat Wizard flow
+  - Integrated with existing UTM content API (/api/utm-content/:source/:medium) to fetch content suggestions
+  - Updated CampaignData interface to include selectedContent field for managing content variations
+  - Auto-selects all available content templates for each source-medium combination
+  - Generates separate UTM links for each content variation instead of defaulting to "default"
+  - Enhanced campaign creation to support multiple content variations per source-medium pair
+  - Updated both campaign creation and copy links functionality to use content templates
+  - Replaced manual content input with automated content template selection for better user experience
 
 ## User Preferences
 
