@@ -408,50 +408,29 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }));
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
-    // Update the last bot message to reflect the new selection
+    // Instead of trying to update the existing message, add a new confirmation message
     setTimeout(() => {
       const updatedSources = [...campaignData.selectedSources, source];
-      const updatedContent = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
+      const message = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
       
-      setMessages(prev => {
-        // Find the last bot message with step 'sources'
-        let lastBotMessageIndex = -1;
-        for (let i = prev.length - 1; i >= 0; i--) {
-          if (prev[i].isBot && prev[i].step === 'sources') {
-            lastBotMessageIndex = i;
-            break;
-          }
-        }
-        
-        if (lastBotMessageIndex >= 0) {
-          const lastMessage = prev[lastBotMessageIndex];
-          // Update the options to remove the selected source and add continue button
-          const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
-          const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
-          
-          const sourceOptions = unselectedSources.map(src => ({
-            label: src.charAt(0).toUpperCase() + src.slice(1),
-            value: src,
-            action: () => selectSource(src)
-          }));
+      // Get available sources for remaining options
+      const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
+      const unselectedSources = availableSources.filter(src => !updatedSources.includes(src));
+      
+      const sourceOptions = unselectedSources.map(src => ({
+        label: src.charAt(0).toUpperCase() + src.slice(1),
+        value: src,
+        action: () => selectSource(src)
+      }));
 
-          const options = [
-            ...sourceOptions,
-            { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-            { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }
-          ];
+      const options = [
+        ...sourceOptions,
+        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
+        { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }
+      ];
 
-          const updatedBotMessage = {
-            ...lastMessage,
-            content: updatedContent,
-            options: options
-          };
-
-          return [...prev.slice(0, lastBotMessageIndex), updatedBotMessage];
-        }
-        return prev;
-      });
-    }, 100);
+      addBotMessage(message, options, 'sources');
+    }, 500);
   };
 
   const showMediumSelectionForFirstSource = () => {
