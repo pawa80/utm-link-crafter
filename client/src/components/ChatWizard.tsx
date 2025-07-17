@@ -1017,8 +1017,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showFinalOptions = () => {
+    const successMessage = campaignData.isExistingCampaign 
+      ? "🎉 Your links have been added to your campaign successfully! What would you like to do next?"
+      : "🎉 Your campaign has been created successfully! What would you like to do next?";
+      
     addBotMessage(
-      "🎉 Your campaign has been created successfully! What would you like to do next?",
+      successMessage,
       [
         { label: "View Campaign", value: "view", action: () => navigateToCampaignManagement(), isPrimary: true },
         { label: "Copy Campaign Links", value: "copy", action: () => copyCampaignLinks() }
@@ -1187,7 +1191,8 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
       }
       
       setIsCreatingCampaign(true);
-      addBotMessage("Creating your campaign... 🚀");
+      const creatingMessage = currentCampaignData.isExistingCampaign ? "Adding links to your campaign... 🚀" : "Creating your campaign... 🚀";
+      addBotMessage(creatingMessage);
       
       // Proceed with campaign creation using the current data
       proceedWithCampaignCreation(currentCampaignData);

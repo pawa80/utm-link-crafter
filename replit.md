@@ -275,6 +275,10 @@ Changelog:
   - Eliminated timeout issues where existing campaigns would get stuck in loading state
   - Fixed button text for existing campaign path: "Create Campaign" now shows "Add Links to Campaign" for better UX clarity
   - Enhanced error handling and removed debug console logs for cleaner production code
+  - Fixed all button text across multiple Chat Wizard paths (review step, tag selection, skip tags)
+  - Updated status messages: "Creating your campaign" → "Adding links to your campaign" for existing campaigns
+  - Updated success message: "Your campaign has been created" → "Your links have been added to your campaign" for existing campaigns
+  - Comprehensive UX improvements ensuring consistent messaging throughout the existing campaign flow
 
 ## User Preferences
 
