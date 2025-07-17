@@ -73,7 +73,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            UTM Link Builder
+            UTM Builder
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Create, manage, and track your marketing campaign links with ease. 

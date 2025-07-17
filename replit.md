@@ -213,6 +213,7 @@ Changelog:
   - Logo always links back to home page for consistent navigation
   - Implemented responsive design with proper spacing and hover effects
   - Enhanced visual brand consistency across the entire application
+  - Updated main heading on HomePage from "UTM Link Builder" to "UTM Builder" for consistent branding
 
 ## User Preferences
 
