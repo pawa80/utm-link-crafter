@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import CampaignWizard from "@/components/CampaignWizard";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
+import Logo from "@/components/Logo";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -90,14 +91,17 @@ export default function NewCampaign() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Top Navigation with User */}
+        {/* Top Navigation with Logo and User */}
         <div className="flex justify-between items-center mb-6 pt-4">
-          <Link href="/campaigns">
-            <Button variant="ghost">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Campaign Management
-            </Button>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Logo />
+            <Link href="/campaigns">
+              <Button variant="ghost">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Campaign Management
+              </Button>
+            </Link>
+          </div>
           <UserHeader user={user} onLogout={handleLogout} />
         </div>
 

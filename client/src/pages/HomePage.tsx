@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
+import Logo from "@/components/Logo";
 import { Plus, Settings, Archive } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
@@ -63,8 +64,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Top Navigation with User */}
-        <div className="flex justify-end mb-8 pt-4">
+        {/* Top Navigation with Logo and User */}
+        <div className="flex justify-between items-center mb-8 pt-4">
+          <Logo />
           <UserHeader user={user} onLogout={handleLogout} />
         </div>
 

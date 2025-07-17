@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import GeneratedLinks from "@/components/GeneratedLinks";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
+import Logo from "@/components/Logo";
 import { Plus, ArrowLeft, Archive } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
@@ -64,14 +65,17 @@ export default function CampaignManagement() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Top Navigation with User */}
+        {/* Top Navigation with Logo and User */}
         <div className="flex justify-between items-center mb-6 pt-4">
-          <Link href="/">
-            <Button variant="ghost">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Logo />
+            <Link href="/">
+              <Button variant="ghost">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
           <UserHeader user={user} onLogout={handleLogout} />
         </div>
 
