@@ -185,6 +185,13 @@ Changelog:
   - Added /api/unique-urls endpoint that fetches all previously used URLs from campaign landing pages and UTM links
   - Landing Page URL fields now show dropdown suggestions for easy reuse of previous URLs
   - Enhanced user experience by eliminating need to retype commonly used landing page URLs
+- July 17, 2025. Campaign Management page enhancements:
+  - Added clickable tag filtering system with "All", individual tags, and "Untagged" filter options
+  - Implemented landing page URLs display above UTM Links count on campaign cards with mobile responsive design
+  - Enhanced data integration to fetch and combine campaign landing pages with UTM link target URLs
+  - Fixed edit campaign mode navigation: "Back to Home" link now reads "Back to Campaign Management" and navigates to campaigns page
+  - Added visual filter section with clickable badges showing active filter states
+  - Both desktop and mobile layouts support the new filtering and URL display features
 
 ## User Preferences
 
