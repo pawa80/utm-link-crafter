@@ -10,6 +10,7 @@ import NewCampaign from "@/pages/NewCampaign";
 import SourceManagement from "@/pages/SourceManagement";
 import Settings from "@/pages/Settings";
 import TagManagement from "@/pages/TagManagement";
+import ChatWizardPage from "@/pages/ChatWizardPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/campaigns" component={CampaignManagement} />
       <Route path="/new-campaign" component={NewCampaign} />
+      <Route path="/chat-wizard" component={ChatWizardPage} />
       <Route path="/sources" component={SourceManagement} />
       <Route path="/settings" component={Settings} />
       <Route path="/tags" component={TagManagement} />

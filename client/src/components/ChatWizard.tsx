@@ -1,0 +1,630 @@
+import { useState, useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { generateUTMLink, validateUrl } from "@/lib/utm";
+import { MessageCircle, Send, Bot, User as UserIcon, Plus, Check } from "lucide-react";
+import type { User, SourceTemplate, Tag } from "@shared/schema";
+
+interface ChatWizardProps {
+  user: User;
+  onComplete?: () => void;
+}
+
+interface ChatMessage {
+  id: string;
+  type: 'bot' | 'user';
+  content: string;
+  timestamp: Date;
+  options?: Array<{ label: string; value: string; action?: () => void }>;
+  showInput?: boolean;
+  inputPlaceholder?: string;
+  onInput?: (value: string) => void;
+}
+
+interface CampaignData {
+  name: string;
+  landingPages: Array<{ id: string; url: string; label: string }>;
+  selectedSources: string[];
+  selectedMediums: { [source: string]: string[] };
+  contentInputs: { [key: string]: string };
+  selectedTags: string[];
+}
+
+export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'campaign-name' | 'landing-pages' | 'sources' | 'mediums' | 'content' | 'tags' | 'review' | 'complete'>('welcome');
+  const [campaignData, setCampaignData] = useState<CampaignData>({
+    name: '',
+    landingPages: [],
+    selectedSources: [],
+    selectedMediums: {},
+    contentInputs: {},
+    selectedTags: []
+  });
+  const [currentInput, setCurrentInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch source templates
+  const { data: sourceTemplates = [] } = useQuery<SourceTemplate[]>({
+    queryKey: ["/api/source-templates"],
+  });
+
+  // Fetch tags
+  const { data: tags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+  });
+
+  // Fetch unique URLs for autocomplete
+  const { data: uniqueUrls = [] } = useQuery<string[]>({
+    queryKey: ["/api/unique-urls"],
+  });
+
+  // Create campaign mutation
+  const createCampaignMutation = useMutation({
+    mutationFn: async (campaignData: any) => {
+      const response = await apiRequest("POST", "/api/utm-links", campaignData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+      addBotMessage("🎉 Your campaign has been created successfully! You can view and manage it from the Campaign Management page.", [], 'complete');
+      if (onComplete) {
+        setTimeout(onComplete, 2000);
+      }
+    },
+    onError: (error: any) => {
+      addBotMessage(`❌ Sorry, there was an error creating your campaign: ${error.message}. Would you like to try again?`, [
+        { label: "Try Again", value: "retry", action: () => setCurrentStep('review') },
+        { label: "Start Over", value: "restart", action: () => restartWizard() }
+      ]);
+    },
+  });
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    // Start with welcome message
+    if (messages.length === 0) {
+      setTimeout(() => {
+        addBotMessage(
+          "👋 Hi! I'm your UTM Campaign Assistant. I'll help you create a new campaign step by step. Let's start with a name for your campaign.",
+          [],
+          'campaign-name',
+          true,
+          "Enter campaign name (e.g., 'Summer Sale 2025')"
+        );
+      }, 500);
+    }
+  }, []);
+
+  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void }> = [], nextStep?: string, showInput = false, inputPlaceholder = "") => {
+    setIsTyping(true);
+    setTimeout(() => {
+      const newMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        type: 'bot',
+        content,
+        timestamp: new Date(),
+        options,
+        showInput,
+        inputPlaceholder,
+        onInput: showInput ? handleUserInput : undefined
+      };
+      setMessages(prev => [...prev, newMessage]);
+      setIsTyping(false);
+      if (nextStep) {
+        setCurrentStep(nextStep as any);
+      }
+    }, 1000);
+  };
+
+  const addUserMessage = (content: string) => {
+    const newMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      type: 'user',
+      content,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleUserInput = (value: string) => {
+    if (!value.trim()) return;
+
+    addUserMessage(value);
+    setCurrentInput('');
+
+    switch (currentStep) {
+      case 'campaign-name':
+        setCampaignData(prev => ({ ...prev, name: value }));
+        setTimeout(() => {
+          addBotMessage(
+            `Great! Your campaign "${value}" is set up. Now let's add some landing pages. What's the main URL you want to promote?`,
+            [],
+            'landing-pages',
+            true,
+            "Enter landing page URL (e.g., 'https://example.com')"
+          );
+        }, 500);
+        break;
+
+      case 'landing-pages':
+        if (validateUrl(value)) {
+          const newLandingPage = {
+            id: `lp-${Date.now()}`,
+            url: value,
+            label: value
+          };
+          setCampaignData(prev => ({
+            ...prev,
+            landingPages: [...prev.landingPages, newLandingPage]
+          }));
+          setTimeout(() => {
+            addBotMessage(
+              `✅ Landing page added! Would you like to add another landing page, or shall we move on to selecting traffic sources?`,
+              [
+                { label: "Add Another Landing Page", value: "add-another", action: () => promptForAnotherLandingPage() },
+                { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
+              ]
+            );
+          }, 500);
+        } else {
+          setTimeout(() => {
+            addBotMessage(
+              "That doesn't look like a valid URL. Please enter a complete URL starting with http:// or https://",
+              [],
+              'landing-pages',
+              true,
+              "Enter a valid URL (e.g., 'https://example.com')"
+            );
+          }, 500);
+        }
+        break;
+
+      case 'content':
+        // Handle content input for specific source-medium combination
+        const contentKey = `${campaignData.selectedSources[0]}-${campaignData.selectedMediums[campaignData.selectedSources[0]]?.[0]}`;
+        setCampaignData(prev => ({
+          ...prev,
+          contentInputs: { ...prev.contentInputs, [contentKey]: value }
+        }));
+        setTimeout(() => {
+          showTagSelection();
+        }, 500);
+        break;
+
+      case 'tags':
+        // Handle custom tag input
+        if (!tags.find(tag => tag.name.toLowerCase() === value.toLowerCase())) {
+          setCampaignData(prev => ({
+            ...prev,
+            selectedTags: [...prev.selectedTags, value]
+          }));
+          setTimeout(() => {
+            addBotMessage(
+              `✅ Custom tag "${value}" added! Ready to review your campaign?`,
+              [
+                { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
+                { label: "Review Campaign", value: "review", action: () => showReview() }
+              ]
+            );
+          }, 500);
+        } else {
+          setTimeout(() => {
+            addBotMessage(
+              "That tag already exists. Please choose a different name or select from the existing tags above.",
+              [],
+              'tags',
+              true,
+              "Enter a new tag name"
+            );
+          }, 500);
+        }
+        break;
+    }
+  };
+
+  const promptForAnotherLandingPage = () => {
+    addBotMessage(
+      "What's the next landing page URL you'd like to add?",
+      [],
+      'landing-pages',
+      true,
+      "Enter another landing page URL"
+    );
+  };
+
+  const showSourceSelection = () => {
+    const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
+    const sourceOptions = availableSources.map(source => ({
+      label: source.charAt(0).toUpperCase() + source.slice(1),
+      value: source,
+      action: () => selectSource(source)
+    }));
+
+    addBotMessage(
+      "Perfect! Now let's choose your traffic sources. Which platforms will you be promoting on?",
+      [
+        ...sourceOptions,
+        { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() }
+      ],
+      'sources'
+    );
+  };
+
+  const selectSource = (source: string) => {
+    setCampaignData(prev => ({
+      ...prev,
+      selectedSources: [...prev.selectedSources, source]
+    }));
+    addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
+
+    setTimeout(() => {
+      const sourceMediums = sourceTemplates
+        .filter(template => template.sourceName === source)
+        .map(template => template.mediumName);
+
+      if (sourceMediums.length > 0) {
+        const mediumOptions = sourceMediums.map(medium => ({
+          label: medium.charAt(0).toUpperCase() + medium.slice(1),
+          value: medium,
+          action: () => selectMedium(source, medium)
+        }));
+
+        addBotMessage(
+          `Great choice! For ${source}, which type of marketing medium will you use?`,
+          [
+            ...mediumOptions,
+            { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(source) }
+          ],
+          'mediums'
+        );
+      } else {
+        promptForCustomMedium(source);
+      }
+    }, 500);
+  };
+
+  const selectMedium = (source: string, medium: string) => {
+    setCampaignData(prev => ({
+      ...prev,
+      selectedMediums: {
+        ...prev.selectedMediums,
+        [source]: [medium]
+      }
+    }));
+    addUserMessage(medium.charAt(0).toUpperCase() + medium.slice(1));
+
+    setTimeout(() => {
+      // Check if there are auto-suggestions for this source-medium combo
+      const matchingTemplate = sourceTemplates.find(
+        template => template.sourceName === source && template.mediumName === medium
+      );
+
+      if (matchingTemplate && matchingTemplate.contentSuggestions && matchingTemplate.contentSuggestions.length > 0) {
+        const contentOptions = matchingTemplate.contentSuggestions.map(suggestion => ({
+          label: suggestion,
+          value: suggestion,
+          action: () => selectContent(source, medium, suggestion)
+        }));
+
+        addBotMessage(
+          `Excellent! For ${source} ${medium}, I have some content suggestions. Pick one or add your own:`,
+          [
+            ...contentOptions,
+            { label: "Add Custom Content", value: "custom-content", action: () => promptForCustomContent(source, medium) }
+          ],
+          'content'
+        );
+      } else {
+        promptForCustomContent(source, medium);
+      }
+    }, 500);
+  };
+
+  const selectContent = (source: string, medium: string, content: string) => {
+    const contentKey = `${source}-${medium}`;
+    setCampaignData(prev => ({
+      ...prev,
+      contentInputs: { ...prev.contentInputs, [contentKey]: content }
+    }));
+    addUserMessage(content);
+
+    setTimeout(() => {
+      showTagSelection();
+    }, 500);
+  };
+
+  const promptForCustomSource = () => {
+    addBotMessage(
+      "What's the name of your custom traffic source?",
+      [],
+      'sources',
+      true,
+      "Enter custom source name (e.g., 'newsletter')"
+    );
+  };
+
+  const promptForCustomMedium = (source: string) => {
+    addBotMessage(
+      `What type of medium will you use for ${source}?`,
+      [],
+      'mediums',
+      true,
+      "Enter medium type (e.g., 'email', 'banner', 'post')"
+    );
+  };
+
+  const promptForCustomContent = (source: string, medium: string) => {
+    addBotMessage(
+      `What content description would you like for your ${source} ${medium} campaign?`,
+      [],
+      'content',
+      true,
+      "Enter content description (e.g., 'summer-sale-banner')"
+    );
+  };
+
+  const showTagSelection = () => {
+    if (tags.length > 0) {
+      const tagOptions = tags.map(tag => ({
+        label: tag.name,
+        value: tag.name,
+        action: () => selectTag(tag.name)
+      }));
+
+      addBotMessage(
+        "Almost done! Let's add some tags to organize your campaign. Choose from existing tags or create new ones:",
+        [
+          ...tagOptions,
+          { label: "Add Custom Tag", value: "custom-tag", action: () => promptForCustomTag() },
+          { label: "Skip Tags", value: "skip-tags", action: () => showReview() }
+        ],
+        'tags'
+      );
+    } else {
+      addBotMessage(
+        "Would you like to add tags to organize your campaign?",
+        [
+          { label: "Add Tag", value: "add-tag", action: () => promptForCustomTag() },
+          { label: "Skip Tags", value: "skip", action: () => showReview() }
+        ],
+        'tags'
+      );
+    }
+  };
+
+  const selectTag = (tagName: string) => {
+    setCampaignData(prev => ({
+      ...prev,
+      selectedTags: [...prev.selectedTags, tagName]
+    }));
+    addUserMessage(tagName);
+
+    setTimeout(() => {
+      addBotMessage(
+        `✅ Tag "${tagName}" added! Ready to review your campaign?`,
+        [
+          { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
+          { label: "Review Campaign", value: "review", action: () => showReview() }
+        ]
+      );
+    }, 500);
+  };
+
+  const promptForCustomTag = () => {
+    addBotMessage(
+      "What would you like to name your new tag?",
+      [],
+      'tags',
+      true,
+      "Enter tag name (e.g., 'summer-campaign')"
+    );
+  };
+
+  const showReview = () => {
+    const summary = `
+📋 **Campaign Summary:**
+
+**Name:** ${campaignData.name}
+**Landing Pages:** ${campaignData.landingPages.map(lp => lp.url).join(', ')}
+**Sources:** ${campaignData.selectedSources.join(', ')}
+**Tags:** ${campaignData.selectedTags.length > 0 ? campaignData.selectedTags.join(', ') : 'None'}
+
+This will create ${campaignData.selectedSources.length} UTM link(s) for your campaign.
+    `;
+
+    addBotMessage(
+      summary,
+      [
+        { label: "Create Campaign", value: "create", action: () => createCampaign() },
+        { label: "Make Changes", value: "edit", action: () => restartWizard() }
+      ],
+      'review'
+    );
+  };
+
+  const createCampaign = () => {
+    addBotMessage("Creating your campaign... 🚀");
+
+    // Transform campaign data to match API format
+    const utmLinks = [];
+    for (const source of campaignData.selectedSources) {
+      const mediums = campaignData.selectedMediums[source] || ['cpc'];
+      for (const medium of mediums) {
+        const contentKey = `${source}-${medium}`;
+        const content = campaignData.contentInputs[contentKey] || 'default';
+        
+        for (const landingPage of campaignData.landingPages) {
+          const utmParams = {
+            utm_campaign: campaignData.name,
+            utm_source: source,
+            utm_medium: medium,
+            utm_content: content,
+            utm_term: null
+          };
+
+          const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
+          
+          utmLinks.push({
+            targetUrl: landingPage.url,
+            fullUtmLink,
+            utm_campaign: campaignData.name,
+            utm_source: source,
+            utm_medium: medium,
+            utm_content: content,
+            utm_term: null,
+            tags: campaignData.selectedTags
+          });
+        }
+      }
+    }
+
+    // Also create landing pages
+    const landingPagesToCreate = campaignData.landingPages.map(lp => ({
+      campaignName: campaignData.name,
+      url: lp.url,
+      urlLabel: lp.label
+    }));
+
+    createCampaignMutation.mutate({
+      utmLinks,
+      landingPages: landingPagesToCreate
+    });
+  };
+
+  const restartWizard = () => {
+    setMessages([]);
+    setCurrentStep('welcome');
+    setCampaignData({
+      name: '',
+      landingPages: [],
+      selectedSources: [],
+      selectedMediums: {},
+      contentInputs: {},
+      selectedTags: []
+    });
+  };
+
+  const handleSendMessage = () => {
+    if (currentInput.trim()) {
+      handleUserInput(currentInput.trim());
+    }
+  };
+
+  return (
+    <Card className="h-[600px] flex flex-col">
+      <CardHeader className="flex-shrink-0 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <MessageCircle className="w-5 h-5" />
+          Campaign Chat Wizard
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="flex-1 flex flex-col p-0">
+        <ScrollArea className="flex-1 px-6">
+          <div className="space-y-4 pb-4">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex gap-2 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    message.type === 'user' ? 'bg-primary text-white' : 'bg-gray-100'
+                  }`}>
+                    {message.type === 'user' ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                  </div>
+                  <div className="space-y-2">
+                    <div className={`p-3 rounded-lg ${
+                      message.type === 'user' 
+                        ? 'bg-primary text-white' 
+                        : 'bg-gray-100 text-gray-900'
+                    }`}>
+                      <div className="text-sm whitespace-pre-line">{message.content}</div>
+                    </div>
+                    
+                    {message.options && message.options.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {message.options.map((option, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            onClick={option.action}
+                            className="text-xs"
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="flex gap-2 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+        
+        {/* Input Area */}
+        {currentStep !== 'complete' && (
+          <div className="flex-shrink-0 p-4 border-t">
+            <div className="flex gap-2">
+              <Input
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                placeholder="Type your message..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                disabled={isTyping || createCampaignMutation.isPending}
+              />
+              <Button 
+                onClick={handleSendMessage}
+                disabled={!currentInput.trim() || isTyping || createCampaignMutation.isPending}
+                size="icon"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
 import Logo from "@/components/Logo";
-import { Plus, Settings, Archive } from "lucide-react";
+import { Plus, Settings, Archive, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -82,7 +82,26 @@ export default function HomePage() {
         </div>
 
         {/* Main Action Cards */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+          {/* Chat Wizard Card - First Quadrant */}
+          <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle size={32} className="text-primary" />
+              </div>
+              <CardTitle className="text-xl">Chat Wizard</CardTitle>
+              <CardDescription>
+                Let our AI assistant guide you through creating a campaign step by step
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/chat-wizard">
+                <Button className="w-full h-12 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                  Start Chat Wizard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
           {/* New Campaign Card */}
           <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
