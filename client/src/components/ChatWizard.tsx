@@ -960,7 +960,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         [
           ...tagOptions,
           { label: "Add Custom Tag", value: "custom-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip-tags", action: () => createCampaign(), disabled: isCreatingCampaign }
+          { 
+            label: campaignData.isExistingCampaign ? "Skip Tags & Add Links" : "Skip Tags", 
+            value: "skip-tags", 
+            action: () => createCampaign(), 
+            disabled: isCreatingCampaign 
+          }
         ],
         'tags'
       );
@@ -969,7 +974,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         "Would you like to add tags to organize your campaign?",
         [
           { label: "Add Tag", value: "add-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip", action: () => createCampaign(), disabled: isCreatingCampaign }
+          { 
+            label: campaignData.isExistingCampaign ? "Skip Tags & Add Links" : "Skip Tags", 
+            value: "skip", 
+            action: () => createCampaign(), 
+            disabled: isCreatingCampaign 
+          }
         ],
         'tags'
       );
@@ -984,11 +994,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addUserMessage(tagName);
 
     setTimeout(() => {
+      const buttonLabel = campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
+      
       addBotMessage(
         `✅ Tag "${tagName}" added! Ready to complete your campaign?`,
         [
           { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
-          { label: "Create Campaign", value: "create", action: () => createCampaign(), isPrimary: true, disabled: isCreatingCampaign }
+          { label: buttonLabel, value: "create", action: () => createCampaign(), isPrimary: true, disabled: isCreatingCampaign }
         ]
       );
     }, 500);
@@ -1117,9 +1129,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showReview = () => {
-    console.log('DEBUG - campaignData.isExistingCampaign:', campaignData.isExistingCampaign);
-    console.log('DEBUG - campaignData:', campaignData);
-    
     const summary = `
 📋 **Campaign Summary:**
 
@@ -1133,7 +1142,6 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
     `;
 
     const buttonLabel = campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
-    console.log('DEBUG - Button label should be:', buttonLabel);
 
     addBotMessage(
       summary,
