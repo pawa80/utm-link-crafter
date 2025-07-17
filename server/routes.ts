@@ -343,12 +343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tags", authMiddleware, async (req: any, res) => {
     try {
-      console.log("Raw req.body:", req.body);
-      console.log("Type of req.body:", typeof req.body);
-      console.log("Full request object keys:", Object.keys(req));
+      // Handle the case where req.body is incorrectly structured
+      let requestBody = req.body;
+      if (req.body && typeof req.body.body === 'string') {
+        try {
+          requestBody = JSON.parse(req.body.body);
+        } catch (e) {
+          console.error("Failed to parse nested body:", e);
+        }
+      }
       
-      const tagData = insertTagSchema.parse(req.body);
-      console.log("Parsed tag data:", tagData);
+      console.log("Processed request body:", requestBody);
+      const tagData = insertTagSchema.parse(requestBody);
       
       // Check if tag already exists
       const existingTag = await storage.getTagByName(req.user.id, tagData.name);

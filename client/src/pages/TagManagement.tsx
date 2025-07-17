@@ -104,10 +104,7 @@ export default function TagManagement() {
   // Create tag mutation
   const createTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
-      const response = await apiRequest("POST", "/api/tags", {
-        body: JSON.stringify({ name: tagName }),
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiRequest("POST", "/api/tags", { name: tagName });
       return response.json();
     },
     onSuccess: () => {
