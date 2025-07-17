@@ -410,7 +410,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }));
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
-    // Update the last bot message to show selected sources and continue button
+    // Add a new message showing the selected sources and continue button
     setTimeout(() => {
       const updatedSources = [...campaignData.selectedSources, source];
       const message = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
@@ -431,21 +431,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource(), isPrimary: true }
       ];
 
-      // Find and update the last sources message instead of adding a new one
-      setMessages(prev => {
-        const lastSourcesIndex = prev.findLastIndex(msg => msg.isBot && msg.step === 'sources');
-        if (lastSourcesIndex >= 0) {
-          const updatedMessages = [...prev];
-          updatedMessages[lastSourcesIndex] = {
-            ...updatedMessages[lastSourcesIndex],
-            content: message,
-            options: options
-          };
-          return updatedMessages;
-        }
-        return prev;
-      });
-    }, 100);
+      // Simply add a new message with the continue button
+      addBotMessage(message, options, 'sources');
+    }, 500);
   };
 
   const showMediumSelectionForFirstSource = () => {
