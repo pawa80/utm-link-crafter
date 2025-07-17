@@ -976,6 +976,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
           const fullUtmLink = generateUTMLink(landingPage.url, utmParams);
           
           utmLinks.push({
+            userId: user.id,
             targetUrl: landingPage.url,
             fullUtmLink,
             utm_campaign: campaignData.name,
@@ -991,9 +992,10 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
 
     // Also create landing pages
     const landingPagesToCreate = campaignData.landingPages.map(lp => ({
+      userId: user.id,
       campaignName: campaignData.name,
       url: lp.url,
-      urlLabel: lp.label
+      label: lp.label
     }));
 
     createCampaignMutation.mutate({
