@@ -607,10 +607,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         }
       });
       
-      // Create content variants for each source-medium combination
+      // Create content variants for each source-medium combination  
       Object.entries(linksBySourceMedium).forEach(([key, links]) => {
         const variants = links.map((link, index) => ({
-          id: `${key}-${index}`,
+          id: `${key}-${index}`, // Keep simple, consistent indexing
           content: link.utm_content || ''
         }));
         newContentVariants[key] = variants;
