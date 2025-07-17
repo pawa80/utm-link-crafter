@@ -535,11 +535,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const mediumOptions = sourceMediums.map(medium => ({
         label: medium.charAt(0).toUpperCase() + medium.slice(1),
         value: medium,
-        action: () => selectMedium(firstSource, medium)
+        action: () => selectMediumForSource(firstSource, medium)
       }));
 
       addBotMessage(
-        `Great! For ${firstSource}, which type of marketing medium will you use?`,
+        `Great! For ${firstSource}, select the marketing mediums you'll use:`,
         [
           ...mediumOptions,
           { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(firstSource) }
@@ -549,6 +549,115 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     } else {
       promptForCustomMedium(firstSource);
     }
+  };
+
+  const selectMediumForSource = (source: string, medium: string) => {
+    setCampaignData(prev => {
+      const currentMediums = prev.selectedMediums[source] || [];
+      const newMediums = [...currentMediums, medium];
+      
+      // Update the UI to show selected mediums
+      setTimeout(() => {
+        const message = `✅ Selected mediums for ${source}: ${newMediums.join(', ')}. Select additional mediums or continue:`;
+        
+        // Get available mediums for this source
+        const sourceMediums = sourceTemplates
+          .filter(template => template.sourceName === source)
+          .map(template => template.mediumName)
+          .filter(medium => medium && medium.trim());
+        
+        const unselectedMediums = sourceMediums.filter(m => !newMediums.includes(m));
+        
+        const mediumOptions = unselectedMediums.map(m => ({
+          label: m.charAt(0).toUpperCase() + m.slice(1),
+          value: m,
+          action: () => selectMediumForSource(source, m),
+          isSelected: false
+        }));
+
+        const selectedOptions = newMediums.map(m => ({
+          label: m.charAt(0).toUpperCase() + m.slice(1),
+          value: m,
+          action: () => {}, // No action for selected mediums
+          isSelected: true
+        }));
+
+        const options = [
+          ...selectedOptions,
+          ...mediumOptions,
+          { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(source) },
+          { label: "Continue with Selected Mediums", value: "continue", action: () => proceedToContentForSource(source), isPrimary: true }
+        ];
+
+        // Find and update the last mediums message
+        setMessages(prevMessages => {
+          const lastMediumIndex = prevMessages.findLastIndex(msg => 
+            msg.type === 'bot' && msg.content && (msg.content.includes('marketing medium') || msg.content.includes('Selected mediums'))
+          );
+          
+          if (lastMediumIndex >= 0) {
+            const updatedMessages = [...prevMessages];
+            updatedMessages[lastMediumIndex] = {
+              ...updatedMessages[lastMediumIndex],
+              content: message,
+              options: options
+            };
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+      }, 100);
+
+      return {
+        ...prev,
+        selectedMediums: {
+          ...prev.selectedMediums,
+          [source]: newMediums
+        }
+      };
+    });
+  };
+
+  const proceedToContentForSource = (source: string) => {
+    const selectedMediums = campaignData.selectedMediums[source];
+    
+    if (!selectedMediums || selectedMediums.length === 0) {
+      addBotMessage(
+        "No mediums selected. Please select at least one medium.",
+        [{ label: "Back to Mediums", value: "back", action: () => showMediumSelectionForFirstSource() }]
+      );
+      return;
+    }
+
+    // Add user message showing selected mediums
+    addUserMessage(`Selected mediums for ${source}: ${selectedMediums.join(', ')}`);
+    
+    // Check if there are auto-suggestions for this source-medium combo
+    setTimeout(() => {
+      const firstMedium = selectedMediums[0];
+      const matchingTemplate = sourceTemplates.find(
+        template => template.sourceName === source && template.mediumName === firstMedium
+      );
+
+      if (matchingTemplate && matchingTemplate.contentSuggestions && matchingTemplate.contentSuggestions.length > 0) {
+        const contentOptions = matchingTemplate.contentSuggestions.map(suggestion => ({
+          label: suggestion,
+          value: suggestion,
+          action: () => selectContent(source, firstMedium, suggestion)
+        }));
+
+        addBotMessage(
+          `Perfect! I found some content suggestions for ${source} ${firstMedium}. Select the ones you'd like to use:`,
+          [
+            ...contentOptions,
+            { label: "Skip Auto-suggestions", value: "skip", action: () => proceedToNextSourceOrContent(source) }
+          ],
+          'content'
+        );
+      } else {
+        proceedToNextSourceOrContent(source);
+      }
+    }, 500);
   };
 
   const selectMedium = (source: string, medium: string) => {
