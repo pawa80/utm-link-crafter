@@ -92,6 +92,26 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
       return showArchived ? data.filter((link: UtmLink) => link.isArchived) : data.filter((link: UtmLink) => !link.isArchived);
     },
   });
+
+  // Fetch all campaign landing pages to show URLs per campaign
+  const { data: allLandingPages = [] } = useQuery<CampaignLandingPage[]>({
+    queryKey: ["/api/campaign-landing-pages"],
+    queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
+      
+      const response = await fetch("/api/campaign-landing-pages", {
+        credentials: "include",
+        headers: authHeaders,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch landing pages: ${response.status} ${errorText}`);
+      }
+      
+      return response.json();
+    },
+  });
   
   // Debug logging
   console.log("GeneratedLinks - Links data:", links);
@@ -192,7 +212,7 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
     )
   ).sort();
 
-  // Group links within each campaign by source
+  // Group links within each campaign by source and add landing pages info
   let campaignGroups = Object.entries(groupedByCampaign).map(([campaignName, campaignLinks]) => {
     const groupedBySource = campaignLinks.reduce((acc, link) => {
       const sourceName = link.utm_source;
@@ -203,8 +223,20 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
       return acc;
     }, {} as Record<string, typeof campaignLinks>);
 
+    // Get landing pages for this campaign
+    const campaignLandingPages = allLandingPages
+      .filter(lp => lp.campaignName === campaignName)
+      .map(lp => lp.url);
+
+    // Get unique URLs from UTM links as well (fallback)
+    const utmUrls = [...new Set(campaignLinks.map(link => link.targetUrl))];
+    
+    // Combine and deduplicate URLs
+    const allUrls = [...new Set([...campaignLandingPages, ...utmUrls])];
+
     return {
       campaignName,
+      landingPageUrls: allUrls,
       sources: Object.entries(groupedBySource).map(([sourceName, sourceLinks]) => ({
         sourceName,
         links: sourceLinks
@@ -335,6 +367,39 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
             </div>
           </div>
         </div>
+
+        {/* Active Tags Filter Section */}
+        {allTags.length > 0 && (
+          <div className="border-t pt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Filter by tag:</span>
+              <Badge 
+                variant={filterByTag === "all" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => setFilterByTag("all")}
+              >
+                All
+              </Badge>
+              {allTags.map(tag => (
+                <Badge 
+                  key={tag}
+                  variant={filterByTag === tag ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => setFilterByTag(tag)}
+                >
+                  {tag}
+                </Badge>
+              ))}
+              <Badge 
+                variant={filterByTag === "untagged" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => setFilterByTag("untagged")}
+              >
+                Untagged
+              </Badge>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (
@@ -347,13 +412,14 @@ export default function GeneratedLinks({ showArchived = false }: GeneratedLinksP
           </div>
         ) : (
           <div className="space-y-8">
-            {campaignGroups.map(({ campaignName, sources }) => {
+            {campaignGroups.map(({ campaignName, landingPageUrls, sources }) => {
               const isCollapsed = isCampaignCollapsed(campaignName);
               
               return (
                 <div key={campaignName} className="space-y-6">
                   <CampaignCard
                     campaignName={campaignName}
+                    landingPageUrls={landingPageUrls}
                     sources={sources}
                     isCollapsed={isCollapsed}
                     onToggleCollapse={() => toggleCampaignCollapse(campaignName)}

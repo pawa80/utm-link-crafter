@@ -20,6 +20,7 @@ import type { UtmLink, CampaignLandingPage } from "@shared/schema";
 
 interface CampaignCardProps {
   campaignName: string;
+  landingPageUrls?: string[];
   sources: Array<{
     sourceName: string;
     links: UtmLink[];
@@ -31,6 +32,7 @@ interface CampaignCardProps {
 
 export default function CampaignCard({ 
   campaignName, 
+  landingPageUrls = [],
   sources, 
   isCollapsed, 
   onToggleCollapse,
@@ -40,14 +42,7 @@ export default function CampaignCard({
   const queryClient = useQueryClient();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   
-  // Fetch landing pages for this specific campaign
-  const { data: landingPages = [] } = useQuery<CampaignLandingPage[]>({
-    queryKey: ["/api/campaign-landing-pages", campaignName],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/campaign-landing-pages?campaignName=${encodeURIComponent(campaignName)}`);
-      return response.json();
-    },
-  });
+  // Note: Landing page URLs are now passed as props from the parent component
 
   // Get tags from the most recent link in campaign
   const allLinksInCampaign = sources.flatMap(source => source.links);
@@ -163,9 +158,9 @@ export default function CampaignCard({
           </h2>
           
           {/* Landing Page URLs - one row per URL */}
-          {landingPages.map((landingPage) => (
-            <div key={landingPage.id} className="text-sm text-gray-600 mt-1">
-              {landingPage.url}
+          {landingPageUrls.map((url, index) => (
+            <div key={index} className="text-sm text-gray-600 mt-1">
+              {url}
             </div>
           ))}
           
@@ -257,9 +252,9 @@ export default function CampaignCard({
         </h2>
         
         {/* Landing Page URLs - one row per URL */}
-        {landingPages.map((landingPage) => (
-          <div key={landingPage.id} className="text-sm text-gray-600 mt-1">
-            {landingPage.url}
+        {landingPageUrls.map((url, index) => (
+          <div key={index} className="text-sm text-gray-600 mt-1">
+            {url}
           </div>
         ))}
         
