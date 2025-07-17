@@ -126,7 +126,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, []);
 
-  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", step?: string) => {
+  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", step?: string) => {
     setIsTyping(true);
     setTimeout(() => {
       const newMessage: ChatMessage = {
@@ -397,7 +397,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     // Always show continue option if we have at least one source
     if (currentCount > 0) {
-      options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource(), isPrimary: true });
+      options.push({ label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true });
     }
 
     addBotMessage(message, options, 'sources');
@@ -408,9 +408,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       ...prev,
       selectedSources: [...prev.selectedSources, source]
     }));
-    addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
-
-    // Add a new message showing the selected sources and continue button
+    
+    // Don't add user message here - just update the source selection UI
+    // The user message will be added when they click "Continue to Mediums"
+    
+    // Update the existing source selection message to show selected sources
     setTimeout(() => {
       const updatedSources = [...campaignData.selectedSources, source];
       const message = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
@@ -422,18 +424,58 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const sourceOptions = unselectedSources.map(src => ({
         label: src.charAt(0).toUpperCase() + src.slice(1),
         value: src,
-        action: () => selectSource(src)
+        action: () => selectSource(src),
+        isSelected: false
+      }));
+
+      const selectedOptions = updatedSources.map(src => ({
+        label: src.charAt(0).toUpperCase() + src.slice(1),
+        value: src,
+        action: () => {}, // No action for selected sources
+        isSelected: true
       }));
 
       const options = [
+        ...selectedOptions,
         ...sourceOptions,
         { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-        { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource(), isPrimary: true }
+        { label: "Continue to Mediums", value: "continue", action: () => proceedToMediums(), isPrimary: true }
       ];
 
-      // Simply add a new message with the continue button
-      addBotMessage(message, options, 'sources');
-    }, 500);
+      // Find and update the last sources message
+      setMessages(prev => {
+        const lastSourcesIndex = prev.findLastIndex(msg => 
+          msg.type === 'bot' && msg.content && msg.content.includes('traffic sources')
+        );
+        
+        if (lastSourcesIndex >= 0) {
+          const updatedMessages = [...prev];
+          updatedMessages[lastSourcesIndex] = {
+            ...updatedMessages[lastSourcesIndex],
+            content: message,
+            options: options
+          };
+          return updatedMessages;
+        }
+        return prev;
+      });
+    }, 100);
+  };
+
+  const proceedToMediums = () => {
+    if (campaignData.selectedSources.length === 0) {
+      addBotMessage(
+        "No sources selected. Please go back and select at least one source.",
+        [{ label: "Back to Sources", value: "back", action: () => showSourceSelection() }]
+      );
+      return;
+    }
+
+    // Add user message showing selected sources
+    addUserMessage(`Selected sources: ${campaignData.selectedSources.join(', ')}`);
+    
+    // Proceed to medium selection
+    showMediumSelectionForFirstSource();
   };
 
   const showMediumSelectionForFirstSource = () => {
@@ -735,12 +777,19 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
                         {message.options.map((option, index) => (
                           <Button
                             key={index}
-                            variant={option.isPrimary ? "default" : "outline"}
+                            variant={option.isPrimary ? "default" : option.isSelected ? "default" : "outline"}
                             size="sm"
                             onClick={option.action}
-                            className={`text-xs ${option.isPrimary ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-none' : ''}`}
+                            className={`text-xs ${
+                              option.isPrimary 
+                                ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-none' 
+                                : option.isSelected 
+                                  ? 'bg-green-500 hover:bg-green-600 text-white border-none cursor-default' 
+                                  : ''
+                            }`}
+                            disabled={option.isSelected}
                           >
-                            {option.label}
+                            {option.isSelected ? `✓ ${option.label}` : option.label}
                           </Button>
                         ))}
                       </div>
