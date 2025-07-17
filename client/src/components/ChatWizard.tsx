@@ -87,15 +87,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     mutationFn: async (data: { utmLinks: any[], landingPages: any[] }) => {
       const results = [];
       
-      console.log("Creating campaign with data:", data);
-      
       // Create landing pages first
       for (const landingPage of data.landingPages) {
         try {
-          console.log("Creating landing page:", landingPage);
           const response = await apiRequest("POST", "/api/campaign-landing-pages", landingPage);
           const result = await response.json();
-          console.log("Landing page created:", result);
           results.push(result);
         } catch (error) {
           console.error("Failed to create landing page:", error);
@@ -106,10 +102,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       // Create UTM links
       for (const utmLink of data.utmLinks) {
         try {
-          console.log("Creating UTM link:", utmLink);
           const response = await apiRequest("POST", "/api/utm-links", utmLink);
           const result = await response.json();
-          console.log("UTM link created:", result);
           results.push(result);
         } catch (error) {
           console.error("Failed to create UTM link:", error);
@@ -120,7 +114,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return results;
     },
     onSuccess: (results) => {
-      console.log("Campaign creation successful:", results);
       setIsCreatingCampaign(false);
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
@@ -129,7 +122,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }, 500);
     },
     onError: (error: any) => {
-      console.error("Campaign creation failed:", error);
       setIsCreatingCampaign(false);
       addBotMessage(`❌ Sorry, there was an error creating your campaign: ${error.message}. Would you like to try again?`, [
         { label: "Try Again", value: "retry", action: () => createCampaign() },
@@ -203,12 +195,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     switch (currentStep) {
       case 'campaign-name':
-        console.log("Setting campaign name to:", value);
-        setCampaignData(prev => {
-          const newData = { ...prev, name: value };
-          console.log("Updated campaign data:", newData);
-          return newData;
-        });
+        setCampaignData(prev => ({ ...prev, name: value }));
         setTimeout(() => {
           showLandingPageSelection();
         }, 500);
@@ -323,12 +310,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const startNewCampaign = () => {
-    console.log("startNewCampaign called");
-    setCampaignData(prev => {
-      const newData = { ...prev, isExistingCampaign: false };
-      console.log("Setting campaign data to:", newData);
-      return newData;
-    });
+    setCampaignData(prev => ({ ...prev, isExistingCampaign: false }));
     addBotMessage(
       "Perfect! Let's create a new campaign. What would you like to name it?",
       [],
@@ -376,7 +358,6 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectLandingPageUrl = (url: string) => {
-    console.log("selectLandingPageUrl called with:", url);
     // Check if URL is already selected
     if (campaignData.landingPages.find(lp => lp.url === url)) {
       setTimeout(() => {
@@ -395,15 +376,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       url: url,
       label: url
     };
-    console.log("Adding landing page:", newLandingPage);
-    setCampaignData(prev => {
-      const newData = {
-        ...prev,
-        landingPages: [...prev.landingPages, newLandingPage]
-      };
-      console.log("Updated campaign data with landing page:", newData);
-      return newData;
-    });
+    setCampaignData(prev => ({
+      ...prev,
+      landingPages: [...prev.landingPages, newLandingPage]
+    }));
     addUserMessage(url);
     
     setTimeout(() => {
@@ -459,10 +435,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectSource = (source: string) => {
-    console.log("selectSource called with:", source);
     setCampaignData(prev => {
       const newSelectedSources = [...prev.selectedSources, source];
-      console.log("Updated selected sources:", newSelectedSources);
       
       // Update the UI immediately with the new state
       setTimeout(() => {
@@ -1002,17 +976,12 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   };
 
   const createCampaign = () => {
-    console.log("createCampaign called, isCreatingCampaign:", isCreatingCampaign);
-    
     if (isCreatingCampaign) {
-      console.log("Already creating campaign, returning early");
       return; // Prevent duplicate campaign creation
     }
     
     // Use functional update to get the most current campaign data
     setCampaignData(currentCampaignData => {
-      console.log("Current campaign data in createCampaign:", currentCampaignData);
-      
       // Validate campaign data before proceeding
       if (!currentCampaignData.name || currentCampaignData.name.trim() === '') {
         addBotMessage("❌ Campaign name is required. Please provide a campaign name first.", [
@@ -1096,8 +1065,6 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   };
 
   const restartWizard = () => {
-    console.log("restartWizard called - resetting campaign data");
-    console.trace("restartWizard call stack");
     setMessages([]);
     setCurrentStep('welcome');
     setIsCreatingCampaign(false);

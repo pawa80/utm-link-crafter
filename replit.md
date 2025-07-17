@@ -244,6 +244,12 @@ Changelog:
   - Campaign creation now properly creates landing pages first, then UTM links sequentially
   - Fixed mutation success flow to call showFinalOptions() only after successful creation
   - Enhanced error handling with proper state reset on both success and error scenarios
+- July 17, 2025. Chat Wizard stale closure fix:
+  - Fixed critical stale closure issue where createCampaign function was using empty campaign data
+  - Implemented React functional state update pattern to ensure access to most current campaign data
+  - Campaign creation now properly validates and uses populated data from conversation flow
+  - Eliminated race condition between state updates and campaign creation button clicks
+  - Chat Wizard now successfully creates campaigns with proper data from user interactions
 
 ## User Preferences
 
