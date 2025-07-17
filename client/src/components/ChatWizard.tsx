@@ -79,9 +79,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const { data: existingCampaigns = [] } = useQuery({
     queryKey: ["/api/utm-links"],
     select: (data: any[]) => {
+      console.log('ChatWizard - Raw UTM links data:', data);
       // Filter out archived campaigns and get unique campaign names
       const activeLinks = data.filter(link => !link.isArchived);
+      console.log('ChatWizard - Active links:', activeLinks);
       const campaignNames = [...new Set(activeLinks.map(link => link.utm_campaign))];
+      console.log('ChatWizard - Campaign names:', campaignNames);
       return campaignNames.slice(0, 10); // Get 10 latest campaigns
     }
   });
@@ -294,6 +297,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   const showExistingCampaigns = () => {
     setCampaignData(prev => ({ ...prev, isExistingCampaign: true }));
+    
+    console.log('ChatWizard - existingCampaigns:', existingCampaigns);
+    console.log('ChatWizard - existingCampaigns.length:', existingCampaigns.length);
     
     if (existingCampaigns.length > 0) {
       const campaignOptions = existingCampaigns.map(campaignName => ({
