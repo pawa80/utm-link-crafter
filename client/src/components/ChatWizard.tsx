@@ -126,7 +126,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, []);
 
-  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void }> = [], nextStep?: string, showInput = false, inputPlaceholder = "") => {
+  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", step?: string) => {
     setIsTyping(true);
     setTimeout(() => {
       const newMessage: ChatMessage = {
@@ -137,7 +137,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         options,
         showInput,
         inputPlaceholder,
-        onInput: showInput ? handleUserInput : undefined
+        onInput: showInput ? handleUserInput : undefined,
+        step,
+        isBot: true
       };
       setMessages(prev => [...prev, newMessage]);
       setIsTyping(false);
@@ -395,7 +397,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     // Always show continue option if we have at least one source
     if (currentCount > 0) {
-      options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() });
+      options.push({ label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource(), isPrimary: true });
     }
 
     addBotMessage(message, options, 'sources');
@@ -408,7 +410,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }));
     addUserMessage(source.charAt(0).toUpperCase() + source.slice(1));
 
-    // Instead of trying to update the existing message, add a new confirmation message
+    // Update the last bot message to show selected sources and continue button
     setTimeout(() => {
       const updatedSources = [...campaignData.selectedSources, source];
       const message = `✅ Selected sources: ${updatedSources.join(', ')}. Select additional sources or continue:`;
@@ -426,11 +428,24 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const options = [
         ...sourceOptions,
         { label: "Add Custom Source", value: "custom", action: () => promptForCustomSource() },
-        { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource() }
+        { label: "Continue to Mediums", value: "continue", action: () => showMediumSelectionForFirstSource(), isPrimary: true }
       ];
 
-      addBotMessage(message, options, 'sources');
-    }, 500);
+      // Find and update the last sources message instead of adding a new one
+      setMessages(prev => {
+        const lastSourcesIndex = prev.findLastIndex(msg => msg.isBot && msg.step === 'sources');
+        if (lastSourcesIndex >= 0) {
+          const updatedMessages = [...prev];
+          updatedMessages[lastSourcesIndex] = {
+            ...updatedMessages[lastSourcesIndex],
+            content: message,
+            options: options
+          };
+          return updatedMessages;
+        }
+        return prev;
+      });
+    }, 100);
   };
 
   const showMediumSelectionForFirstSource = () => {
@@ -732,10 +747,10 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
                         {message.options.map((option, index) => (
                           <Button
                             key={index}
-                            variant="outline"
+                            variant={option.isPrimary ? "default" : "outline"}
                             size="sm"
                             onClick={option.action}
-                            className="text-xs"
+                            className={`text-xs ${option.isPrimary ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-none' : ''}`}
                           >
                             {option.label}
                           </Button>
