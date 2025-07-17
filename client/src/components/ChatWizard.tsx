@@ -984,7 +984,11 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   };
 
   const createCampaign = () => {
+    console.log("createCampaign called, isCreatingCampaign:", isCreatingCampaign);
+    console.log("Campaign data:", campaignData);
+    
     if (isCreatingCampaign) {
+      console.log("Already creating campaign, returning early");
       return; // Prevent duplicate campaign creation
     }
     
