@@ -526,10 +526,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return;
     }
 
-    const sourceMediums = sourceTemplates
-      .filter(template => template.sourceName === firstSource)
-      .map(template => template.mediumName)
-      .filter(medium => medium && medium.trim()); // Filter out undefined/null/empty values
+    // Get all mediums for this source from the mediums array
+    const sourceTemplate = sourceTemplates.find(template => template.sourceName === firstSource);
+    const sourceMediums = sourceTemplate?.mediums || [];
 
     if (sourceMediums.length > 0) {
       const mediumOptions = sourceMediums.map(medium => ({
@@ -561,10 +560,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         const message = `✅ Selected mediums for ${source}: ${newMediums.join(', ')}. Select additional mediums or continue:`;
         
         // Get available mediums for this source
-        const sourceMediums = sourceTemplates
-          .filter(template => template.sourceName === source)
-          .map(template => template.mediumName)
-          .filter(medium => medium && medium.trim());
+        const sourceTemplate = sourceTemplates.find(template => template.sourceName === source);
+        const sourceMediums = sourceTemplate?.mediums || [];
         
         const unselectedMediums = sourceMediums.filter(m => !newMediums.includes(m));
         
@@ -635,9 +632,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Check if there are auto-suggestions for this source-medium combo
     setTimeout(() => {
       const firstMedium = selectedMediums[0];
-      const matchingTemplate = sourceTemplates.find(
-        template => template.sourceName === source && template.mediumName === firstMedium
-      );
+      // For now, we'll skip auto-suggestions as the schema doesn't have mediumName field
+      // We'll proceed to the next step or content selection
+      const matchingTemplate = null;
 
       if (matchingTemplate && matchingTemplate.contentSuggestions && matchingTemplate.contentSuggestions.length > 0) {
         const contentOptions = matchingTemplate.contentSuggestions.map(suggestion => ({
@@ -650,12 +647,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           `Perfect! I found some content suggestions for ${source} ${firstMedium}. Select the ones you'd like to use:`,
           [
             ...contentOptions,
-            { label: "Skip Auto-suggestions", value: "skip", action: () => proceedToNextSourceOrContent(source) }
+            { label: "Skip Auto-suggestions", value: "skip", action: () => showTagSelection() }
           ],
           'content'
         );
       } else {
-        proceedToNextSourceOrContent(source);
+        // For now, proceed to tag selection
+        showTagSelection();
       }
     }, 500);
   };
