@@ -235,6 +235,15 @@ Changelog:
   - Fixed medium selection error handling to prevent undefined charAt errors
   - Added support for multiple source selection with progress tracking
   - Enhanced user experience with clear progress indicators and option management
+- July 17, 2025. Chat Wizard feedback loop bug fix:
+  - Fixed critical campaign creation feedback loop that was causing 92 duplicate UTM links
+  - Restructured campaign creation flow to use individual API calls (POST /api/campaign-landing-pages and POST /api/utm-links)
+  - Added isCreatingCampaign state management to prevent multiple simultaneous creation attempts
+  - Enhanced button disabling during campaign creation to prevent double-clicks
+  - Separated campaign creation logic from final options display to eliminate recursive calls
+  - Campaign creation now properly creates landing pages first, then UTM links sequentially
+  - Fixed mutation success flow to call showFinalOptions() only after successful creation
+  - Enhanced error handling with proper state reset on both success and error scenarios
 
 ## User Preferences
 

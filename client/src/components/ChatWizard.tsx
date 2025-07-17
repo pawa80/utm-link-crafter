@@ -52,6 +52,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   });
   const [currentInput, setCurrentInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
@@ -109,6 +110,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return results;
     },
     onSuccess: () => {
+      setIsCreatingCampaign(false);
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
       setTimeout(() => {
@@ -116,6 +118,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }, 500);
     },
     onError: (error: any) => {
+      setIsCreatingCampaign(false);
       addBotMessage(`❌ Sorry, there was an error creating your campaign: ${error.message}. Would you like to try again?`, [
         { label: "Try Again", value: "retry", action: () => createCampaign() },
         { label: "Start Over", value: "restart", action: () => restartWizard() }
@@ -817,7 +820,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         [
           ...tagOptions,
           { label: "Add Custom Tag", value: "custom-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip-tags", action: () => showFinalOptions() }
+          { label: "Skip Tags", value: "skip-tags", action: () => createCampaign(), disabled: isCreatingCampaign }
         ],
         'tags'
       );
@@ -826,7 +829,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         "Would you like to add tags to organize your campaign?",
         [
           { label: "Add Tag", value: "add-tag", action: () => promptForCustomTag() },
-          { label: "Skip Tags", value: "skip", action: () => showFinalOptions() }
+          { label: "Skip Tags", value: "skip", action: () => createCampaign(), disabled: isCreatingCampaign }
         ],
         'tags'
       );
@@ -845,7 +848,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         `✅ Tag "${tagName}" added! Ready to complete your campaign?`,
         [
           { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
-          { label: "Create Campaign", value: "create", action: () => showFinalOptions(), isPrimary: true }
+          { label: "Create Campaign", value: "create", action: () => createCampaign(), isPrimary: true, disabled: isCreatingCampaign }
         ]
       );
     }, 500);
@@ -862,20 +865,14 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showFinalOptions = () => {
-    // Create the campaign first
-    createCampaign();
-    
-    // Then show the final options
-    setTimeout(() => {
-      addBotMessage(
-        "🎉 Your campaign has been created successfully! What would you like to do next?",
-        [
-          { label: "View Campaign", value: "view", action: () => navigateToCampaignManagement(), isPrimary: true },
-          { label: "Copy Campaign Links", value: "copy", action: () => copyCampaignLinks() }
-        ],
-        'final'
-      );
-    }, 1000);
+    addBotMessage(
+      "🎉 Your campaign has been created successfully! What would you like to do next?",
+      [
+        { label: "View Campaign", value: "view", action: () => navigateToCampaignManagement(), isPrimary: true },
+        { label: "Copy Campaign Links", value: "copy", action: () => copyCampaignLinks() }
+      ],
+      'final'
+    );
   };
 
   const navigateToCampaignManagement = () => {
@@ -975,6 +972,11 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   };
 
   const createCampaign = () => {
+    if (isCreatingCampaign) {
+      return; // Prevent duplicate campaign creation
+    }
+    
+    setIsCreatingCampaign(true);
     addBotMessage("Creating your campaign... 🚀");
 
     // Transform campaign data to match API format
@@ -1028,6 +1030,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   const restartWizard = () => {
     setMessages([]);
     setCurrentStep('welcome');
+    setIsCreatingCampaign(false);
     setCampaignData({
       name: '',
       isExistingCampaign: false,
@@ -1089,7 +1092,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
                                   ? 'bg-green-500 hover:bg-green-600 text-white border-none cursor-default' 
                                   : ''
                             }`}
-                            disabled={option.isSelected}
+                            disabled={option.isSelected || option.disabled}
                           >
                             {option.isSelected ? `✓ ${option.label}` : option.label}
                           </Button>
