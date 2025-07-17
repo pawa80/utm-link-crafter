@@ -9,6 +9,7 @@ import CampaignManagement from "@/pages/CampaignManagement";
 import NewCampaign from "@/pages/NewCampaign";
 import SourceManagement from "@/pages/SourceManagement";
 import Settings from "@/pages/Settings";
+import TagManagement from "@/pages/TagManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/new-campaign" component={NewCampaign} />
       <Route path="/sources" component={SourceManagement} />
       <Route path="/settings" component={Settings} />
+      <Route path="/tags" component={TagManagement} />
       <Route component={NotFound} />
     </Switch>
   );
