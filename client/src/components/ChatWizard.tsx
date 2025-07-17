@@ -203,7 +203,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     switch (currentStep) {
       case 'campaign-name':
-        setCampaignData(prev => ({ ...prev, name: value }));
+        console.log("Setting campaign name to:", value);
+        setCampaignData(prev => {
+          const newData = { ...prev, name: value };
+          console.log("Updated campaign data:", newData);
+          return newData;
+        });
         setTimeout(() => {
           showLandingPageSelection();
         }, 500);
@@ -318,7 +323,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const startNewCampaign = () => {
-    setCampaignData(prev => ({ ...prev, isExistingCampaign: false }));
+    console.log("startNewCampaign called");
+    setCampaignData(prev => {
+      const newData = { ...prev, isExistingCampaign: false };
+      console.log("Setting campaign data to:", newData);
+      return newData;
+    });
     addBotMessage(
       "Perfect! Let's create a new campaign. What would you like to name it?",
       [],
@@ -366,6 +376,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectLandingPageUrl = (url: string) => {
+    console.log("selectLandingPageUrl called with:", url);
     // Check if URL is already selected
     if (campaignData.landingPages.find(lp => lp.url === url)) {
       setTimeout(() => {
@@ -384,10 +395,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       url: url,
       label: url
     };
-    setCampaignData(prev => ({
-      ...prev,
-      landingPages: [...prev.landingPages, newLandingPage]
-    }));
+    console.log("Adding landing page:", newLandingPage);
+    setCampaignData(prev => {
+      const newData = {
+        ...prev,
+        landingPages: [...prev.landingPages, newLandingPage]
+      };
+      console.log("Updated campaign data with landing page:", newData);
+      return newData;
+    });
     addUserMessage(url);
     
     setTimeout(() => {
@@ -443,8 +459,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectSource = (source: string) => {
+    console.log("selectSource called with:", source);
     setCampaignData(prev => {
       const newSelectedSources = [...prev.selectedSources, source];
+      console.log("Updated selected sources:", newSelectedSources);
       
       // Update the UI immediately with the new state
       setTimeout(() => {
