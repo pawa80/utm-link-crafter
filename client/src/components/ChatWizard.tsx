@@ -76,7 +76,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   });
 
   // Fetch existing campaigns
-  const { data: existingCampaigns = [], isLoading: isLoadingCampaigns } = useQuery({
+  const existingCampaignsQuery = useQuery({
     queryKey: ["/api/utm-links"],
     select: (data: any[]) => {
       console.log('ChatWizard - Raw UTM links data:', data);
@@ -297,6 +297,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   const showExistingCampaigns = () => {
     setCampaignData(prev => ({ ...prev, isExistingCampaign: true }));
+    
+    const { data: existingCampaigns = [], isLoading: isLoadingCampaigns } = existingCampaignsQuery;
     
     console.log('ChatWizard - existingCampaigns:', existingCampaigns);
     console.log('ChatWizard - existingCampaigns.length:', existingCampaigns.length);
