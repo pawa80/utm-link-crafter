@@ -1084,6 +1084,8 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
   };
 
   const restartWizard = () => {
+    console.log("restartWizard called - resetting campaign data");
+    console.trace("restartWizard call stack");
     setMessages([]);
     setCurrentStep('welcome');
     setIsCreatingCampaign(false);
