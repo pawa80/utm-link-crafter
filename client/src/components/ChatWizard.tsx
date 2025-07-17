@@ -83,20 +83,41 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   // Create campaign mutation
   const createCampaignMutation = useMutation({
-    mutationFn: async (campaignData: any) => {
-      const response = await apiRequest("POST", "/api/utm-links", campaignData);
-      return response.json();
+    mutationFn: async (data: { utmLinks: any[], landingPages: any[] }) => {
+      const results = [];
+      
+      // Create landing pages first
+      for (const landingPage of data.landingPages) {
+        try {
+          const response = await apiRequest("POST", "/api/campaign-landing-pages", landingPage);
+          results.push(await response.json());
+        } catch (error) {
+          console.error("Failed to create landing page:", error);
+        }
+      }
+      
+      // Create UTM links
+      for (const utmLink of data.utmLinks) {
+        try {
+          const response = await apiRequest("POST", "/api/utm-links", utmLink);
+          results.push(await response.json());
+        } catch (error) {
+          console.error("Failed to create UTM link:", error);
+        }
+      }
+      
+      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
-      addBotMessage("🎉 Your campaign has been created successfully! You can view and manage it from the Campaign Management page.", [], 'complete');
-      if (onComplete) {
-        setTimeout(onComplete, 2000);
-      }
+      queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
+      setTimeout(() => {
+        showFinalOptions();
+      }, 500);
     },
     onError: (error: any) => {
       addBotMessage(`❌ Sorry, there was an error creating your campaign: ${error.message}. Would you like to try again?`, [
-        { label: "Try Again", value: "retry", action: () => setCurrentStep('review') },
+        { label: "Try Again", value: "retry", action: () => createCampaign() },
         { label: "Start Over", value: "restart", action: () => restartWizard() }
       ]);
     },
