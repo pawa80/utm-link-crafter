@@ -1117,6 +1117,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showReview = () => {
+    console.log('DEBUG - campaignData.isExistingCampaign:', campaignData.isExistingCampaign);
+    console.log('DEBUG - campaignData:', campaignData);
+    
     const summary = `
 📋 **Campaign Summary:**
 
@@ -1129,11 +1132,14 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 This will create ${campaignData.selectedSources.length * campaignData.landingPages.length} UTM link(s) for your campaign.
     `;
 
+    const buttonLabel = campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
+    console.log('DEBUG - Button label should be:', buttonLabel);
+
     addBotMessage(
       summary,
       [
         { 
-          label: campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign", 
+          label: buttonLabel, 
           value: "create", 
           action: () => createCampaign() 
         },
