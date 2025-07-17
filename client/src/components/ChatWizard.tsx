@@ -535,6 +535,14 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const currentMediums = prev.selectedMediums[source] || [];
       const newMediums = [...currentMediums, medium];
       
+      const newCampaignData = {
+        ...prev,
+        selectedMediums: {
+          ...prev.selectedMediums,
+          [source]: newMediums
+        }
+      };
+
       // Update the UI to show selected mediums
       setTimeout(() => {
         const message = `✅ Selected mediums for ${source}: ${newMediums.join(', ')}. Select additional mediums or continue:`;
@@ -563,7 +571,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           ...selectedOptions,
           ...mediumOptions,
           { label: "Add Custom Medium", value: "custom-medium", action: () => promptForCustomMedium(source) },
-          { label: "Continue with Selected Mediums", value: "continue", action: () => proceedToContentForSource(source), isPrimary: true }
+          { 
+            label: "Continue with Selected Mediums", 
+            value: "continue", 
+            action: () => {
+              // Pass the current state directly to avoid timing issues
+              proceedToContentForSourceWithState(source, newCampaignData);
+            }, 
+            isPrimary: true 
+          }
         ];
 
         // Find and update the last mediums message
@@ -585,14 +601,32 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         });
       }, 100);
 
-      return {
-        ...prev,
-        selectedMediums: {
-          ...prev.selectedMediums,
-          [source]: newMediums
-        }
-      };
+      return newCampaignData;
     });
+  };
+
+  const proceedToContentForSourceWithState = (source: string, currentCampaignData: any) => {
+    const selectedMediums = currentCampaignData.selectedMediums[source];
+    
+    console.log('proceedToContentForSourceWithState - source:', source);
+    console.log('proceedToContentForSourceWithState - selectedMediums:', selectedMediums);
+    console.log('proceedToContentForSourceWithState - all selectedMediums:', currentCampaignData.selectedMediums);
+    
+    if (!selectedMediums || selectedMediums.length === 0) {
+      addBotMessage(
+        "No mediums selected. Please select at least one medium.",
+        [{ label: "Back to Mediums", value: "back", action: () => showMediumSelectionForFirstSource() }]
+      );
+      return;
+    }
+
+    // Add user message showing selected mediums
+    addUserMessage(`Selected mediums for ${source}: ${selectedMediums.join(', ')}`);
+    
+    // Check if there are more sources to process
+    setTimeout(() => {
+      proceedToNextSourceWithState(source, currentCampaignData);
+    }, 500);
   };
 
   const proceedToContentForSource = (source: string) => {
@@ -620,6 +654,21 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         proceedToNextSource(source);
       }, 500);
     }, 200);
+  };
+
+  const proceedToNextSourceWithState = (currentSource: string, currentCampaignData: any) => {
+    const selectedSources = currentCampaignData.selectedSources;
+    const currentIndex = selectedSources.indexOf(currentSource);
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex < selectedSources.length) {
+      // There's another source to process
+      const nextSource = selectedSources[nextIndex];
+      showMediumSelectionForSource(nextSource);
+    } else {
+      // All sources processed, proceed to tag selection
+      showTagSelection();
+    }
   };
 
   const proceedToNextSource = (currentSource: string) => {
