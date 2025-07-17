@@ -490,6 +490,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const proceedToMediumsWithSources = (selectedSources: string[]) => {
+    console.log('proceedToMediumsWithSources called with:', selectedSources);
+    console.log('Current campaignData.selectedSources:', campaignData.selectedSources);
+    
     if (selectedSources.length === 0) {
       addBotMessage(
         "No sources selected. Please go back and select at least one source.",
@@ -498,19 +501,29 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return;
     }
 
+    // Update the campaign data with the selected sources to ensure state consistency
+    setCampaignData(prev => ({
+      ...prev,
+      selectedSources: selectedSources
+    }));
+
     // Add user message showing selected sources
     addUserMessage(`Selected sources: ${selectedSources.join(', ')}`);
     
-    // Proceed to medium selection
+    // Proceed to medium selection with a delay to ensure state updates
     setTimeout(() => {
       showMediumSelectionForFirstSource();
-    }, 500);
+    }, 1000);
   };
 
   const showMediumSelectionForFirstSource = () => {
+    // Debug: log the current state
+    console.log('showMediumSelectionForFirstSource - campaignData.selectedSources:', campaignData.selectedSources);
+    
     const firstSource = campaignData.selectedSources[0];
     
     if (!firstSource) {
+      console.log('No first source found, selectedSources:', campaignData.selectedSources);
       addBotMessage(
         "No sources selected. Please go back and select at least one source.",
         [{ label: "Back to Sources", value: "back", action: () => showSourceSelection() }]
