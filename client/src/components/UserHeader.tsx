@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Settings } from "lucide-react";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import type { User } from "@shared/schema";
 
 interface UserHeaderProps {
@@ -45,6 +46,12 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={handleLogout}
             className="text-red-600 focus:text-red-600"

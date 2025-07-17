@@ -80,7 +80,7 @@ export default function HomePage() {
         </div>
 
         {/* Main Action Cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
           {/* New Campaign Card */}
           <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
@@ -121,25 +121,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Source Management Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-            <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Archive size={32} className="text-primary" />
-              </div>
-              <CardTitle className="text-xl">Manage Sources</CardTitle>
-              <CardDescription>
-                Organize and archive your campaign sources and mediums
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/sources">
-                <Button variant="outline" className="w-full h-12 text-lg">
-                  Manage Sources
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Features Section */}
