@@ -65,6 +65,16 @@ export const utmTemplates = pgTable("utm_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const userUtmContent = pgTable("user_utm_content", {
+  id: serial("id").primaryKey(),
+  userId: serial("user_id").references(() => users.id).notNull(),
+  utmSource: text("utm_source").notNull(),
+  utmMedium: text("utm_medium").notNull(),
+  utmContent: text("utm_content").notNull(),
+  isArchived: boolean("is_archived").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
@@ -122,6 +132,11 @@ export const insertUtmTemplateSchema = createInsertSchema(utmTemplates).omit({
   createdAt: true,
 });
 
+export const insertUserUtmContentSchema = createInsertSchema(userUtmContent).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
@@ -135,3 +150,5 @@ export type InsertCampaignLandingPage = z.infer<typeof insertCampaignLandingPage
 export type CampaignLandingPage = typeof campaignLandingPages.$inferSelect;
 export type InsertUtmTemplate = z.infer<typeof insertUtmTemplateSchema>;
 export type UtmTemplate = typeof utmTemplates.$inferSelect;
+export type InsertUserUtmContent = z.infer<typeof insertUserUtmContentSchema>;
+export type UserUtmContent = typeof userUtmContent.$inferSelect;

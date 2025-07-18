@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, utmTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type UtmTemplate, type InsertUtmTemplate } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, utmTemplates, userUtmContent, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type UtmTemplate, type InsertUtmTemplate, type UserUtmContent, type InsertUserUtmContent } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -39,6 +39,13 @@ export interface IStorage {
   // UTM Template operations
   getUtmTemplates(): Promise<UtmTemplate[]>;
   getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]>;
+  
+  // User UTM Content operations
+  createUserUtmContent(userContent: InsertUserUtmContent): Promise<UserUtmContent>;
+  getUserUtmContentsBySourceMedium(userId: number, utmSource: string, utmMedium: string, includeArchived?: boolean): Promise<UserUtmContent[]>;
+  archiveUserUtmContent(id: number, userId: number): Promise<boolean>;
+  unarchiveUserUtmContent(id: number, userId: number): Promise<boolean>;
+  deleteUserUtmContent(id: number, userId: number): Promise<boolean>;
   
   // Get all unique URLs that have been used across the account
   getAllUniqueUrls(userId: number): Promise<string[]>;
@@ -330,6 +337,44 @@ export class DatabaseStorage implements IStorage {
       );
     
     return templates.map(t => t.utmContent);
+  }
+
+  async createUserUtmContent(insertUserContent: InsertUserUtmContent): Promise<UserUtmContent> {
+    const [userContent] = await db
+      .insert(userUtmContent)
+      .values(insertUserContent)
+      .returning();
+    return userContent;
+  }
+
+  async getUserUtmContentsBySourceMedium(userId: number, utmSource: string, utmMedium: string, includeArchived = false): Promise<UserUtmContent[]> {
+    return await db.select().from(userUtmContent)
+      .where(and(
+        eq(userUtmContent.userId, userId),
+        eq(userUtmContent.utmSource, utmSource),
+        eq(userUtmContent.utmMedium, utmMedium),
+        includeArchived ? undefined : eq(userUtmContent.isArchived, false)
+      ));
+  }
+
+  async archiveUserUtmContent(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userUtmContent)
+      .set({ isArchived: true })
+      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async unarchiveUserUtmContent(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userUtmContent)
+      .set({ isArchived: false })
+      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async deleteUserUtmContent(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(userUtmContent)
+      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getAllUniqueUrls(userId: number): Promise<string[]> {

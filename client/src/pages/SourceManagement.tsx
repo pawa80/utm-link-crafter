@@ -16,19 +16,92 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createOrGetUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
-import type { User, SourceTemplate, UtmLink } from "@shared/schema";
+import type { User, SourceTemplate, UtmLink, UserUtmContent } from "@shared/schema";
 
 // Component to display content for a specific medium
 function MediumContentDisplay({ 
   source, 
   medium, 
-  useUtmContent 
+  useUtmContent,
+  user
 }: { 
   source: string; 
   medium: string; 
   useUtmContent: (source: string, medium: string) => any;
+  user: User;
 }) {
+  const [showAddContent, setShowAddContent] = useState(false);
+  const [newContentText, setNewContentText] = useState("");
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const { data: contentOptions = [], isLoading, error } = useUtmContent(source, medium);
+  
+  // Fetch user-specific content to distinguish base vs custom
+  const { data: userContent = [] } = useQuery<UserUtmContent[]>({
+    queryKey: ["/api/user-utm-content", source, medium],
+    enabled: !!user,
+    queryFn: async () => {
+      const response = await fetch(`/api/user-utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+      if (!response.ok) throw new Error('Failed to fetch user content');
+      return response.json();
+    }
+  });
+
+  // Create mutation for adding new content
+  const addContentMutation = useMutation({
+    mutationFn: async (contentText: string) => {
+      const response = await apiRequest("POST", "/api/user-utm-content", {
+        utmSource: source,
+        utmMedium: medium,
+        utmContent: contentText
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-content", source, medium] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-content", source, medium] });
+      setNewContentText("");
+      setShowAddContent(false);
+      toast({
+        title: "Success",
+        description: "Content added successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add content",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Archive content mutation
+  const archiveContentMutation = useMutation({
+    mutationFn: async (contentId: number) => {
+      const response = await apiRequest("PATCH", `/api/user-utm-content/${contentId}/archive`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-content", source, medium] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-content", source, medium] });
+      toast({
+        title: "Success",
+        description: "Content archived successfully",
+      });
+    }
+  });
+
+  const handleAddContent = () => {
+    if (!newContentText.trim()) return;
+    addContentMutation.mutate(newContentText.trim());
+  };
+
+  const getUserContentItem = (content: string) => {
+    return userContent.find(uc => uc.utmContent === content);
+  };
 
   if (isLoading) {
     return (
@@ -57,17 +130,88 @@ function MediumContentDisplay({
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         {contentOptions.length > 0 ? (
-          contentOptions.map((content: string) => (
-            <Badge key={content} variant="outline" className="text-xs">
-              {content}
-            </Badge>
-          ))
+          contentOptions.map((content: string) => {
+            const userContentItem = getUserContentItem(content);
+            const isUserContent = !!userContentItem;
+            
+            return (
+              <div key={content} className="flex items-center gap-1">
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${isUserContent ? 'bg-blue-50 border-blue-200' : ''}`}
+                >
+                  {content}
+                </Badge>
+                {isUserContent && (
+                  <Button
+                    onClick={() => archiveContentMutation.mutate(userContentItem.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-red-500 p-0 h-4 w-4"
+                    disabled={archiveContentMutation.isPending}
+                  >
+                    <Trash2 size={10} />
+                  </Button>
+                )}
+              </div>
+            );
+          })
         ) : (
           <Badge variant="outline" className="text-xs text-gray-500">
             No content available
           </Badge>
         )}
+        
+        {/* Add Content Button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAddContent(true)}
+          className="h-6 text-xs"
+        >
+          <Plus size={12} className="mr-1" />
+          Add Content
+        </Button>
       </div>
+      
+      {/* Add content input */}
+      {showAddContent && (
+        <div className="flex items-center space-x-2 mt-2">
+          <Input
+            value={newContentText}
+            onChange={(e) => setNewContentText(e.target.value)}
+            placeholder="Add content (e.g., text-ad, banner, video)"
+            className="flex-1 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddContent();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddContent}
+            disabled={!newContentText.trim() || addContentMutation.isPending}
+          >
+            Add
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowAddContent(false);
+              setNewContentText("");
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -497,6 +641,7 @@ export default function SourceManagement() {
                                 source={template.sourceName} 
                                 medium={medium}
                                 useUtmContent={useUtmContent}
+                                user={user}
                               />
                             </div>
                           );
