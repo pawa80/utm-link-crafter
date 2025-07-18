@@ -1,0 +1,167 @@
+# UTM Builder - Pre-Launch Feature Implementation
+
+## CONTEXT
+You are implementing critical enterprise features for UTM Builder, a SaaS application for digital marketers. The app currently supports single users and needs multi-user account functionality, pricing plan infrastructure, and UI improvements before launch.
+
+## CURRENT TECH STACK
+- Backend: Express.js + TypeScript + PostgreSQL + Drizzle ORM
+- Frontend: React + shadcn/ui components
+- Auth: Firebase Authentication
+- Database: PostgreSQL with connection pooling
+
+## IMPLEMENTATION REQUIREMENTS
+
+### Phase 1: Database Schema Updates (Day 1-2)
+
+1. **Create Account Management Tables**
+   ```
+   - accounts table (id, name, created_at, subscription_tier, trial_end_date)
+   - user_accounts table (user_id, account_id, role, invited_by, joined_at)
+   - invitations table (id, account_id, email, role, token, expires_at, status)
+   ```
+
+2. **Add Feature Access Control**
+   ```
+   - Add feature_flags column to accounts table (JSON field)
+   - Add usage_limits column to accounts table (JSON field)
+   - Update all existing tables to reference account_id instead of user_id
+   ```
+
+3. **User Role System**
+   ```
+   - Update user_accounts table with role enum: 'user', 'developer', 'admin', 'super_admin'
+   - Add permissions mapping for each role level
+   ```
+
+### Phase 2: Backend API Development (Day 3-5)
+
+4. **Account Management Endpoints**
+   ```
+   POST /api/accounts - Create new account
+   GET /api/accounts/:id - Get account details
+   PUT /api/accounts/:id - Update account settings
+   GET /api/accounts/:id/users - List account users
+   POST /api/accounts/:id/invite - Invite user to account
+   DELETE /api/accounts/:id/users/:userId - Remove user from account
+   PUT /api/accounts/:id/users/:userId/role - Update user role
+   ```
+
+5. **Feature Access Middleware**
+   ```
+   - Create middleware to check feature access based on account subscription
+   - Implement usage tracking for campaigns, links, templates
+   - Add trial period validation
+   ```
+
+6. **Invitation System**
+   ```
+   - Email invitation sending with unique tokens
+   - Invitation acceptance flow
+   - Automatic account creation for invited users
+   ```
+
+### Phase 3: Frontend Implementation (Day 6-8)
+
+7. **Account Dashboard**
+   ```
+   - Account settings page for Super Admin
+   - User management interface (invite, remove, change roles)
+   - Subscription and billing information display
+   - Usage statistics and limits
+   ```
+
+8. **Role-Based UI Components**
+   ```
+   - Conditional rendering based on user role
+   - Feature access gates for premium features
+   - Role-specific navigation and permissions
+   ```
+
+9. **Invitation Flow**
+   ```
+   - Invitation acceptance page
+   - Account selection for users in multiple accounts
+   - Onboarding flow for invited users
+   ```
+
+### Phase 4: UI/UX Improvements (Day 9-10)
+
+10. **Color Scheme Update**
+    ```
+    - Primary: #2563eb (professional blue)
+    - Secondary: #7c3aed (purple accent)
+    - Success: #16a34a (green)
+    - Warning: #ea580c (orange)
+    - Error: #dc2626 (red)
+    - Neutral: #6b7280 (gray)
+    ```
+
+11. **Component Updates**
+    ```
+    - Update all shadcn/ui components to use new color palette
+    - Improve button hierarchies and states
+    - Add loading states for all async operations
+    - Implement consistent spacing and typography
+    ```
+
+## TECHNICAL REQUIREMENTS
+
+### Database Migration Strategy
+- Create migration files for all schema changes
+- Implement rollback procedures
+- Test with existing data preservation
+
+### Authentication Updates
+- Modify Firebase auth to support account context
+- Update JWT tokens to include account_id and role
+- Implement account switching for multi-account users
+
+### API Security
+- Validate user has access to requested account resources
+- Implement rate limiting per account
+- Add audit logging for admin actions
+
+### Frontend State Management
+- Add account context to React app
+- Implement role-based routing
+- Handle account switching without full page reload
+
+## TESTING REQUIREMENTS
+
+### Unit Tests
+- Test all new API endpoints
+- Test role-based access control
+- Test invitation flow end-to-end
+
+### Integration Tests
+- Test multi-user campaign collaboration
+- Test feature access restrictions
+- Test account billing and usage tracking
+
+### Manual Testing Checklist
+- [ ] Super Admin can invite users with different roles
+- [ ] Users can only access features allowed by their account plan
+- [ ] Trial accounts have proper limitations
+- [ ] UI reflects new color scheme consistently
+- [ ] All existing functionality works with new account structure
+
+## DEPLOYMENT CHECKLIST
+
+### Pre-Deployment
+- [ ] Database migrations tested on staging
+- [ ] All tests passing
+- [ ] Performance testing with multiple users
+- [ ] Security audit completed
+
+### Post-Deployment
+- [ ] Monitor database connection usage
+- [ ] Verify email invitations are working
+- [ ] Test user onboarding flow
+- [ ] Monitor for any authentication issues
+
+## SUCCESS CRITERIA
+- 15-30 test users can be invited and use the app simultaneously
+- All users can create campaigns and manage UTM links
+- Role-based permissions work correctly
+- New color scheme is applied consistently
+- App performs well under multi-user load
