@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, accounts, userAccounts, invitations, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate, type Account, type InsertAccount, type UserAccount, type InsertUserAccount, type Invitation, type InsertInvitation } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -53,6 +53,29 @@ export interface IStorage {
   
   // Get all unique URLs that have been used across the account
   getAllUniqueUrls(userId: number): Promise<string[]>;
+  
+  // Account management operations
+  createAccount(account: InsertAccount): Promise<Account>;
+  getAccount(id: number): Promise<Account | undefined>;
+  updateAccount(id: number, updates: Partial<InsertAccount>): Promise<Account | undefined>;
+  getUserAccounts(userId: number): Promise<Account[]>;
+  
+  // User account relationship operations
+  addUserToAccount(userAccount: InsertUserAccount): Promise<UserAccount>;
+  getUserAccountRelation(userId: number, accountId: number): Promise<UserAccount | undefined>;
+  getAccountUsers(accountId: number): Promise<UserAccount[]>;
+  updateUserRole(userId: number, accountId: number, role: string): Promise<UserAccount | undefined>;
+  removeUserFromAccount(userId: number, accountId: number): Promise<boolean>;
+  
+  // Invitation operations
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  getAccountInvitations(accountId: number): Promise<Invitation[]>;
+  updateInvitationStatus(id: number, status: string): Promise<Invitation | undefined>;
+  
+  // User context operations
+  getUserAccountsWithRole(userId: number): Promise<(UserAccount & { account: Account })[]>;
+  getDefaultAccountForUser(userId: number): Promise<Account | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -387,14 +410,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User account setup - creates user template copies from base templates
-  async createUserTemplatesFromBase(userId: number): Promise<boolean> {
+  async createUserTemplatesFromBase(userId: number, accountId?: number): Promise<boolean> {
     try {
+      // Get default account if not provided
+      if (!accountId) {
+        const defaultAccount = await this.getDefaultAccountForUser(userId);
+        if (!defaultAccount) {
+          console.error('No default account found for user');
+          return false;
+        }
+        accountId = defaultAccount.id;
+      }
+      
       // Get all active base templates
       const baseTemplates = await this.getBaseUtmTemplates();
       
       // Create user template copies
       const userTemplateInserts = baseTemplates.map(base => ({
         userId,
+        accountId: accountId!, // ensure it's not undefined
         utmSource: base.utmSource,
         utmMedium: base.utmMedium,
         utmContent: base.utmContent,
@@ -454,6 +488,157 @@ export class DatabaseStorage implements IStorage {
 
     // Return as sorted array for consistent ordering
     return Array.from(allUrls).sort();
+  }
+
+  // Account management operations
+  async createAccount(account: InsertAccount): Promise<Account> {
+    const [newAccount] = await db
+      .insert(accounts)
+      .values(account)
+      .returning();
+    return newAccount;
+  }
+
+  async getAccount(id: number): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
+    return account || undefined;
+  }
+
+  async updateAccount(id: number, updates: Partial<InsertAccount>): Promise<Account | undefined> {
+    const [updatedAccount] = await db
+      .update(accounts)
+      .set(updates)
+      .where(eq(accounts.id, id))
+      .returning();
+    return updatedAccount || undefined;
+  }
+
+  async getUserAccounts(userId: number): Promise<Account[]> {
+    const userAccountsData = await db
+      .select({
+        account: accounts
+      })
+      .from(userAccounts)
+      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
+      .where(eq(userAccounts.userId, userId));
+    
+    return userAccountsData.map(row => row.account);
+  }
+
+  // User account relationship operations
+  async addUserToAccount(userAccount: InsertUserAccount): Promise<UserAccount> {
+    const [newUserAccount] = await db
+      .insert(userAccounts)
+      .values(userAccount)
+      .returning();
+    return newUserAccount;
+  }
+
+  async getUserAccountRelation(userId: number, accountId: number): Promise<UserAccount | undefined> {
+    const [relation] = await db
+      .select()
+      .from(userAccounts)
+      .where(and(
+        eq(userAccounts.userId, userId),
+        eq(userAccounts.accountId, accountId)
+      ));
+    return relation || undefined;
+  }
+
+  async getAccountUsers(accountId: number): Promise<UserAccount[]> {
+    return await db
+      .select()
+      .from(userAccounts)
+      .where(eq(userAccounts.accountId, accountId));
+  }
+
+  async updateUserRole(userId: number, accountId: number, role: string): Promise<UserAccount | undefined> {
+    const [updatedUserAccount] = await db
+      .update(userAccounts)
+      .set({ role })
+      .where(and(
+        eq(userAccounts.userId, userId),
+        eq(userAccounts.accountId, accountId)
+      ))
+      .returning();
+    return updatedUserAccount || undefined;
+  }
+
+  async removeUserFromAccount(userId: number, accountId: number): Promise<boolean> {
+    const result = await db
+      .delete(userAccounts)
+      .where(and(
+        eq(userAccounts.userId, userId),
+        eq(userAccounts.accountId, accountId)
+      ));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Invitation operations
+  async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
+    const [newInvitation] = await db
+      .insert(invitations)
+      .values(invitation)
+      .returning();
+    return newInvitation;
+  }
+
+  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    return invitation || undefined;
+  }
+
+  async getAccountInvitations(accountId: number): Promise<Invitation[]> {
+    return await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.accountId, accountId))
+      .orderBy(desc(invitations.createdAt));
+  }
+
+  async updateInvitationStatus(id: number, status: string): Promise<Invitation | undefined> {
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set({ status })
+      .where(eq(invitations.id, id))
+      .returning();
+    return updatedInvitation || undefined;
+  }
+
+  // User context operations
+  async getUserAccountsWithRole(userId: number): Promise<(UserAccount & { account: Account })[]> {
+    return await db
+      .select({
+        id: userAccounts.id,
+        userId: userAccounts.userId,
+        accountId: userAccounts.accountId,
+        role: userAccounts.role,
+        invitedBy: userAccounts.invitedBy,
+        joinedAt: userAccounts.joinedAt,
+        account: accounts
+      })
+      .from(userAccounts)
+      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
+      .where(eq(userAccounts.userId, userId))
+      .orderBy(desc(userAccounts.joinedAt));
+  }
+
+  async getDefaultAccountForUser(userId: number): Promise<Account | undefined> {
+    // Get the first account the user joined (usually their personal account)
+    const [userAccountData] = await db
+      .select({
+        account: accounts
+      })
+      .from(userAccounts)
+      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
+      .where(eq(userAccounts.userId, userId))
+      .orderBy(userAccounts.joinedAt)
+      .limit(1);
+    
+    return userAccountData?.account || undefined;
   }
 }
 

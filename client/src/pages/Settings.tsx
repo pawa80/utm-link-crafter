@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Archive, ArrowLeft, Tag } from "lucide-react";
+import { Archive, ArrowLeft, Tag, Users } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
@@ -131,6 +131,26 @@ export default function Settings() {
                 <Link href="/tags">
                   <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
                     Manage Tags
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Account Management Card */}
+            <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users size={32} className="text-primary" />
+                </div>
+                <CardTitle className="text-xl">Account Management</CardTitle>
+                <CardDescription>
+                  Manage users, roles, and multi-account access settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/account-management">
+                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
+                    Manage Accounts
                   </Button>
                 </Link>
               </CardContent>

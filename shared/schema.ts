@@ -1,6 +1,38 @@
-import { pgTable, text, serial, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Account management tables for multi-user support
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  subscriptionTier: text("subscription_tier").notNull().default("trial"), // trial, basic, pro, enterprise
+  trialEndDate: timestamp("trial_end_date"),
+  featureFlags: json("feature_flags").default({}), // JSON object for feature toggles
+  usageLimits: json("usage_limits").default({}), // JSON object for usage limits
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userAccounts = pgTable("user_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(),
+  role: text("role").notNull().default("user"), // user, developer, admin, super_admin
+  invitedBy: integer("invited_by").references(() => users.id),
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("user"),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, expired
+  invitedBy: integer("invited_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -30,6 +62,7 @@ export const users = pgTable("users", {
 export const sourceTemplates = pgTable("source_templates", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   sourceName: text("source_name").notNull(),
   mediums: text("mediums").array().default([]),
   formats: text("formats").array().default([]),
@@ -42,6 +75,7 @@ export const sourceTemplates = pgTable("source_templates", {
 export const tags = pgTable("tags", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   name: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -49,6 +83,7 @@ export const tags = pgTable("tags", {
 export const campaignLandingPages = pgTable("campaign_landing_pages", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   campaignName: text("campaign_name").notNull(),
   url: text("url").notNull(),
   label: text("label").notNull(), // User-friendly name for the URL
@@ -71,6 +106,7 @@ export const baseUtmTemplates = pgTable("base_utm_templates", {
 export const userUtmTemplates = pgTable("user_utm_templates", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   utmSource: text("utm_source").notNull(),
   utmMedium: text("utm_medium").notNull(),
   utmContent: text("utm_content").notNull(),
@@ -83,6 +119,7 @@ export const userUtmTemplates = pgTable("user_utm_templates", {
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   targetUrl: text("target_url").notNull(),
   utm_campaign: text("utm_campaign").notNull(),
   utm_source: text("utm_source").notNull(),
@@ -142,6 +179,27 @@ export const insertUserUtmTemplateSchema = createInsertSchema(userUtmTemplates).
   createdAt: true,
 });
 
+// New account management schema definitions
+export const insertAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserAccountSchema = createInsertSchema(userAccounts).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertInvitationSchema = createInsertSchema(invitations).omit({
+  id: true,
+  createdAt: true,
+});
+
+// User role enum for validation
+export const userRoleSchema = z.enum(["user", "developer", "admin", "super_admin"]);
+export const subscriptionTierSchema = z.enum(["trial", "basic", "pro", "enterprise"]);
+export const invitationStatusSchema = z.enum(["pending", "accepted", "expired"]);
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUtmLink = z.infer<typeof insertUtmLinkSchema>;
@@ -157,3 +215,14 @@ export type InsertBaseUtmTemplate = z.infer<typeof insertBaseUtmTemplateSchema>;
 export type BaseUtmTemplate = typeof baseUtmTemplates.$inferSelect;
 export type InsertUserUtmTemplate = z.infer<typeof insertUserUtmTemplateSchema>;
 export type UserUtmTemplate = typeof userUtmTemplates.$inferSelect;
+
+// New account management types
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type Account = typeof accounts.$inferSelect;
+export type InsertUserAccount = z.infer<typeof insertUserAccountSchema>;
+export type UserAccount = typeof userAccounts.$inferSelect;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type Invitation = typeof invitations.$inferSelect;
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type SubscriptionTier = z.infer<typeof subscriptionTierSchema>;
+export type InvitationStatus = z.infer<typeof invitationStatusSchema>;

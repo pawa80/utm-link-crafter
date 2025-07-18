@@ -10,6 +10,7 @@ import NewCampaign from "@/pages/NewCampaign";
 import TemplateManagement from "@/pages/TemplateManagement";
 import Settings from "@/pages/Settings";
 import TagManagement from "@/pages/TagManagement";
+import AccountManagement from "@/pages/AccountManagement";
 import ChatWizardPage from "@/pages/ChatWizardPage";
 import NotFound from "@/pages/not-found";
 
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/template-management" component={TemplateManagement} />
       <Route path="/settings" component={Settings} />
       <Route path="/tags" component={TagManagement} />
+      <Route path="/account-management" component={AccountManagement} />
       <Route component={NotFound} />
     </Switch>
   );

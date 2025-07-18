@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertUserAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 
@@ -45,17 +45,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(existingUser);
       }
       
+      // Create user
       const user = await storage.createUser(userData);
       
-      // Create user template copies from base templates
-      await storage.createUserTemplatesFromBase(user.id);
+      // Create default account for new user
+      const account = await storage.createAccount({
+        name: `${userData.email}'s Account`,
+        subscriptionTier: "trial",
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        featureFlags: {},
+        usageLimits: {
+          maxCampaigns: 50,
+          maxLinksPerCampaign: 100,
+          maxTemplates: 200
+        }
+      });
       
-      // Create default source templates for new users
+      // Add user to their account as super_admin
+      await storage.addUserToAccount({
+        userId: user.id,
+        accountId: account.id,
+        role: "super_admin"
+      });
+      
+      // Create user template copies from base templates with account context
+      await storage.createUserTemplatesFromBase(user.id, account.id);
+      
+      // Create default source templates for new users with account context
       const defaultSources = getUniqueSourcesAndMediums();
       for (const sourceData of defaultSources) {
         await storage.createSourceTemplate({
           ...sourceData,
-          userId: user.id
+          userId: user.id,
+          accountId: account.id
         });
       }
       
@@ -601,6 +623,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const success = await storage.deleteUserUtmTemplate(id, req.user.id);
       res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Account Management Endpoints
+
+  // Create new account (admin only)
+  app.post("/api/accounts", authMiddleware, async (req: any, res) => {
+    try {
+      const accountData = insertAccountSchema.parse(req.body);
+      
+      // Check if user is super_admin
+      const userAccounts = await storage.getUserAccountsWithRole(req.user.id);
+      const isSuperAdmin = userAccounts.some(ua => ua.role === 'super_admin');
+      if (!isSuperAdmin) {
+        return res.status(403).json({ message: "Only super admins can create accounts" });
+      }
+      
+      const account = await storage.createAccount(accountData);
+      res.json(account);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get account details
+  app.get("/api/accounts/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      // Check if user has access to this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount) {
+        return res.status(403).json({ message: "Access denied to this account" });
+      }
+      
+      const account = await storage.getAccount(accountId);
+      if (!account) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+      
+      res.json(account);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get user's accounts
+  app.get("/api/user/accounts", authMiddleware, async (req: any, res) => {
+    try {
+      console.log("Getting accounts for user:", req.user.id);
+      const userAccountsWithRole = await storage.getUserAccountsWithRole(req.user.id);
+      console.log("Found accounts:", userAccountsWithRole);
+      res.json(userAccountsWithRole);
+    } catch (error: any) {
+      console.error("Error getting user accounts:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Update account settings (admin/super_admin only)
+  app.put("/api/accounts/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Check if user is admin or super_admin for this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+        return res.status(403).json({ message: "Only admins can update account settings" });
+      }
+      
+      const updatedAccount = await storage.updateAccount(accountId, updates);
+      res.json(updatedAccount);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get account users (admin/super_admin only)
+  app.get("/api/accounts/:id/users", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      // Check if user is admin or super_admin for this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+        return res.status(403).json({ message: "Only admins can view account users" });
+      }
+      
+      const accountUsers = await storage.getAccountUsers(accountId);
+      res.json(accountUsers);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Invite user to account (admin/super_admin only)
+  app.post("/api/accounts/:id/invite", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const { email, role } = req.body;
+      
+      // Check if user is admin or super_admin for this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+        return res.status(403).json({ message: "Only admins can invite users" });
+      }
+      
+      // Validate role
+      const validatedRole = userRoleSchema.parse(role);
+      
+      // Generate unique invitation token
+      const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      
+      const invitation = await storage.createInvitation({
+        accountId,
+        email,
+        role: validatedRole,
+        token,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        invitedBy: req.user.id
+      });
+      
+      res.json(invitation);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Remove user from account (super_admin only)
+  app.delete("/api/accounts/:id/users/:userId", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+      
+      // Check if requesting user is super_admin for this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount || userAccount.role !== 'super_admin') {
+        return res.status(403).json({ message: "Only super admins can remove users" });
+      }
+      
+      // Don't allow removing the last super_admin
+      const accountUsers = await storage.getAccountUsers(accountId);
+      const superAdmins = accountUsers.filter(u => u.role === 'super_admin');
+      const targetUser = accountUsers.find(u => u.userId === userId);
+      
+      if (targetUser?.role === 'super_admin' && superAdmins.length === 1) {
+        return res.status(400).json({ message: "Cannot remove the last super admin" });
+      }
+      
+      const success = await storage.removeUserFromAccount(userId, accountId);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Update user role (super_admin only)
+  app.put("/api/accounts/:id/users/:userId/role", authMiddleware, async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+      const { role } = req.body;
+      
+      // Check if requesting user is super_admin for this account
+      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
+      if (!userAccount || userAccount.role !== 'super_admin') {
+        return res.status(403).json({ message: "Only super admins can change user roles" });
+      }
+      
+      // Validate role
+      const validatedRole = userRoleSchema.parse(role);
+      
+      const updatedUserAccount = await storage.updateUserRole(userId, accountId, validatedRole);
+      res.json(updatedUserAccount);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Accept invitation
+  app.post("/api/invitations/:token/accept", async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      const { firebaseUid } = req.body;
+      
+      // Get invitation
+      const invitation = await storage.getInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if invitation is valid
+      if (invitation.status !== 'pending') {
+        return res.status(400).json({ message: "Invitation already used or expired" });
+      }
+      
+      if (new Date() > invitation.expiresAt) {
+        await storage.updateInvitationStatus(invitation.id, 'expired');
+        return res.status(400).json({ message: "Invitation expired" });
+      }
+      
+      // Get or create user
+      let user = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        user = await storage.createUser({
+          email: invitation.email,
+          firebaseUid
+        });
+      }
+      
+      // Add user to account
+      await storage.addUserToAccount({
+        userId: user.id,
+        accountId: invitation.accountId,
+        role: invitation.role,
+        invitedBy: invitation.invitedBy
+      });
+      
+      // Mark invitation as accepted
+      await storage.updateInvitationStatus(invitation.id, 'accepted');
+      
+      res.json({ user, account: await storage.getAccount(invitation.accountId) });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
