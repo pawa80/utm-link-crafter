@@ -153,7 +153,7 @@ function MediumContentDisplay({
                   {content}
                   {isCustomContent && <span className="ml-1 text-blue-600">*</span>}
                 </Badge>
-                {isCustomContent && userTemplateItem && (
+                {userTemplateItem && (
                   <Button
                     onClick={() => archiveContentMutation.mutate(userTemplateItem.id)}
                     variant="ghost"

@@ -279,6 +279,15 @@ Changelog:
   - Updated status messages: "Creating your campaign" → "Adding links to your campaign" for existing campaigns
   - Updated success message: "Your campaign has been created" → "Your links have been added to your campaign" for existing campaigns
   - Comprehensive UX improvements ensuring consistent messaging throughout the existing campaign flow
+- July 18, 2025. Major template system architectural overhaul completed:
+  - Migrated from single utm_templates table to base_utm_templates and user_utm_templates for proper data isolation
+  - Created setup script to migrate existing data and create user-specific template copies for all existing users
+  - Updated all API endpoints to work with new user template system while maintaining backward compatibility
+  - Fixed authentication issues in Template Management page by adding both Authorization and x-firebase-uid headers
+  - Updated Template Management page to display base templates (green badges) vs custom templates (blue badges with *)
+  - Enabled deletion/archiving of both base and custom content templates for full user control
+  - New users automatically receive copies of all base templates upon registration
+  - Template system now fully supports multi-user isolation with shared base templates and individual customization
 
 ## User Preferences
 
