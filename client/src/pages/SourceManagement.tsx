@@ -18,6 +18,60 @@ import { createOrGetUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
 import type { User, SourceTemplate, UtmLink } from "@shared/schema";
 
+// Component to display content for a specific medium
+function MediumContentDisplay({ 
+  source, 
+  medium, 
+  useUtmContent 
+}: { 
+  source: string; 
+  medium: string; 
+  useUtmContent: (source: string, medium: string) => any;
+}) {
+  const { data: contentOptions = [], isLoading, error } = useUtmContent(source, medium);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="animate-pulse bg-gray-200 h-6 w-20 rounded"></div>
+          <div className="animate-pulse bg-gray-200 h-6 w-16 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-xs text-red-600">
+            Error loading content
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {contentOptions.length > 0 ? (
+          contentOptions.map((content: string) => (
+            <Badge key={content} variant="outline" className="text-xs">
+              {content}
+            </Badge>
+          ))
+        ) : (
+          <Badge variant="outline" className="text-xs text-gray-500">
+            No content available
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SourceManagement() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -26,9 +80,6 @@ export default function SourceManagement() {
   const [showArchived, setShowArchived] = useState(false);
   const [newSourceName, setNewSourceName] = useState("");
   const [newMediums, setNewMediums] = useState<{ [sourceId: number]: string }>({});
-  const [newFormats, setNewFormats] = useState<{ [sourceId: number]: string }>({});
-  const [selectedTemplateForContent, setSelectedTemplateForContent] = useState<number | null>(null);
-  const [selectedMediumForContent, setSelectedMediumForContent] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "alphabetic-az" | "alphabetic-za">("updated");
 
   const { toast } = useToast();
@@ -78,6 +129,21 @@ export default function SourceManagement() {
     queryKey: ["/api/utm-links"],
     enabled: !!user,
   });
+
+  // Function to fetch content for a specific source-medium combination
+  const useUtmContent = (source: string, medium: string) => {
+    return useQuery<string[]>({
+      queryKey: ["/api/utm-content", source, medium],
+      enabled: !!source && !!medium,
+      queryFn: async () => {
+        const response = await fetch(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch content');
+        }
+        return response.json();
+      }
+    });
+  };
 
   // Create source template
   const createSourceMutation = useMutation({
@@ -188,39 +254,7 @@ export default function SourceManagement() {
     });
   };
 
-  const addFormatToSource = async (template: SourceTemplate) => {
-    const newFormat = newFormats[template.id]?.trim();
-    if (!newFormat) return;
 
-    const updatedFormats = [...(template.formats || []), newFormat];
-    
-    await updateSourceMutation.mutateAsync({
-      id: template.id,
-      updates: { formats: updatedFormats }
-    });
-
-    setNewFormats(prev => ({ ...prev, [template.id]: "" }));
-    setSelectedTemplateForContent(null);
-    setSelectedMediumForContent(null);
-    toast({
-      title: "Success", 
-      description: "Content added successfully",
-    });
-  };
-
-  const removeFormatFromSource = async (template: SourceTemplate, formatToRemove: string) => {
-    const updatedFormats = (template.formats || []).filter(format => format !== formatToRemove);
-    
-    await updateSourceMutation.mutateAsync({
-      id: template.id,
-      updates: { formats: updatedFormats }
-    });
-
-    toast({
-      title: "Success",
-      description: "Content removed successfully", 
-    });
-  };
 
   // Create new source
   const handleCreateSource = async () => {
@@ -459,83 +493,11 @@ export default function SourceManagement() {
                               </div>
                               
                               {/* Content items for this medium */}
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {(template.formats || []).map((format) => (
-                                    <div key={format} className="flex items-center gap-1">
-                                      <Badge variant="outline" className="text-xs">
-                                        {format}
-                                      </Badge>
-                                      {!template.isArchived && (
-                                        <Button
-                                          onClick={() => removeFormatFromSource(template, format)}
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-gray-400 hover:text-red-500 p-0 h-4 w-4"
-                                        >
-                                          <Trash2 size={10} />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  ))}
-                                  
-                                  {/* Add Content Button */}
-                                  {!template.isArchived && !isArchived && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedTemplateForContent(template.id);
-                                        setSelectedMediumForContent(medium);
-                                      }}
-                                      className="h-6 text-xs"
-                                    >
-                                      <Plus size={12} className="mr-1" />
-                                      Add Content
-                                    </Button>
-                                  )}
-                                </div>
-                                
-                                {/* Add content input - shown when this template and medium is selected */}
-                                {selectedTemplateForContent === template.id && selectedMediumForContent === medium && (
-                                  <div className="flex items-center space-x-2 mt-2">
-                                    <Input
-                                      value={newFormats[template.id] || ""}
-                                      onChange={(e) => setNewFormats(prev => ({ ...prev, [template.id]: e.target.value }))}
-                                      placeholder="Add content (e.g., text-ad, banner, video)"
-                                      className="flex-1 text-sm"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          addFormatToSource(template);
-                                        }
-                                      }}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => addFormatToSource(template)}
-                                      disabled={!newFormats[template.id]?.trim()}
-                                    >
-                                      Add
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedTemplateForContent(null);
-                                        setSelectedMediumForContent(null);
-                                        setNewFormats(prev => ({ ...prev, [template.id]: "" }));
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
+                              <MediumContentDisplay 
+                                source={template.sourceName} 
+                                medium={medium}
+                                useUtmContent={useUtmContent}
+                              />
                             </div>
                           );
                         })}
