@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Zap, Users, Plus, Settings, Mail, Trash2, UserPlus, Shield, User, Crown } from "lucide-react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { createOrGetUser } from "@/lib/auth";
+import AuthScreen from "@/components/AuthScreen";
+import UserHeader from "@/components/UserHeader";
+import type { User as FirebaseUser } from "firebase/auth";
+import type { User as DatabaseUser } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +114,30 @@ export default function AccountManagement() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("user");
+  const [user, setUser] = useState<DatabaseUser | null>(null);
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setAuthUser(firebaseUser);
+        try {
+          const userData = await createOrGetUser(firebaseUser);
+          setUser(userData);
+        } catch (error) {
+          console.error("Error creating/getting user:", error);
+        }
+      } else {
+        setAuthUser(null);
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Get user's accounts
   const { data: userAccounts, isLoading: accountsLoading } = useQuery<UserAccount[]>({
@@ -222,9 +253,37 @@ export default function AccountManagement() {
     });
   };
 
+  const handleAuthSuccess = async () => {
+    // Auth state change will be handled by the useEffect
+  };
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      setLocation("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const selectedAccount = userAccounts?.find(ua => ua.accountId === selectedAccountId);
   const isAdmin = selectedAccount?.role === "admin" || selectedAccount?.role === "super_admin";
   const isSuperAdmin = selectedAccount?.role === "super_admin";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser || !user) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
 
   if (accountsLoading) {
     return (
@@ -257,12 +316,15 @@ export default function AccountManagement() {
               <h1 className="text-3xl font-bold text-gray-900">Account Management</h1>
               <p className="text-gray-600 mt-2">Manage users, roles, and account settings</p>
             </div>
-            <Link href="/settings">
-              <Button variant="outline">
-                <Settings className="w-4 h-4 mr-2" />
-                Back to Settings
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link href="/settings">
+                <Button variant="outline">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Back to Settings
+                </Button>
+              </Link>
+              <UserHeader user={user} onLogout={handleLogout} />
+            </div>
           </div>
         </div>
 
