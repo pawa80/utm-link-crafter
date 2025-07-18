@@ -43,7 +43,12 @@ function MediumContentDisplay({
     queryKey: ["/api/user-utm-templates", source, medium],
     enabled: !!user,
     queryFn: async () => {
-      const response = await fetch(`/api/user-utm-templates`);
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch(`/api/user-utm-templates`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch user templates');
       const allTemplates = await response.json();
       return allTemplates.filter((t: UserUtmTemplate) => t.utmSource === source && t.utmMedium === medium);
@@ -220,7 +225,7 @@ function MediumContentDisplay({
   );
 }
 
-export default function SourceManagement() {
+export default function TemplateManagement() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -282,9 +287,14 @@ export default function SourceManagement() {
   const useUtmContent = (source: string, medium: string) => {
     return useQuery<string[]>({
       queryKey: ["/api/utm-content", source, medium],
-      enabled: !!source && !!medium,
+      enabled: !!source && !!medium && !!user,
       queryFn: async () => {
-        const response = await fetch(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+        const token = await auth.currentUser?.getIdToken();
+        const response = await fetch(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch content');
         }
@@ -469,7 +479,7 @@ export default function SourceManagement() {
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Source & Medium Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Template Management</h1>
             <p className="text-gray-600">Manage your campaign sources and their mediums</p>
           </div>
 
