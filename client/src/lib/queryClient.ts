@@ -27,23 +27,27 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options: {
+    method: string;
+    body?: string;
+    headers?: Record<string, string>;
+  } = { method: "GET" }
 ): Promise<Response> {
   const authHeaders = await getAuthHeaders();
   const headers: Record<string, string> = {
     ...authHeaders,
+    ...options.headers,
   };
   
-  if (data) {
+  if (options.body) {
     headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(url, {
-    method,
+    method: options.method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
+    body: options.body,
     credentials: "include",
   });
 
