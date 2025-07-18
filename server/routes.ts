@@ -748,6 +748,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invitedBy: req.user.id
       });
       
+      // Send invitation email
+      try {
+        const account = await storage.getAccount(accountId);
+        const inviterUser = await storage.getUser(req.user.id);
+        
+        // For now, just log the invitation details
+        console.log('=== INVITATION SENT ===');
+        console.log('To:', email);
+        console.log('From:', inviterUser?.email || 'Unknown');
+        console.log('Account:', account?.name || 'Unknown Account');
+        console.log('Role:', validatedRole);
+        console.log('Invitation Token:', token);
+        console.log('Invitation URL:', `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/accept-invitation/${token}`);
+        console.log('Expires:', invitation.expiresAt);
+        console.log('=====================');
+        
+        // TODO: Implement actual email sending when email service is configured
+        // await sendInvitationEmail({
+        //   email,
+        //   inviterName: inviterUser?.email || 'Team Member',
+        //   accountName: account?.name || 'UTM Builder Account',
+        //   invitationToken: token,
+        //   role: validatedRole
+        // });
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Don't fail the invitation if email fails
+      }
+      
       res.json(invitation);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -800,6 +829,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedUserAccount = await storage.updateUserRole(userId, accountId, validatedRole);
       res.json(updatedUserAccount);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get invitation details
+  app.get("/api/invitations/:token", async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Get invitation with related data
+      const invitation = await storage.getInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if invitation is valid
+      if (invitation.status !== 'pending') {
+        return res.status(400).json({ message: "Invitation already used or expired" });
+      }
+      
+      if (new Date() > invitation.expiresAt) {
+        await storage.updateInvitationStatus(invitation.id, 'expired');
+        return res.status(400).json({ message: "Invitation expired" });
+      }
+      
+      // Get additional data
+      const account = await storage.getAccount(invitation.accountId);
+      const inviter = await storage.getUser(invitation.invitedBy);
+      
+      res.json({
+        ...invitation,
+        account: account ? { id: account.id, name: account.name } : null,
+        inviter: inviter ? { email: inviter.email } : null
+      });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
