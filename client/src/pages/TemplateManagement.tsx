@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
+import Logo from "@/components/Logo";
 import { ArrowLeft, Plus, Archive, ArchiveRestore, Trash2, Settings, ArrowUpDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
@@ -471,12 +472,15 @@ export default function TemplateManagement() {
       <div className="max-w-6xl mx-auto">
         {/* Top Navigation */}
         <div className="flex justify-between items-center mb-6 pt-4">
-          <Link href="/">
-            <Button variant="ghost">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Logo />
+            <Link href="/settings">
+              <Button variant="ghost">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Settings
+              </Button>
+            </Link>
+          </div>
           <UserHeader user={user} onLogout={handleLogout} />
         </div>
 
