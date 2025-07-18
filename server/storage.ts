@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, utmTemplates, userUtmContent, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type UtmTemplate, type InsertUtmTemplate, type UserUtmContent, type InsertUserUtmContent } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -36,16 +36,20 @@ export interface IStorage {
   getAllCampaignLandingPages(userId: number, includeArchived?: boolean): Promise<CampaignLandingPage[]>;
   deleteCampaignLandingPages(userId: number, campaignName: string): Promise<boolean>;
   
-  // UTM Template operations
-  getUtmTemplates(): Promise<UtmTemplate[]>;
-  getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]>;
+  // Base UTM Template operations (admin/developer managed)
+  getBaseUtmTemplates(): Promise<BaseUtmTemplate[]>;
+  getBaseUtmContentByCombination(source: string, medium: string): Promise<BaseUtmTemplate[]>;
   
-  // User UTM Content operations
-  createUserUtmContent(userContent: InsertUserUtmContent): Promise<UserUtmContent>;
-  getUserUtmContentsBySourceMedium(userId: number, utmSource: string, utmMedium: string, includeArchived?: boolean): Promise<UserUtmContent[]>;
-  archiveUserUtmContent(id: number, userId: number): Promise<boolean>;
-  unarchiveUserUtmContent(id: number, userId: number): Promise<boolean>;
-  deleteUserUtmContent(id: number, userId: number): Promise<boolean>;
+  // User UTM Template operations (user-specific copies)
+  createUserUtmTemplate(template: InsertUserUtmTemplate): Promise<UserUtmTemplate>;
+  getUserUtmTemplates(userId: number): Promise<UserUtmTemplate[]>;
+  getUserUtmContentByCombination(userId: number, source: string, medium: string): Promise<UserUtmTemplate[]>;
+  deleteUserUtmTemplate(id: number, userId: number): Promise<boolean>;
+  archiveUserUtmTemplate(id: number, userId: number): Promise<boolean>;
+  unarchiveUserUtmTemplate(id: number, userId: number): Promise<boolean>;
+  
+  // User account setup
+  createUserTemplatesFromBase(userId: number): Promise<boolean>;
   
   // Get all unique URLs that have been used across the account
   getAllUniqueUrls(userId: number): Promise<string[]>;
@@ -321,61 +325,104 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getUtmTemplates(): Promise<UtmTemplate[]> {
-    return await db.select().from(utmTemplates);
+  // Base UTM Template operations
+  async getBaseUtmTemplates(): Promise<BaseUtmTemplate[]> {
+    return await db.select().from(baseUtmTemplates).where(eq(baseUtmTemplates.isActive, true));
   }
 
-  async getUtmContentsBySourceMedium(utmSource: string, utmMedium: string): Promise<string[]> {
-    const templates = await db
-      .select({ utmContent: utmTemplates.utmContent })
-      .from(utmTemplates)
-      .where(
-        and(
-          eq(utmTemplates.utmSource, utmSource),
-          eq(utmTemplates.utmMedium, utmMedium)
-        )
-      );
-    
-    return templates.map(t => t.utmContent);
-  }
-
-  async createUserUtmContent(insertUserContent: InsertUserUtmContent): Promise<UserUtmContent> {
-    const [userContent] = await db
-      .insert(userUtmContent)
-      .values(insertUserContent)
-      .returning();
-    return userContent;
-  }
-
-  async getUserUtmContentsBySourceMedium(userId: number, utmSource: string, utmMedium: string, includeArchived = false): Promise<UserUtmContent[]> {
-    return await db.select().from(userUtmContent)
+  async getBaseUtmContentByCombination(source: string, medium: string): Promise<BaseUtmTemplate[]> {
+    return await db.select().from(baseUtmTemplates)
       .where(and(
-        eq(userUtmContent.userId, userId),
-        eq(userUtmContent.utmSource, utmSource),
-        eq(userUtmContent.utmMedium, utmMedium),
-        includeArchived ? undefined : eq(userUtmContent.isArchived, false)
+        eq(baseUtmTemplates.utmSource, source),
+        eq(baseUtmTemplates.utmMedium, medium),
+        eq(baseUtmTemplates.isActive, true)
       ));
   }
 
-  async archiveUserUtmContent(id: number, userId: number): Promise<boolean> {
-    const result = await db.update(userUtmContent)
+  // User UTM Template operations  
+  async createUserUtmTemplate(template: InsertUserUtmTemplate): Promise<UserUtmTemplate> {
+    const [userTemplate] = await db
+      .insert(userUtmTemplates)
+      .values(template)
+      .returning();
+    return userTemplate;
+  }
+
+  async getUserUtmTemplates(userId: number): Promise<UserUtmTemplate[]> {
+    return await db.select().from(userUtmTemplates)
+      .where(and(
+        eq(userUtmTemplates.userId, userId),
+        eq(userUtmTemplates.isArchived, false)
+      ));
+  }
+
+  async getUserUtmContentByCombination(userId: number, source: string, medium: string): Promise<UserUtmTemplate[]> {
+    return await db.select().from(userUtmTemplates)
+      .where(and(
+        eq(userUtmTemplates.userId, userId),
+        eq(userUtmTemplates.utmSource, source),
+        eq(userUtmTemplates.utmMedium, medium),
+        eq(userUtmTemplates.isArchived, false)
+      ));
+  }
+
+  async deleteUserUtmTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(userUtmTemplates)
+      .where(and(eq(userUtmTemplates.id, id), eq(userUtmTemplates.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async archiveUserUtmTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userUtmTemplates)
       .set({ isArchived: true })
-      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
+      .where(and(eq(userUtmTemplates.id, id), eq(userUtmTemplates.userId, userId)));
     return (result.rowCount ?? 0) > 0;
   }
 
-  async unarchiveUserUtmContent(id: number, userId: number): Promise<boolean> {
-    const result = await db.update(userUtmContent)
+  async unarchiveUserUtmTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userUtmTemplates)
       .set({ isArchived: false })
-      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
+      .where(and(eq(userUtmTemplates.id, id), eq(userUtmTemplates.userId, userId)));
     return (result.rowCount ?? 0) > 0;
   }
 
-  async deleteUserUtmContent(id: number, userId: number): Promise<boolean> {
-    const result = await db.delete(userUtmContent)
-      .where(and(eq(userUtmContent.id, id), eq(userUtmContent.userId, userId)));
-    return (result.rowCount ?? 0) > 0;
+  // User account setup - creates user template copies from base templates
+  async createUserTemplatesFromBase(userId: number): Promise<boolean> {
+    try {
+      // Get all active base templates
+      const baseTemplates = await this.getBaseUtmTemplates();
+      
+      // Create user template copies
+      const userTemplateInserts = baseTemplates.map(base => ({
+        userId,
+        utmSource: base.utmSource,
+        utmMedium: base.utmMedium,
+        utmContent: base.utmContent,
+        description: base.description,
+        isArchived: false,
+        isCustom: false // false because it's from base template
+      }));
+
+      if (userTemplateInserts.length > 0) {
+        await db.insert(userUtmTemplates).values(userTemplateInserts);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error creating user templates from base:', error);
+      return false;
+    }
   }
+
+
+
+
+
+
+
+
+
+
 
   async getAllUniqueUrls(userId: number): Promise<string[]> {
     // Get URLs from campaign landing pages (user's own data)

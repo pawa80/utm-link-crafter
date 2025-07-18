@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { utmTemplates } from "@shared/schema";
+import { baseUtmTemplates } from "@shared/schema";
 
 const defaultUtmTemplates = [
   { utmSource: "google", utmMedium: "cpc", utmContent: "text-ad", description: "Google Ads - Tekstannonse" },
@@ -79,14 +79,14 @@ const defaultUtmTemplates = [
 export async function seedUtmTemplates() {
   try {
     // Check if templates already exist
-    const existingTemplates = await db.select().from(utmTemplates).limit(1);
+    const existingTemplates = await db.select().from(baseUtmTemplates).limit(1);
     
     if (existingTemplates.length === 0) {
-      console.log('Seeding UTM templates...');
-      await db.insert(utmTemplates).values(defaultUtmTemplates);
-      console.log(`Seeded ${defaultUtmTemplates.length} UTM templates successfully`);
+      console.log('Seeding base UTM templates...');
+      await db.insert(baseUtmTemplates).values(defaultUtmTemplates);
+      console.log(`Seeded ${defaultUtmTemplates.length} base UTM templates successfully`);
     } else {
-      console.log('UTM templates already exist, skipping seed');
+      console.log('Base UTM templates already exist, skipping seed');
     }
   } catch (error) {
     console.error('Error seeding UTM templates:', error);

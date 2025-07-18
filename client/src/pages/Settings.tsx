@@ -96,21 +96,21 @@ export default function Settings() {
           {/* Settings Cards */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             
-            {/* Source & Medium Management Card */}
+            {/* Template Management Card */}
             <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
               <CardHeader className="text-center pb-4">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Archive size={32} className="text-primary" />
                 </div>
-                <CardTitle className="text-xl">Source & Medium Management</CardTitle>
+                <CardTitle className="text-xl">Template Management</CardTitle>
                 <CardDescription>
-                  Organize and archive your campaign sources and mediums
+                  Manage your UTM templates for sources, mediums, and content
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/sources">
+                <Link href="/template-management">
                   <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
-                    Manage Sources & Mediums
+                    Manage Templates
                   </Button>
                 </Link>
               </CardContent>

@@ -56,22 +56,27 @@ export const campaignLandingPages = pgTable("campaign_landing_pages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const utmTemplates = pgTable("utm_templates", {
+// Base templates managed by developers/admins
+export const baseUtmTemplates = pgTable("base_utm_templates", {
   id: serial("id").primaryKey(),
   utmSource: text("utm_source").notNull(),
   utmMedium: text("utm_medium").notNull(),
   utmContent: text("utm_content").notNull(),
-  description: text("description"), // Norwegian description from CSV
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const userUtmContent = pgTable("user_utm_content", {
+// User-specific template copies (created on account setup)
+export const userUtmTemplates = pgTable("user_utm_templates", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
   utmSource: text("utm_source").notNull(),
   utmMedium: text("utm_medium").notNull(),
   utmContent: text("utm_content").notNull(),
+  description: text("description"),
   isArchived: boolean("is_archived").default(false),
+  isCustom: boolean("is_custom").default(false), // true if user-added, false if from base template
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -127,12 +132,12 @@ export const insertCampaignLandingPageSchema = createInsertSchema(campaignLandin
   createdAt: true,
 });
 
-export const insertUtmTemplateSchema = createInsertSchema(utmTemplates).omit({
+export const insertBaseUtmTemplateSchema = createInsertSchema(baseUtmTemplates).omit({
   id: true,
   createdAt: true,
 });
 
-export const insertUserUtmContentSchema = createInsertSchema(userUtmContent).omit({
+export const insertUserUtmTemplateSchema = createInsertSchema(userUtmTemplates).omit({
   id: true,
   createdAt: true,
 });
@@ -148,7 +153,7 @@ export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Tag = typeof tags.$inferSelect;
 export type InsertCampaignLandingPage = z.infer<typeof insertCampaignLandingPageSchema>;
 export type CampaignLandingPage = typeof campaignLandingPages.$inferSelect;
-export type InsertUtmTemplate = z.infer<typeof insertUtmTemplateSchema>;
-export type UtmTemplate = typeof utmTemplates.$inferSelect;
-export type InsertUserUtmContent = z.infer<typeof insertUserUtmContentSchema>;
-export type UserUtmContent = typeof userUtmContent.$inferSelect;
+export type InsertBaseUtmTemplate = z.infer<typeof insertBaseUtmTemplateSchema>;
+export type BaseUtmTemplate = typeof baseUtmTemplates.$inferSelect;
+export type InsertUserUtmTemplate = z.infer<typeof insertUserUtmTemplateSchema>;
+export type UserUtmTemplate = typeof userUtmTemplates.$inferSelect;

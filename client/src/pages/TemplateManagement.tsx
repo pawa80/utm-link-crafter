@@ -16,7 +16,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createOrGetUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
-import type { User, SourceTemplate, UtmLink, UserUtmContent } from "@shared/schema";
+import type { User, SourceTemplate, UtmLink, UserUtmTemplate } from "@shared/schema";
 
 // Component to display content for a specific medium
 function MediumContentDisplay({ 
@@ -38,30 +38,33 @@ function MediumContentDisplay({
   
   const { data: contentOptions = [], isLoading, error } = useUtmContent(source, medium);
   
-  // Fetch user-specific content to distinguish base vs custom
-  const { data: userContent = [] } = useQuery<UserUtmContent[]>({
-    queryKey: ["/api/user-utm-content", source, medium],
+  // Fetch user templates for this source-medium combination
+  const { data: userTemplates = [] } = useQuery<UserUtmTemplate[]>({
+    queryKey: ["/api/user-utm-templates", source, medium],
     enabled: !!user,
     queryFn: async () => {
-      const response = await fetch(`/api/user-utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
-      if (!response.ok) throw new Error('Failed to fetch user content');
-      return response.json();
+      const response = await fetch(`/api/user-utm-templates`);
+      if (!response.ok) throw new Error('Failed to fetch user templates');
+      const allTemplates = await response.json();
+      return allTemplates.filter((t: UserUtmTemplate) => t.utmSource === source && t.utmMedium === medium);
     }
   });
 
   // Create mutation for adding new content
   const addContentMutation = useMutation({
     mutationFn: async (contentText: string) => {
-      const response = await apiRequest("POST", "/api/user-utm-content", {
+      const response = await apiRequest("POST", "/api/user-utm-templates", {
         utmSource: source,
         utmMedium: medium,
-        utmContent: contentText
+        utmContent: contentText,
+        description: `Custom content for ${source}/${medium}`,
+        isCustom: true
       });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/utm-content", source, medium] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-content", source, medium] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-templates", source, medium] });
       setNewContentText("");
       setShowAddContent(false);
       toast({
@@ -80,13 +83,13 @@ function MediumContentDisplay({
 
   // Archive content mutation
   const archiveContentMutation = useMutation({
-    mutationFn: async (contentId: number) => {
-      const response = await apiRequest("PATCH", `/api/user-utm-content/${contentId}/archive`);
+    mutationFn: async (templateId: number) => {
+      const response = await apiRequest("PATCH", `/api/user-utm-templates/${templateId}/archive`);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/utm-content", source, medium] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-content", source, medium] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user-utm-templates", source, medium] });
       toast({
         title: "Success",
         description: "Content archived successfully",
@@ -99,8 +102,8 @@ function MediumContentDisplay({
     addContentMutation.mutate(newContentText.trim());
   };
 
-  const getUserContentItem = (content: string) => {
-    return userContent.find(uc => uc.utmContent === content);
+  const getUserTemplateItem = (content: string) => {
+    return userTemplates.find(ut => ut.utmContent === content);
   };
 
   if (isLoading) {
@@ -131,20 +134,21 @@ function MediumContentDisplay({
       <div className="flex items-center gap-2 flex-wrap">
         {contentOptions.length > 0 ? (
           contentOptions.map((content: string) => {
-            const userContentItem = getUserContentItem(content);
-            const isUserContent = !!userContentItem;
+            const userTemplateItem = getUserTemplateItem(content);
+            const isCustomContent = userTemplateItem?.isCustom || false;
             
             return (
               <div key={content} className="flex items-center gap-1">
                 <Badge 
                   variant="outline" 
-                  className={`text-xs ${isUserContent ? 'bg-blue-50 border-blue-200' : ''}`}
+                  className={`text-xs ${isCustomContent ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'}`}
                 >
                   {content}
+                  {isCustomContent && <span className="ml-1 text-blue-600">*</span>}
                 </Badge>
-                {isUserContent && (
+                {isCustomContent && userTemplateItem && (
                   <Button
-                    onClick={() => archiveContentMutation.mutate(userContentItem.id)}
+                    onClick={() => archiveContentMutation.mutate(userTemplateItem.id)}
                     variant="ghost"
                     size="sm"
                     className="text-gray-400 hover:text-red-500 p-0 h-4 w-4"

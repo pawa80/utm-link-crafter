@@ -47,6 +47,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
       
+      // Create user template copies from base templates
+      await storage.createUserTemplatesFromBase(user.id);
+      
       // Create default source templates for new users
       const defaultSources = getUniqueSourcesAndMediums();
       for (const sourceData of defaultSources) {
@@ -529,86 +532,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Source and medium are required" });
       }
       
-      // Get base template content (available to all users)
-      const baseContentOptions = await storage.getUtmContentsBySourceMedium(source, medium);
+      // Get user's template content for this source-medium combination
+      const userTemplates = await storage.getUserUtmContentByCombination(req.user.id, source, medium);
+      const contentOptions = userTemplates.map(t => t.utmContent);
       
-      // Get user's custom content for this source-medium combination
-      const userCustomContent = await storage.getUserUtmContentsBySourceMedium(req.user.id, source, medium);
-      const userContentOptions = userCustomContent.map(c => c.utmContent);
-      
-      // Combine base and user content, removing duplicates
-      const allContent = [...new Set([...baseContentOptions, ...userContentOptions])];
-      
-      res.json(allContent);
+      res.json(contentOptions);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  // User UTM Content routes
-  app.post("/api/user-utm-content", authMiddleware, async (req: any, res) => {
+  // User UTM Template routes
+  app.post("/api/user-utm-templates", authMiddleware, async (req: any, res) => {
     try {
-      const { utmSource, utmMedium, utmContent } = req.body;
+      const { utmSource, utmMedium, utmContent, description } = req.body;
       
       if (!utmSource || !utmMedium || !utmContent) {
         return res.status(400).json({ message: "Source, medium, and content are required" });
       }
       
-      const userContent = await storage.createUserUtmContent({
+      const userTemplate = await storage.createUserUtmTemplate({
         userId: req.user.id,
         utmSource,
         utmMedium,
-        utmContent
+        utmContent,
+        description,
+        isArchived: false,
+        isCustom: true // true because user-created
       });
       
-      res.json(userContent);
+      res.json(userTemplate);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  app.get("/api/user-utm-content/:source/:medium", authMiddleware, async (req: any, res) => {
+  app.get("/api/user-utm-templates", authMiddleware, async (req: any, res) => {
     try {
-      const { source, medium } = req.params;
-      const includeArchived = req.query.includeArchived === 'true';
-      
-      const userContent = await storage.getUserUtmContentsBySourceMedium(
-        req.user.id,
-        source,
-        medium,
-        includeArchived
-      );
-      
-      res.json(userContent);
+      const userTemplates = await storage.getUserUtmTemplates(req.user.id);
+      res.json(userTemplates);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  app.patch("/api/user-utm-content/:id/archive", authMiddleware, async (req: any, res) => {
+  app.patch("/api/user-utm-templates/:id/archive", authMiddleware, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.archiveUserUtmContent(id, req.user.id);
+      const success = await storage.archiveUserUtmTemplate(id, req.user.id);
       res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  app.patch("/api/user-utm-content/:id/unarchive", authMiddleware, async (req: any, res) => {
+  app.patch("/api/user-utm-templates/:id/unarchive", authMiddleware, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.unarchiveUserUtmContent(id, req.user.id);
+      const success = await storage.unarchiveUserUtmTemplate(id, req.user.id);
       res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  app.delete("/api/user-utm-content/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/user-utm-templates/:id", authMiddleware, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteUserUtmContent(id, req.user.id);
+      const success = await storage.deleteUserUtmTemplate(id, req.user.id);
       res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
