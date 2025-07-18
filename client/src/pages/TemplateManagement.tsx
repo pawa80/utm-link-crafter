@@ -44,9 +44,11 @@ function MediumContentDisplay({
     enabled: !!user,
     queryFn: async () => {
       const token = await auth.currentUser?.getIdToken();
+      const firebaseUid = auth.currentUser?.uid;
       const response = await fetch(`/api/user-utm-templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'x-firebase-uid': firebaseUid || '',
         },
       });
       if (!response.ok) throw new Error('Failed to fetch user templates');
@@ -290,9 +292,11 @@ export default function TemplateManagement() {
       enabled: !!source && !!medium && !!user,
       queryFn: async () => {
         const token = await auth.currentUser?.getIdToken();
+        const firebaseUid = auth.currentUser?.uid;
         const response = await fetch(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
+            'x-firebase-uid': firebaseUid || '',
           },
         });
         if (!response.ok) {
