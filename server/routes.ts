@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customField3Name: userData.customField3Name,
         customField3InUrl: userData.customField3InUrl || false,
         customField3Options: userData.customField3Options
-      }, `${userData.email}'s Account`);
+      }, `${userData.email.split('@')[0]}'s Company`);
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
