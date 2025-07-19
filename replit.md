@@ -305,6 +305,13 @@ Changelog:
   - Fixed invitation system to create users directly in invited company accounts
   - Migrated existing users to have proper account associations with super_admin roles
   - Eliminated account switching complexity - users have one company account
+- July 19, 2025. Critical Firebase configuration and routing fixes:
+  - Fixed application startup issues caused by missing VITE_FIREBASE_PROJECT_ID environment variable
+  - Resolved routing configuration problems that were causing 404 errors on all pages
+  - Database migration completed successfully with proper account_id, role, invited_by, and joined_at columns
+  - All existing users migrated to individual company accounts with super_admin roles
+  - Firebase authentication now properly configured with complete environment variables
+  - Application fully functional with Google sign-in and company-based account architecture
 
 ## User Preferences
 
