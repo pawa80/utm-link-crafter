@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, accounts, userAccounts, invitations, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate, type Account, type InsertAccount, type UserAccount, type InsertUserAccount, type Invitation, type InsertInvitation } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, accounts, invitations, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate, type Account, type InsertAccount, type Invitation, type InsertInvitation } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -95,6 +95,24 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string): Promise<{ user: User; account: Account }> {
+    // Create account first
+    const account = await this.createAccount({
+      name: accountName,
+      subscriptionTier: "trial",
+      trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+    });
+
+    // Create user with the account
+    const user = await this.createUser({
+      ...insertUser,
+      accountId: account.id,
+      role: "super_admin" // First user in account is super_admin
+    });
+
+    return { user, account };
   }
 
   async updateUser(id: number, updates: UpdateUser): Promise<User | undefined> {
@@ -513,64 +531,42 @@ export class DatabaseStorage implements IStorage {
     return updatedAccount || undefined;
   }
 
-  async getUserAccounts(userId: number): Promise<Account[]> {
-    const userAccountsData = await db
-      .select({
-        account: accounts
+  async getUserAccount(userId: number): Promise<Account | undefined> {
+    // User belongs to ONE account only - get it directly from user table
+    const [user] = await db
+      .select({ 
+        account: accounts 
       })
-      .from(userAccounts)
-      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
-      .where(eq(userAccounts.userId, userId));
+      .from(users)
+      .innerJoin(accounts, eq(users.accountId, accounts.id))
+      .where(eq(users.id, userId));
     
-    return userAccountsData.map(row => row.account);
+    return user?.account;
   }
 
-  // User account relationship operations
-  async addUserToAccount(userAccount: InsertUserAccount): Promise<UserAccount> {
-    const [newUserAccount] = await db
-      .insert(userAccounts)
-      .values(userAccount)
-      .returning();
-    return newUserAccount;
-  }
-
-  async getUserAccountRelation(userId: number, accountId: number): Promise<UserAccount | undefined> {
-    const [relation] = await db
-      .select()
-      .from(userAccounts)
-      .where(and(
-        eq(userAccounts.userId, userId),
-        eq(userAccounts.accountId, accountId)
-      ));
-    return relation || undefined;
-  }
-
-  async getAccountUsers(accountId: number): Promise<UserAccount[]> {
+  // User account operations (simplified - users belong to ONE account only)
+  async getAccountUsers(accountId: number): Promise<User[]> {
     return await db
       .select()
-      .from(userAccounts)
-      .where(eq(userAccounts.accountId, accountId));
+      .from(users)
+      .where(eq(users.accountId, accountId));
   }
 
-  async updateUserRole(userId: number, accountId: number, role: string): Promise<UserAccount | undefined> {
-    const [updatedUserAccount] = await db
-      .update(userAccounts)
+  async updateUserRole(userId: number, role: string): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
       .set({ role })
-      .where(and(
-        eq(userAccounts.userId, userId),
-        eq(userAccounts.accountId, accountId)
-      ))
+      .where(eq(users.id, userId))
       .returning();
-    return updatedUserAccount || undefined;
+    return updatedUser || undefined;
   }
 
-  async removeUserFromAccount(userId: number, accountId: number): Promise<boolean> {
+  async removeUserFromAccount(userId: number): Promise<boolean> {
+    // In this model, removing a user from account means deleting the user
+    // Or we could set accountId to null if we want to keep user data
     const result = await db
-      .delete(userAccounts)
-      .where(and(
-        eq(userAccounts.userId, userId),
-        eq(userAccounts.accountId, accountId)
-      ));
+      .delete(users)
+      .where(eq(users.id, userId));
     return result.rowCount !== null && result.rowCount > 0;
   }
 
@@ -608,37 +604,48 @@ export class DatabaseStorage implements IStorage {
     return updatedInvitation || undefined;
   }
 
-  // User context operations
-  async getUserAccountsWithRole(userId: number): Promise<(UserAccount & { account: Account })[]> {
-    return await db
+  // User context operations (simplified for single account model)
+  async getUserWithAccount(userId: number): Promise<(User & { account: Account }) | undefined> {
+    const [userData] = await db
       .select({
-        id: userAccounts.id,
-        userId: userAccounts.userId,
-        accountId: userAccounts.accountId,
-        role: userAccounts.role,
-        invitedBy: userAccounts.invitedBy,
-        joinedAt: userAccounts.joinedAt,
+        id: users.id,
+        firebaseUid: users.firebaseUid,
+        email: users.email,
+        accountId: users.accountId,
+        role: users.role,
+        invitedBy: users.invitedBy,
+        joinedAt: users.joinedAt,
+        createdAt: users.createdAt,
+        categories: users.categories,
+        defaultSources: users.defaultSources,
+        defaultMediums: users.defaultMediums,
+        defaultCampaignNames: users.defaultCampaignNames,
+        isSetupComplete: users.isSetupComplete,
+        showCampaignTerm: users.showCampaignTerm,
+        showInternalCampaignId: users.showInternalCampaignId,
+        showCategory: users.showCategory,
+        showCustomFields: users.showCustomFields,
+        customField1Name: users.customField1Name,
+        customField1InUrl: users.customField1InUrl,
+        customField1Options: users.customField1Options,
+        customField2Name: users.customField2Name,
+        customField2InUrl: users.customField2InUrl,
+        customField2Options: users.customField2Options,
+        customField3Name: users.customField3Name,
+        customField3InUrl: users.customField3InUrl,
+        customField3Options: users.customField3Options,
         account: accounts
       })
-      .from(userAccounts)
-      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
-      .where(eq(userAccounts.userId, userId))
-      .orderBy(desc(userAccounts.joinedAt));
+      .from(users)
+      .innerJoin(accounts, eq(users.accountId, accounts.id))
+      .where(eq(users.id, userId));
+    
+    return userData || undefined;
   }
 
   async getDefaultAccountForUser(userId: number): Promise<Account | undefined> {
-    // Get the first account the user joined (usually their personal account)
-    const [userAccountData] = await db
-      .select({
-        account: accounts
-      })
-      .from(userAccounts)
-      .innerJoin(accounts, eq(userAccounts.accountId, accounts.id))
-      .where(eq(userAccounts.userId, userId))
-      .orderBy(userAccounts.joinedAt)
-      .limit(1);
-    
-    return userAccountData?.account || undefined;
+    // In single account model, just get the user's account
+    return this.getUserAccount(userId);
   }
 }
 

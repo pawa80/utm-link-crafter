@@ -45,28 +45,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(existingUser);
       }
       
-      // Create user
-      const user = await storage.createUser(userData);
-      
-      // Create default account for new user
-      const account = await storage.createAccount({
-        name: `${userData.email}'s Account`,
-        subscriptionTier: "trial",
-        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        featureFlags: {},
-        usageLimits: {
-          maxCampaigns: 50,
-          maxLinksPerCampaign: 100,
-          maxTemplates: 200
-        }
-      });
-      
-      // Add user to their account as super_admin
-      await storage.addUserToAccount({
-        userId: user.id,
-        accountId: account.id,
-        role: "super_admin"
-      });
+      // Create user with their own account (company model)
+      const { user, account } = await storage.createUserWithAccount({
+        firebaseUid: userData.firebaseUid,
+        email: userData.email,
+        categories: userData.categories || [],
+        defaultSources: userData.defaultSources || [],
+        defaultMediums: userData.defaultMediums || [],
+        defaultCampaignNames: userData.defaultCampaignNames || [],
+        isSetupComplete: userData.isSetupComplete || false,
+        showCampaignTerm: userData.showCampaignTerm ?? true,
+        showInternalCampaignId: userData.showInternalCampaignId ?? true,
+        showCategory: userData.showCategory ?? true,
+        showCustomFields: userData.showCustomFields || false,
+        customField1Name: userData.customField1Name,
+        customField1InUrl: userData.customField1InUrl || false,
+        customField1Options: userData.customField1Options,
+        customField2Name: userData.customField2Name,
+        customField2InUrl: userData.customField2InUrl || false,
+        customField2Options: userData.customField2Options,
+        customField3Name: userData.customField3Name,
+        customField3InUrl: userData.customField3InUrl || false,
+        customField3Options: userData.customField3Options
+      }, `${userData.email}'s Account`);
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
@@ -636,9 +637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountData = insertAccountSchema.parse(req.body);
       
       // Check if user is super_admin
-      const userAccounts = await storage.getUserAccountsWithRole(req.user.id);
-      const isSuperAdmin = userAccounts.some(ua => ua.role === 'super_admin');
-      if (!isSuperAdmin) {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'super_admin') {
         return res.status(403).json({ message: "Only super admins can create accounts" });
       }
       
@@ -655,8 +655,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = parseInt(req.params.id);
       
       // Check if user has access to this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount) {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId) {
         return res.status(403).json({ message: "Access denied to this account" });
       }
       
@@ -671,15 +671,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's accounts
+  // Get user's account (simplified - users belong to ONE account)
   app.get("/api/user/accounts", authMiddleware, async (req: any, res) => {
     try {
-      console.log("Getting accounts for user:", req.user.id);
-      const userAccountsWithRole = await storage.getUserAccountsWithRole(req.user.id);
-      console.log("Found accounts:", userAccountsWithRole);
-      res.json(userAccountsWithRole);
+      console.log("Getting account for user:", req.user.id);
+      const userWithAccount = await storage.getUserWithAccount(req.user.id);
+      console.log("Found account:", userWithAccount);
+      
+      if (!userWithAccount) {
+        return res.status(404).json({ message: "User account not found" });
+      }
+      
+      // Return in array format for backward compatibility
+      res.json([{
+        id: userWithAccount.id,
+        userId: userWithAccount.id,
+        accountId: userWithAccount.accountId,
+        role: userWithAccount.role,
+        invitedBy: userWithAccount.invitedBy,
+        joinedAt: userWithAccount.joinedAt,
+        account: userWithAccount.account
+      }]);
     } catch (error: any) {
-      console.error("Error getting user accounts:", error);
+      console.error("Error getting user account:", error);
       res.status(400).json({ message: error.message });
     }
   });
@@ -691,8 +705,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
       
       // Check if user is admin or super_admin for this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId || !['admin', 'super_admin'].includes(user.role)) {
         return res.status(403).json({ message: "Only admins can update account settings" });
       }
       
@@ -709,8 +723,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = parseInt(req.params.id);
       
       // Check if user is admin or super_admin for this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId || !['admin', 'super_admin'].includes(user.role)) {
         return res.status(403).json({ message: "Only admins can view account users" });
       }
       
@@ -727,9 +741,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = parseInt(req.params.id);
       const { email, role } = req.body;
       
-      // Check if user is admin or super_admin for this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount || !['admin', 'super_admin'].includes(userAccount.role)) {
+      // Check if user is admin or super_admin for this account  
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId || !['admin', 'super_admin'].includes(user.role)) {
         return res.status(403).json({ message: "Only admins can invite users" });
       }
       
@@ -790,21 +804,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       
       // Check if requesting user is super_admin for this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount || userAccount.role !== 'super_admin') {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId || user.role !== 'super_admin') {
         return res.status(403).json({ message: "Only super admins can remove users" });
       }
       
       // Don't allow removing the last super_admin
       const accountUsers = await storage.getAccountUsers(accountId);
       const superAdmins = accountUsers.filter(u => u.role === 'super_admin');
-      const targetUser = accountUsers.find(u => u.userId === userId);
+      const targetUser = accountUsers.find(u => u.id === userId);
       
       if (targetUser?.role === 'super_admin' && superAdmins.length === 1) {
         return res.status(400).json({ message: "Cannot remove the last super admin" });
       }
       
-      const success = await storage.removeUserFromAccount(userId, accountId);
+      const success = await storage.removeUserFromAccount(userId);
       res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -819,16 +833,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role } = req.body;
       
       // Check if requesting user is super_admin for this account
-      const userAccount = await storage.getUserAccountRelation(req.user.id, accountId);
-      if (!userAccount || userAccount.role !== 'super_admin') {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.accountId !== accountId || user.role !== 'super_admin') {
         return res.status(403).json({ message: "Only super admins can change user roles" });
       }
       
       // Validate role
       const validatedRole = userRoleSchema.parse(role);
       
-      const updatedUserAccount = await storage.updateUserRole(userId, accountId, validatedRole);
-      res.json(updatedUserAccount);
+      const updatedUser = await storage.updateUserRole(userId, validatedRole);
+      res.json(updatedUser);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -891,22 +905,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invitation expired" });
       }
       
-      // Get or create user
+      // Get or create user (single account model)
       let user = await storage.getUserByFirebaseUid(firebaseUid);
       if (!user) {
+        // Create user directly with the invited account
         user = await storage.createUser({
           email: invitation.email,
-          firebaseUid
+          firebaseUid,
+          accountId: invitation.accountId,
+          role: invitation.role,
+          invitedBy: invitation.invitedBy
         });
+      } else {
+        // If user exists but doesn't have account, update them
+        if (!user.accountId) {
+          await storage.updateUser(user.id, {
+            accountId: invitation.accountId,
+            role: invitation.role,
+            invitedBy: invitation.invitedBy
+          });
+          user = await storage.getUser(user.id); // Get updated user
+        }
       }
-      
-      // Add user to account
-      await storage.addUserToAccount({
-        userId: user.id,
-        accountId: invitation.accountId,
-        role: invitation.role,
-        invitedBy: invitation.invitedBy
-      });
       
       // Mark invitation as accepted
       await storage.updateInvitationStatus(invitation.id, 'accepted');

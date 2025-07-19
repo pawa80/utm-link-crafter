@@ -13,14 +13,7 @@ export const accounts = pgTable("accounts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const userAccounts = pgTable("user_accounts", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  accountId: integer("account_id").references(() => accounts.id).notNull(),
-  role: text("role").notNull().default("user"), // user, developer, admin, super_admin
-  invitedBy: integer("invited_by").references(() => users.id),
-  joinedAt: timestamp("joined_at").defaultNow(),
-});
+// REMOVED: userAccounts table - users now belong to ONE account only
 
 export const invitations = pgTable("invitations", {
   id: serial("id").primaryKey(),
@@ -38,6 +31,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   firebaseUid: text("firebase_uid").notNull().unique(),
   email: text("email").notNull(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(), // User belongs to ONE account
+  role: text("role").notNull().default("user"), // user, developer, admin, super_admin
+  invitedBy: integer("invited_by").references(() => users.id), // Who invited this user
   categories: text("categories").array().default([]),
   defaultSources: text("default_sources").array().default([]),
   defaultMediums: text("default_mediums").array().default([]),
@@ -56,6 +52,7 @@ export const users = pgTable("users", {
   customField3Name: text("custom_field_3_name"),
   customField3InUrl: boolean("custom_field_3_in_url").default(false),
   customField3Options: text("custom_field_3_options").array(),
+  joinedAt: timestamp("joined_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -185,10 +182,7 @@ export const insertAccountSchema = createInsertSchema(accounts).omit({
   createdAt: true,
 });
 
-export const insertUserAccountSchema = createInsertSchema(userAccounts).omit({
-  id: true,
-  joinedAt: true,
-});
+// REMOVED: insertUserAccountSchema - no longer needed
 
 export const insertInvitationSchema = createInsertSchema(invitations).omit({
   id: true,
@@ -219,8 +213,7 @@ export type UserUtmTemplate = typeof userUtmTemplates.$inferSelect;
 // New account management types
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 export type Account = typeof accounts.$inferSelect;
-export type InsertUserAccount = z.infer<typeof insertUserAccountSchema>;
-export type UserAccount = typeof userAccounts.$inferSelect;
+// REMOVED: UserAccount types - users now belong to ONE account only
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 export type UserRole = z.infer<typeof userRoleSchema>;
