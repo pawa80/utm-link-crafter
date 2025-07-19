@@ -671,19 +671,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's account (simplified - users belong to ONE account)
-  app.get("/api/user/accounts", authMiddleware, async (req: any, res) => {
+  // Get user's account (single account model)
+  app.get("/api/user/account", authMiddleware, async (req: any, res) => {
     try {
-      console.log("Getting account for user:", req.user.id);
       const userWithAccount = await storage.getUserWithAccount(req.user.id);
-      console.log("Found account:", userWithAccount);
       
       if (!userWithAccount) {
         return res.status(404).json({ message: "User account not found" });
       }
       
-      // Return in array format for backward compatibility
-      res.json([{
+      // Return single account object (not array)
+      res.json({
         id: userWithAccount.id,
         userId: userWithAccount.id,
         accountId: userWithAccount.accountId,
@@ -691,7 +689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invitedBy: userWithAccount.invitedBy,
         joinedAt: userWithAccount.joinedAt,
         account: userWithAccount.account
-      }]);
+      });
     } catch (error: any) {
       console.error("Error getting user account:", error);
       res.status(400).json({ message: error.message });

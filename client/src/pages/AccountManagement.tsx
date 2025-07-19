@@ -110,7 +110,7 @@ function RoleBadge({ role }: { role: string }) {
 export default function AccountManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("user");
@@ -139,16 +139,20 @@ export default function AccountManagement() {
     return () => unsubscribe();
   }, []);
 
-  // Get user's accounts
-  const { data: userAccounts, isLoading: accountsLoading } = useQuery<UserAccount[]>({
-    queryKey: ["/api/user/accounts"],
+  // Get user's account (single account)
+  const { data: userAccount, isLoading: accountsLoading } = useQuery<UserAccount>({
+    queryKey: ["/api/user/account"],
   });
 
-  // Get account users for selected account
+  // Get account users for user's account
   const { data: accountUsers, isLoading: usersLoading } = useQuery<AccountUser[]>({
-    queryKey: ["/api/accounts", selectedAccountId, "users"],
-    enabled: !!selectedAccountId,
+    queryKey: ["/api/accounts", userAccount?.accountId, "users"],
+    enabled: !!userAccount?.accountId,
   });
+
+  // Role permissions
+  const isAdmin = userAccount?.role === "admin" || userAccount?.role === "super_admin";
+  const isSuperAdmin = userAccount?.role === "super_admin";
 
   // Invite user mutation
   const inviteUserMutation = useMutation({
@@ -159,7 +163,7 @@ export default function AccountManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts", selectedAccountId, "users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounts", userAccount?.accountId, "users"] });
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("user");
@@ -185,7 +189,7 @@ export default function AccountManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts", selectedAccountId, "users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounts", userAccount?.accountId, "users"] });
       toast({
         title: "User removed",
         description: "The user has been removed from the account.",
@@ -209,7 +213,7 @@ export default function AccountManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts", selectedAccountId, "users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounts", userAccount?.accountId, "users"] });
       toast({
         title: "Role updated",
         description: "The user's role has been updated successfully.",
@@ -225,29 +229,29 @@ export default function AccountManagement() {
   });
 
   const handleInviteUser = () => {
-    if (!selectedAccountId || !inviteEmail.trim()) return;
+    if (!userAccount?.accountId || !inviteEmail.trim()) return;
     
     inviteUserMutation.mutate({
-      accountId: selectedAccountId,
+      accountId: userAccount.accountId,
       email: inviteEmail.trim(),
       role: inviteRole,
     });
   };
 
   const handleRemoveUser = (userId: number) => {
-    if (!selectedAccountId) return;
+    if (!userAccount?.accountId) return;
     
     removeUserMutation.mutate({
-      accountId: selectedAccountId,
+      accountId: userAccount.accountId,
       userId,
     });
   };
 
   const handleUpdateRole = (userId: number, newRole: string) => {
-    if (!selectedAccountId) return;
+    if (!userAccount?.accountId) return;
     
     updateRoleMutation.mutate({
-      accountId: selectedAccountId,
+      accountId: userAccount.accountId,
       userId,
       role: newRole,
     });
@@ -266,9 +270,7 @@ export default function AccountManagement() {
     }
   };
 
-  const selectedAccount = userAccounts?.find(ua => ua.accountId === selectedAccountId);
-  const isAdmin = selectedAccount?.role === "admin" || selectedAccount?.role === "super_admin";
-  const isSuperAdmin = selectedAccount?.role === "super_admin";
+
 
   if (loading) {
     return (
@@ -335,23 +337,15 @@ export default function AccountManagement() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Users className="w-5 h-5 mr-2" />
-                  Your Accounts
+                  Your Company Account
                 </CardTitle>
                 <CardDescription>
-                  Select an account to manage users and settings
+                  Your company account information and subscription
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {userAccounts?.map((userAccount) => (
-                  <div
-                    key={userAccount.accountId}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedAccountId === userAccount.accountId
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setSelectedAccountId(userAccount.accountId)}
-                  >
+                {userAccount && (
+                  <div className="p-3 rounded-lg border border-blue-500 bg-blue-50">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-gray-900 truncate">
@@ -364,14 +358,14 @@ export default function AccountManagement() {
                       <RoleBadge role={userAccount.role} />
                     </div>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Account Users Management */}
           <div className="lg:col-span-2">
-            {selectedAccountId ? (
+            {userAccount?.accountId ? (
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -381,7 +375,7 @@ export default function AccountManagement() {
                         Account Users
                       </CardTitle>
                       <CardDescription>
-                        Manage users and their roles for {selectedAccount?.account?.name}
+                        Manage users and their roles for {userAccount?.account?.name}
                       </CardDescription>
                     </div>
                     {isAdmin && (
