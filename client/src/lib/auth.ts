@@ -39,6 +39,7 @@ export const createOrGetUser = async (firebaseUser: User) => {
     headers: {
       "Content-Type": "application/json",
       "x-firebase-uid": firebaseUser.uid,
+      "Authorization": `Bearer ${token}`,
     },
     body: JSON.stringify({
       firebaseUid: firebaseUser.uid,

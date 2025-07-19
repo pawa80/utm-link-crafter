@@ -44,13 +44,16 @@ interface UserAccount {
   account?: Account;
 }
 
+// AccountUser type matches the User type from shared schema
 interface AccountUser {
   id: number;
-  userId: number;
+  firebaseUid: string;
+  email: string;
   accountId: number;
   role: "user" | "developer" | "admin" | "super_admin";
   invitedBy: number | null;
   joinedAt: string;
+  createdAt: string;
 }
 
 interface Invitation {
@@ -454,9 +457,9 @@ export default function AccountManagement() {
                               <User className="w-5 h-5 text-gray-600" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">User {user.userId}</p>
+                              <p className="font-medium text-gray-900">{user.email}</p>
                               <p className="text-sm text-gray-500">
-                                Joined {new Date(user.joinedAt).toLocaleDateString()}
+                                Joined {new Date(user.joinedAt || user.createdAt).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -464,7 +467,7 @@ export default function AccountManagement() {
                             {isSuperAdmin && user.role !== "super_admin" ? (
                               <Select
                                 value={user.role}
-                                onValueChange={(newRole) => handleUpdateRole(user.userId, newRole)}
+                                onValueChange={(newRole) => handleUpdateRole(user.id, newRole)}
                               >
                                 <SelectTrigger className="w-32">
                                   <SelectValue />
@@ -496,7 +499,7 @@ export default function AccountManagement() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleRemoveUser(user.userId)}
+                                      onClick={() => handleRemoveUser(user.id)}
                                       className="bg-red-600 hover:bg-red-700"
                                     >
                                       Remove User
