@@ -137,6 +137,11 @@ export const utmLinks = pgTable("utm_links", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  joinedAt: true,
+}).partial({
+  accountId: true, // Make accountId optional for initial user creation
+  role: true,
+  invitedBy: true
 });
 
 export const insertUtmLinkSchema = createInsertSchema(utmLinks).omit({

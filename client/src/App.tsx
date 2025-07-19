@@ -13,7 +13,7 @@ import TagManagement from "@/pages/TagManagement";
 import AccountManagement from "@/pages/AccountManagement";
 import AcceptInvitation from "@/pages/AcceptInvitation";
 import ChatWizardPage from "@/pages/ChatWizardPage";
-import NotFound from "@/pages/not-found";
+import NotFound from "@/pages/NotFound";
 
 function Router() {
   return (

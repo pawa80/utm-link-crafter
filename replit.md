@@ -297,6 +297,14 @@ Changelog:
   - Added role-based access control (super_admin, admin, user) with proper authorization
   - Account management API endpoints tested and fully functional (create accounts, invite users, manage roles)
   - Enhanced security with account-scoped data isolation and proper permission validation
+- July 19, 2025. Major architectural restructure to company-based account model:
+  - BREAKING CHANGE: Removed userAccounts junction table - users now belong to ONE account only
+  - Updated users table with direct accountId foreign key, role, and invitedBy fields
+  - Simplified architecture: Account = Company, User belongs to one company account
+  - Updated all API endpoints to work with single-account model
+  - Fixed invitation system to create users directly in invited company accounts
+  - Migrated existing users to have proper account associations with super_admin roles
+  - Eliminated account switching complexity - users have one company account
 
 ## User Preferences
 
