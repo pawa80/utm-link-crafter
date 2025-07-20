@@ -23,11 +23,11 @@ import { useToast } from "@/hooks/use-toast";
 // Component definitions at the top to prevent hoisting issues
 function UTMBuilderLogo() {
   return (
-    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-      <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-        <Zap className="w-5 h-5 text-white" />
+    <Link href="/" className="flex items-center space-x-3 hover:opacity-90 transition-all duration-200 group">
+      <div className="w-10 h-10 bg-gradient-to-br from-primary via-secondary to-accent rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
+        <Zap className="w-6 h-6 text-white" />
       </div>
-      <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+      <span className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
         UTM Builder
       </span>
     </Link>

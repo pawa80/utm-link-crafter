@@ -48,10 +48,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/20 border-t-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -62,8 +62,8 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 p-4">
+      <div className="max-w-6xl mx-auto">
         {/* Top Navigation with Logo and User */}
         <div className="flex justify-between items-center mb-8 pt-4">
           <Logo />
@@ -72,50 +72,50 @@ export default function HomePage() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6">
             UTM Builder
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Create, manage, and track your marketing campaign links with ease. 
-            Build professional UTM links for better campaign analytics.
+            Build professional UTM links for better campaign analytics and insights.
           </p>
         </div>
 
         {/* Main Action Cards */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-8">
           {/* Chat Wizard Card - First Quadrant */}
-          <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-            <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle size={32} className="text-primary" />
+          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+            <CardHeader className="text-center pb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-secondary via-accent to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <MessageCircle size={40} className="text-white" />
               </div>
-              <CardTitle className="text-xl">Chat Wizard</CardTitle>
-              <CardDescription>
-                Let our AI assistant guide you through creating a campaign step by step
+              <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
+              <CardDescription className="text-base leading-relaxed">
+                Let our AI assistant guide you through creating a campaign step by step with intelligent suggestions
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/chat-wizard">
-                <Button className="w-full h-12 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Button className="w-full h-14 text-lg font-semibold btn-gradient-secondary">
                   Start Chat Wizard
                 </Button>
               </Link>
             </CardContent>
           </Card>
           {/* New Campaign Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-            <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus size={32} className="text-primary" />
+          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+            <CardHeader className="text-center pb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary via-accent to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Plus size={40} className="text-white" />
               </div>
-              <CardTitle className="text-xl">New Campaign</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl font-bold">New Campaign</CardTitle>
+              <CardDescription className="text-base leading-relaxed">
                 Create a new UTM campaign with multiple sources and tracking parameters
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/new-campaign">
-                <Button className="w-full h-12 text-lg">
+                <Button className="w-full h-14 text-lg font-semibold btn-gradient-primary">
                   Start New Campaign
                 </Button>
               </Link>
@@ -123,19 +123,19 @@ export default function HomePage() {
           </Card>
 
           {/* Manage Campaigns Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-            <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Settings size={32} className="text-primary" />
+          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+            <CardHeader className="text-center pb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-accent via-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Settings size={40} className="text-white" />
               </div>
-              <CardTitle className="text-xl">Manage Campaigns</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl font-bold">Manage Campaigns</CardTitle>
+              <CardDescription className="text-base leading-relaxed">
                 View, edit, and organize your existing UTM campaigns and links
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/campaigns">
-                <Button variant="outline" className="w-full h-12 text-lg">
+                <Button variant="outline" className="w-full h-14 text-lg font-semibold border-2 hover:border-primary hover:bg-primary/5">
                   Manage Campaigns
                 </Button>
               </Link>
@@ -146,36 +146,36 @@ export default function HomePage() {
         </div>
 
         {/* Features Section */}
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-8">
-            Why Use Our UTM Builder?
+        <div className="mt-20 text-center animate-fade-in">
+          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-12">
+            Why Choose UTM Builder?
           </h2>
-          <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            <div className="p-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">📊</span>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-3xl">📊</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Track Performance</h3>
-              <p className="text-sm text-gray-600">
-                Monitor campaign effectiveness with detailed analytics
+              <h3 className="text-xl font-bold mb-3">Track Performance</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Monitor campaign effectiveness with detailed analytics and insights
               </p>
             </div>
-            <div className="p-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">⚡</span>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-success/5 to-secondary/5 hover:from-success/10 hover:to-secondary/10 transition-all duration-300 group">
+              <div className="w-16 h-16 bg-gradient-to-br from-success to-success/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-3xl">⚡</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Quick Setup</h3>
-              <p className="text-sm text-gray-600">
-                Create professional UTM links in minutes, not hours
+              <h3 className="text-xl font-bold mb-3">Quick Setup</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Create professional UTM links in minutes with AI-powered assistance
               </p>
             </div>
-            <div className="p-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🎯</span>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/5 to-accent/5 hover:from-secondary/10 hover:to-accent/10 transition-all duration-300 group">
+              <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-3xl">🎯</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Organized</h3>
-              <p className="text-sm text-gray-600">
-                Keep all your campaigns and sources neatly organized
+              <h3 className="text-xl font-bold mb-3">Organized</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Keep all your campaigns and sources neatly organized and accessible
               </p>
             </div>
           </div>
