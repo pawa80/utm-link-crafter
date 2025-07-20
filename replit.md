@@ -333,9 +333,10 @@ Changelog:
   - Updated "Show Archived" button hover color from cyan to blue (`hover:bg-primary hover:text-white`)
   - Updated UserHeader button hover color from gray to blue (`hover:bg-primary hover:text-white`)
   - Updated Settings dropdown menu item hover from cyan to blue (`hover:bg-primary hover:text-white`)
-  - Replaced all cyan (`--accent`) colors with blue colors in CSS variables (217 91% 40% for light mode, 217 91% 60% for dark mode)
-  - Updated chart colors to use blue instead of cyan for consistent color palette
-  - Achieved complete blue color scheme consistency across entire application interface
+  - Replaced all cyan (`--accent`) colors with blue colors in CSS variables for interactive elements
+  - Restored cyan colors for home page visual gradients and design elements by adding dedicated `--cyan` variables
+  - Created perfect balance: cyan for visual appeal (gradients, icons), blue for interactions (buttons, hovers)
+  - Renamed "Account Settings" to "Profile Settings" for clearer distinction from "Account Management"
 - July 20, 2025. Chat Wizard bug fixes and template architecture correction:
   - Fixed content variations showing "default" instead of proper UTM content suggestions
   - Resolved tag display issue in campaign summary by fixing stale closure problems

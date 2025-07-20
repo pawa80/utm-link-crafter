@@ -162,9 +162,9 @@ export default function Settings() {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl text-gray-400">⚙️</span>
                 </div>
-                <CardTitle className="text-xl text-gray-500">Account Settings</CardTitle>
+                <CardTitle className="text-xl text-gray-500">Profile Settings</CardTitle>
                 <CardDescription>
-                  Manage your account preferences and profile
+                  Manage your personal preferences and profile
                 </CardDescription>
               </CardHeader>
               <CardContent>
