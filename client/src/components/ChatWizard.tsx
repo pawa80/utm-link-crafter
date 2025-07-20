@@ -90,9 +90,16 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const fetchContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
     try {
       const response = await apiRequest("GET", `/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error fetching content for ${source}-${medium}:`, response.status, errorText);
+        return [];
+      }
+      const data = await response.json();
+      console.log(`Content suggestions for ${source}-${medium}:`, data);
+      return data;
     } catch (error) {
-      console.error(`Error fetching content suggestions for ${source}-${medium}:`, error);
+      console.error(`Error fetching content for ${source}-${medium}:`, error);
       return [];
     }
   };
@@ -910,13 +917,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const contentSuggestions = {};
     for (const { source, medium } of sourceMediumCombinations) {
       try {
+        console.log(`Fetching content suggestions for ${source}-${medium}...`);
         const suggestions = await fetchContentSuggestions(source, medium);
         const key = `${source}-${medium}`;
         contentSuggestions[key] = suggestions;
+        console.log(`Successfully fetched content for ${key}:`, suggestions);
       } catch (error) {
         console.error(`Error fetching content for ${source}-${medium}:`, error);
         const key = `${source}-${medium}`;
-        contentSuggestions[key] = ['default'];
+        contentSuggestions[key] = [];
       }
     }
 
@@ -924,7 +933,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const newSelectedContent = {};
     for (const { source, medium } of sourceMediumCombinations) {
       const key = `${source}-${medium}`;
-      const suggestions = contentSuggestions[key] || ['default'];
+      const suggestions = contentSuggestions[key] || [];
+      console.log(`Processing content for ${key}:`, suggestions);
+      if (suggestions.length === 0) {
+        suggestions.push('default'); // Fallback only if no suggestions found
+      }
       newSelectedContent[key] = suggestions;
     }
 
@@ -939,7 +952,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     
     for (const { source, medium } of sourceMediumCombinations) {
       const key = `${source}-${medium}`;
-      const suggestions = contentSuggestions[key] || ['default'];
+      const suggestions = contentSuggestions[key] || [];
+      if (suggestions.length === 0) {
+        suggestions.push('default'); // Fallback only if no suggestions found
+      }
       contentSummary += `**${source.charAt(0).toUpperCase() + source.slice(1)} → ${medium.charAt(0).toUpperCase() + medium.slice(1)}:**\n`;
       contentSummary += suggestions.map(content => `• ${content}`).join('\n') + '\n\n';
     }
