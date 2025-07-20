@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ interface ContentVariant {
 }
 
 export default function CampaignWizard({ user, onSaveSuccess, editMode = false, existingCampaignData = [], existingLandingPages = [] }: CampaignWizardProps) {
+  const [, navigate] = useLocation();
   const [campaignName, setCampaignName] = useState("");
   const [originalCampaignName, setOriginalCampaignName] = useState(""); // Track original name for edit mode
   const [targetUrl, setTargetUrl] = useState(""); // Keep for backward compatibility
@@ -1647,8 +1649,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   description: `Created ${successCount} UTM links for "${campaignName}"`,
                 });
                 
-                // Optionally redirect or reset form
-                // navigate('/campaigns');
+                // Redirect to Campaign Management page with auto-expand
+                navigate(`/campaigns?expand=${encodeURIComponent(campaignName)}`);
                 
               } catch (error) {
                 console.error("Failed to save campaign:", error);
