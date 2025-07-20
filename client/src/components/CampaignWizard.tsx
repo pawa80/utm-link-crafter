@@ -1654,7 +1654,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                   <Select
                                     value={row.selectedLandingPageId || ""}
                                     onValueChange={(value) => {
-                                      const rowKey = `${sourceName}-${row.medium}-${row.variant.id}`;
+                                      const rowKey = `${sourceName}-${row.medium}-${row.contentItem}-${row.termItem}`;
                                       setSourceStates(prev => ({
                                         ...prev,
                                         [sourceName]: {
@@ -1686,16 +1686,23 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
                                   <Input
-                                    value={row.variant.content}
-                                    onChange={(e) => updateContentVariant(sourceName, row.medium, row.variant.id, e.target.value)}
+                                    value={row.contentItem}
+                                    onChange={(e) => {
+                                      // This is now read-only since content comes from selections
+                                      // You can't edit individual content items in the table
+                                    }}
                                     placeholder="Content..."
-                                    className="text-sm flex-1"
+                                    className="text-sm flex-1 bg-gray-50"
+                                    readOnly
                                   />
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => addContentVariant(sourceName, row.medium, row.variant.id)}
+                                    onClick={() => {
+                                      // No longer adding variants here - content comes from selection
+                                    }}
                                     className="flex-shrink-0"
+                                    disabled
                                   >
                                     <Plus className="w-3 h-3" />
                                   </Button>
@@ -1736,7 +1743,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    removeContentVariant(sourceName, row.medium, row.variant.id);
+                                    // Remove functionality disabled - content managed through selection buttons
                                   }}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
                                 >
@@ -1759,7 +1766,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               <Select
                                 value={row.selectedLandingPageId || ""}
                                 onValueChange={(value) => {
-                                  const rowKey = `${sourceName}-${row.medium}-${row.variant.id}`;
+                                  const rowKey = `${sourceName}-${row.medium}-${row.contentItem}-${row.termItem}`;
                                   setSourceStates(prev => ({
                                     ...prev,
                                     [sourceName]: {
@@ -1795,7 +1802,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => addContentVariant(sourceName, row.medium, row.variant.id)}
+                                onClick={() => {
+                                  // Add functionality disabled - content managed through selection buttons
+                                }}
                                 className="flex-shrink-0"
                               >
                                 <Plus className="w-3 h-3" />
@@ -1806,10 +1815,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           <div>
                             <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
                             <Input
-                              value={row.variant.content}
-                              onChange={(e) => updateContentVariant(sourceName, row.medium, row.variant.id, e.target.value)}
+                              value={row.contentItem}
+                              onChange={(e) => {
+                                // Content is read-only - managed through selection buttons
+                              }}
                               placeholder="Content..."
-                              className="text-sm"
+                              className="text-sm bg-gray-50"
+                              readOnly
                             />
                           </div>
                           
