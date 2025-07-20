@@ -1276,21 +1276,21 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }
       
       console.log('ChatWizard - selectTerm:', termValue, 'newSelectedTerm:', newCampaignData.selectedTerm);
+      
+      // Update the term selection display with the updated data
+      setTimeout(() => {
+        updateTermSelectionOptions(newCampaignData);
+      }, 100);
+      
       return newCampaignData;
     });
-    
-    // DON'T add user message here - just update the options
-    // Update the term selection display without summary message
-    setTimeout(() => {
-      updateTermSelectionOptions();
-    }, 100);
   };
 
-  const updateTermSelectionOptions = async () => {
-    const currentData = campaignData;
+  const updateTermSelectionOptions = async (currentData?: CampaignData) => {
+    const dataToUse = currentData || campaignData;
     
     // Show selected terms
-    const selectedTerms = Object.values(currentData.selectedTerm || {}).flat();
+    const selectedTerms = Object.values(dataToUse.selectedTerm || {}).flat();
     const uniqueTerms = [...new Set(selectedTerms)];
     
     // Get term suggestions for remaining options

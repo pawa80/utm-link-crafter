@@ -428,6 +428,12 @@ Changelog:
   - When adding to existing campaigns, Chat Wizard now preserves original tags while adding new tags (no duplicates)
   - New UTM links created through existing campaign updates maintain complete tag history from both sessions
   - Enhanced campaign tag management ensures no data loss when extending campaigns with additional tags
+- July 20, 2025. Chat Wizard term selection UI fix:
+  - Fixed critical term disappearing bug where selected terms would vanish from the UI after clicking
+  - Resolved stale closure issue in updateTermSelectionOptions function by passing updated campaign data directly
+  - Term selection now properly maintains all options visible with selected terms showing green background
+  - Enhanced selectTerm function to use current state data instead of potentially outdated component state
+  - Users can now select multiple terms without losing previously selected options from view
 
 ## User Preferences
 
