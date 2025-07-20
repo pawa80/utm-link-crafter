@@ -1752,7 +1752,8 @@ This will create ${(() => {
       accountId: user.accountId,
       campaignName: currentCampaignData.name,
       url: lp.url,
-      label: lp.label
+      label: lp.label,
+      isExistingCampaign: currentCampaignData.isExistingCampaign
     }));
 
     createCampaignMutation.mutate({

@@ -416,6 +416,12 @@ Changelog:
   - Custom content input works without affecting other content options
   - Enhanced campaign summary to show comprehensive details: mediums, content, and terms with clean display
   - Removed "Make Changes" button from campaign summary for cleaner interface
+- July 20, 2025. Chat Wizard existing campaign updates with different tags bug fix:
+  - Fixed critical issue where adding links to existing campaigns with different tags failed with "campaign name already exists" error
+  - Updated POST /api/campaign-landing-pages endpoint to accept isExistingCampaign parameter
+  - Modified duplicate campaign validation to skip duplicate checks when adding to existing campaigns
+  - Chat Wizard now properly passes isExistingCampaign flag when creating landing pages for existing campaigns
+  - Users can now successfully add UTM links with different tags to their existing campaigns through Chat Wizard
 
 ## User Preferences
 

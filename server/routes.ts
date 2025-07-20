@@ -588,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/campaign-landing-pages", authMiddleware, requirePermission('create_campaigns'), async (req: any, res) => {
     try {
-      const { url, campaignName } = req.body;
+      const { url, campaignName, isExistingCampaign } = req.body;
       
       // URL validation
       const urlValidation = validateUrl(url);
@@ -612,13 +612,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Campaign name must be 100 characters or less" });
       }
 
-      // Check for duplicate campaign names (only when creating new campaigns)
-      const existingLinks = await storage.getUserUtmLinks(req.user.id, 1000, 0);
-      const existingCampaigns = [...new Set(existingLinks.map(link => link.utm_campaign))];
-      const duplicateCheck = checkDuplicateCampaign(sanitizedCampaignName, existingCampaigns);
-      
-      if (duplicateCheck.isDuplicate) {
-        return res.status(400).json({ message: duplicateCheck.error });
+      // Only check for duplicate campaign names when creating NEW campaigns
+      if (!isExistingCampaign) {
+        const existingLinks = await storage.getUserUtmLinks(req.user.id, 1000, 0);
+        const existingCampaigns = [...new Set(existingLinks.map(link => link.utm_campaign))];
+        const duplicateCheck = checkDuplicateCampaign(sanitizedCampaignName, existingCampaigns);
+        
+        if (duplicateCheck.isDuplicate) {
+          return res.status(400).json({ message: duplicateCheck.error });
+        }
       }
 
       const landingPageData = insertCampaignLandingPageSchema.parse({
