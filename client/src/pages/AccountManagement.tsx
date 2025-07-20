@@ -150,11 +150,11 @@ export default function AccountManagement() {
     retry: 3,
   });
 
-  // Get account users for user's account
+  // Get account users for user's account - SIMPLIFIED FOR DEBUGGING
   const { data: accountUsers, isLoading: usersLoading, error: usersError } = useQuery<AccountUser[]>({
     queryKey: ["/api/accounts", userAccount?.accountId, "users"],
-    enabled: !!userAccount?.accountId && !!authUser,
-    retry: 3,
+    enabled: false, // DISABLE THIS QUERY FOR NOW
+    retry: false,
   });
 
   // Role permissions
@@ -317,7 +317,7 @@ export default function AccountManagement() {
     return <AuthScreen onAuthSuccess={() => window.location.reload()} />;
   }
 
-  if (accountError || usersError) {
+  if (accountError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
         <div className="max-w-7xl mx-auto">
@@ -334,11 +334,7 @@ export default function AccountManagement() {
                     Error: {accountError.message}
                   </p>
                 )}
-                {usersError && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Users Error: {usersError.message}
-                  </p>
-                )}
+
               </div>
               <div className="flex gap-2 justify-center">
                 <Button onClick={() => window.location.reload()} variant="default">

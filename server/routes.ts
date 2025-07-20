@@ -738,6 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountUsers = await storage.getAccountUsers(accountId);
       res.json(accountUsers);
     } catch (error: any) {
+      console.error("Error in /api/accounts/:id/users:", error);
       res.status(400).json({ message: error.message });
     }
   });
