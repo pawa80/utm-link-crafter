@@ -140,7 +140,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Function to fetch UTM content suggestions for source and medium
   const fetchUtmContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
     try {
-      const response = await apiRequest("GET", `/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+      const response = await apiRequest(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`, { method: "GET" });
+      if (!response.ok) {
+        console.error('Error fetching UTM content suggestions:', response.status);
+        return [];
+      }
       return response.json();
     } catch (error) {
       console.error('Error fetching UTM content suggestions:', error);
@@ -151,28 +155,28 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Rest of the existing mutations and functions...
   const createUtmLinkMutation = useMutation({
     mutationFn: async (linkData: any) => {
-      const response = await apiRequest("POST", "/api/utm-links", linkData);
+      const response = await apiRequest("/api/utm-links", { method: "POST", body: JSON.stringify(linkData) });
       return response.json();
     },
   });
 
   const deleteCampaignLinksMutation = useMutation({
     mutationFn: async (campaignName: string) => {
-      const response = await apiRequest("DELETE", `/api/utm-links/campaign/${encodeURIComponent(campaignName)}`);
+      const response = await apiRequest(`/api/utm-links/campaign/${encodeURIComponent(campaignName)}`, { method: "DELETE" });
       return response.json();
     },
   });
 
   const createSourceTemplateMutation = useMutation({
     mutationFn: async (templateData: any) => {
-      const response = await apiRequest("POST", "/api/source-templates", templateData);
+      const response = await apiRequest("/api/source-templates", { method: "POST", body: JSON.stringify(templateData) });
       return response.json();
     },
   });
 
   const updateSourceTemplateMutation = useMutation({
     mutationFn: async ({ templateId, updates }: { templateId: number; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/source-templates/${templateId}`, updates);
+      const response = await apiRequest(`/api/source-templates/${templateId}`, { method: "PATCH", body: JSON.stringify(updates) });
       return response.json();
     },
     onSuccess: () => {
@@ -182,8 +186,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   const createTagMutation = useMutation({
     mutationFn: async (tagData: any) => {
-      const response = await apiRequest("POST", "/api/tags", tagData);
+      const response = await apiRequest("/api/tags", { method: "POST", body: JSON.stringify(tagData) });
       return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tags"] });
     },
   });
 
