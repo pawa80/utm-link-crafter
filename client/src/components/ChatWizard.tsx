@@ -104,6 +104,17 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   };
 
+  // Create tag mutation
+  const createTagMutation = useMutation({
+    mutationFn: async (tagData: { name: string; userId: number; accountId: number }) => {
+      const response = await apiRequest("/api/tags", { method: "POST", body: JSON.stringify(tagData) });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tags"] });
+    },
+  });
+
   // Create campaign mutation
   const createCampaignMutation = useMutation({
     mutationFn: async (data: { utmLinks: any[], landingPages: any[] }) => {
@@ -322,19 +333,41 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       case 'tags':
         // Handle custom tag input
         if (!tags.find(tag => tag.name.toLowerCase() === value.toLowerCase())) {
-          setCampaignData(prev => ({
-            ...prev,
-            selectedTags: [...prev.selectedTags, value]
-          }));
-          setTimeout(() => {
-            addBotMessage(
-              `✅ Custom tag "${value}" added! Ready to review your campaign?`,
-              [
-                { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
-                { label: "Review Campaign", value: "review", action: () => showReview() }
-              ]
-            );
-          }, 500);
+          // Create the tag in the database first
+          createTagMutation.mutate({
+            name: value,
+            userId: user.id,
+            accountId: user.accountId
+          }, {
+            onSuccess: () => {
+              // Add to local campaign data after successful creation
+              setCampaignData(prev => ({
+                ...prev,
+                selectedTags: [...prev.selectedTags, value]
+              }));
+              setTimeout(() => {
+                addBotMessage(
+                  `✅ Custom tag "${value}" added! Ready to review your campaign?`,
+                  [
+                    { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
+                    { label: "Review Campaign", value: "review", action: () => showReview() }
+                  ]
+                );
+              }, 500);
+            },
+            onError: (error) => {
+              console.error('Failed to create tag:', error);
+              setTimeout(() => {
+                addBotMessage(
+                  "Failed to create tag. Please try again.",
+                  [],
+                  'tags',
+                  true,
+                  "Enter a new tag name"
+                );
+              }, 500);
+            }
+          });
         } else {
           setTimeout(() => {
             addBotMessage(
