@@ -23,9 +23,9 @@
   --secondary: 262 83% 58%; /* #7c3aed */
   --secondary-foreground: 0 0% 100%; /* White text on purple */
   
-  /* Accent: Cyan for CTAs (#06b6d4) */
-  --accent: 188 94% 42.7%; /* #06b6d4 */
-  --accent-foreground: 0 0% 100%; /* White text on cyan */
+  /* Accent: Blue for CTAs (matching primary) */
+  --accent: 217 91% 40%; /* #1e40af - same as primary */
+  --accent-foreground: 0 0% 100%; /* White text on blue */
   
   /* Success: Emerald Green (#10b981) */
   --success: 158 64% 52%; /* #10b981 */
@@ -47,7 +47,7 @@
   /* Chart colors using new palette */
   --chart-1: 217 91% 40%; /* Primary blue */
   --chart-2: 262 83% 58%; /* Secondary purple */
-  --chart-3: 188 94% 42.7%; /* Accent cyan */
+  --chart-3: 217 91% 40%; /* Accent blue (same as primary) */
   --chart-4: 158 64% 52%; /* Success green */
   --chart-5: 45 93% 47%; /* Warning amber */
 }
@@ -71,7 +71,7 @@
   --secondary: 262 83% 70%; /* Lighter purple for dark mode */
   --secondary-foreground: 210 24% 16%; /* Dark text */
   
-  --accent: 188 94% 60%; /* Lighter cyan for dark mode */
+  --accent: 217 91% 60%; /* Lighter blue for dark mode (matching primary) */
   --accent-foreground: 210 24% 16%; /* Dark text */
   
   --success: 158 64% 60%; /* Lighter green */
@@ -90,7 +90,7 @@
   /* Lighter chart colors for dark mode */
   --chart-1: 217 91% 60%;
   --chart-2: 262 83% 70%;
-  --chart-3: 188 94% 60%;
+  --chart-3: 217 91% 60%; /* Blue instead of cyan */
   --chart-4: 158 64% 60%;
   --chart-5: 45 93% 60%;
 }
