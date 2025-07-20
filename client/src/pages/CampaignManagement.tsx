@@ -97,6 +97,7 @@ export default function CampaignManagement() {
               <Button
                 variant={showArchived ? "default" : "outline"}
                 onClick={() => setShowArchived(!showArchived)}
+                className={!showArchived ? "hover:bg-primary hover:text-white" : ""}
               >
                 <Archive className="w-4 h-4 mr-2" />
                 {showArchived ? "Show Active" : "Show Archived"}
