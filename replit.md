@@ -343,6 +343,7 @@ Changelog:
   - Fixed tag persistence bug: Custom tags now properly saved to database via createTagMutation API call
   - Tags are created with proper userId and accountId for account isolation and persist across campaigns
   - Enhanced landing page input with clear URL format guidance (must include https://)
+  - FINAL FIX: Resolved tag display inconsistency between Chat Wizard and New Campaign page by correcting CampaignWizard useQuery format - both interfaces now properly display existing tags
 
 ## User Preferences
 
