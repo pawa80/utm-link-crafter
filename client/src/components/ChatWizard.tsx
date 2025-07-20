@@ -1212,8 +1212,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const termSuggestions = await fetchTermSuggestions();
       
       if (termSuggestions.length > 0) {
-        // Create clean, direct term options without lengthy explanations
-        const termOptions = termSuggestions.slice(0, 10).map(term => ({
+        // Create clean, direct term options without lengthy explanations - show ALL available terms
+        const termOptions = termSuggestions.map(term => ({
           label: term.termValue,
           value: term.termValue,
           action: () => selectTerm(term.termValue)
@@ -1313,10 +1313,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           isSelected: true
         }));
 
-        // Get remaining term options (not selected)
+        // Get remaining term options (not selected) - show ALL available terms
         const remainingTermOptions = termSuggestions
           .filter(term => !uniqueTerms.includes(term.termValue))
-          .slice(0, 6)
           .map(term => ({
             label: term.termValue,
             value: term.termValue,
