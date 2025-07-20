@@ -46,10 +46,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(existingUser);
       }
       
-      // Create user with their own account (company model)
+      // Create user with their own company account (Super Admin role automatically assigned)
+      const companyName = `${userData.email.split('@')[0]}'s Company`;
       const { user, account } = await storage.createUserWithAccount({
         firebaseUid: userData.firebaseUid,
         email: userData.email,
+        role: 'super_admin', // NEW: Explicitly set as Super Admin
         categories: userData.categories || [],
         defaultSources: userData.defaultSources || [],
         defaultMediums: userData.defaultMediums || [],
@@ -68,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customField3Name: userData.customField3Name,
         customField3InUrl: userData.customField3InUrl || false,
         customField3Options: userData.customField3Options
-      }, `${userData.email.split('@')[0]}'s Company`);
+      }, companyName);
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
