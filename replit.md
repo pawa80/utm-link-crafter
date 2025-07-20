@@ -401,6 +401,14 @@ Changelog:
   - Updated UTM link generation to include selected term parameter
   - Fixed missing user term templates by copying base templates to user accounts
   - Chat Wizard now supports complete 5-parameter UTM link creation with professional template suggestions
+- July 20, 2025. Chat Wizard Term Selection UX improvements:
+  - Rebuilt term selection to support multiple term selection (like sources/mediums)
+  - Each selected term creates separate UTM link variations for comprehensive tracking
+  - Removed lengthy term presentation - now shows direct clickable options without descriptions
+  - Fixed term disappearing issue - selected terms stay visible with checkmarks
+  - Clean, streamlined interface: "Select UTM terms for tracking (choose multiple if needed)"
+  - Enhanced visual feedback with selected terms showing checkmarks and remaining options available
+  - Multiple terms generate multiplication of UTM links (2 terms × 2 content = 4 links per landing page)
 
 ## User Preferences
 

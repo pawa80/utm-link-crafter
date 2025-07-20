@@ -1097,37 +1097,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const termSuggestions = await fetchTermSuggestions();
       
       if (termSuggestions.length > 0) {
-        // Group suggestions by category for better organization
-        const termsByCategory = termSuggestions.reduce((acc: {[key: string]: any[]}, term) => {
-          const category = term.category || 'general';
-          if (!acc[category]) acc[category] = [];
-          acc[category].push(term);
-          return acc;
-        }, {});
-
-        let termMessage = "🎯 Great! Now let's add UTM terms for better tracking. Here are some suggestions organized by category:\n\n";
-        
-        Object.entries(termsByCategory).forEach(([category, categoryTerms]) => {
-          const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
-          termMessage += `**${categoryTitle}:**\n`;
-          categoryTerms.forEach(term => {
-            const description = term.description ? ` (${term.description})` : '';
-            termMessage += `• ${term.termValue}${description}\n`;
-          });
-          termMessage += '\n';
-        });
-
-        termMessage += "💡 **Tip:** UTM terms help track specific keywords, audiences, or A/B test variations. You can also skip this step if terms aren't needed for your campaign.";
-
-        // Create term options grouped by category
-        const termOptions = termSuggestions.slice(0, 8).map(term => ({
-          label: `${term.termValue}${term.description ? ` - ${term.description}` : ''}`,
+        // Create clean, direct term options without lengthy explanations
+        const termOptions = termSuggestions.slice(0, 10).map(term => ({
+          label: term.termValue,
           value: term.termValue,
           action: () => selectTerm(term.termValue)
         }));
 
         addBotMessage(
-          termMessage,
+          "🎯 Select UTM terms for tracking (choose multiple if needed):",
           [
             ...termOptions,
             { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
@@ -1137,7 +1115,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         );
       } else {
         addBotMessage(
-          "Would you like to add UTM terms for tracking specific keywords or audience segments?",
+          "Would you like to add UTM terms for tracking?",
           [
             { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
             { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
@@ -1148,7 +1126,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     } catch (error) {
       console.error('Error fetching term suggestions:', error);
       addBotMessage(
-        "Would you like to add UTM terms for tracking specific keywords or audience segments?",
+        "Would you like to add UTM terms for tracking?",
         [
           { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
           { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
@@ -1230,12 +1208,12 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           isSelected: true
         }));
 
-        // Get remaining term options (not selected)
+        // Get remaining term options (not selected) - clean labels without descriptions
         const remainingTermOptions = termSuggestions
           .filter(term => !uniqueTerms.includes(term.termValue))
-          .slice(0, 4) // Limit remaining options
+          .slice(0, 6) // Show more remaining options
           .map(term => ({
-            label: `${term.termValue}${term.description ? ` - ${term.description}` : ''}`,
+            label: term.termValue,
             value: term.termValue,
             action: () => selectTerm(term.termValue)
           }));
