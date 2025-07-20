@@ -143,14 +143,17 @@ export default function AccountManagement() {
   }, []);
 
   // Get user's account (single account)
-  const { data: userAccount, isLoading: accountsLoading } = useQuery<UserAccount>({
+  const { data: userAccount, isLoading: accountsLoading, error: accountError } = useQuery<UserAccount>({
     queryKey: ["/api/user/account"],
+    enabled: !!authUser && !!user,
+    retry: 3,
   });
 
   // Get account users for user's account
-  const { data: accountUsers, isLoading: usersLoading } = useQuery<AccountUser[]>({
+  const { data: accountUsers, isLoading: usersLoading, error: usersError } = useQuery<AccountUser[]>({
     queryKey: ["/api/accounts", userAccount?.accountId, "users"],
-    enabled: !!userAccount?.accountId,
+    enabled: !!userAccount?.accountId && !!authUser,
+    retry: 3,
   });
 
   // Role permissions
@@ -301,6 +304,29 @@ export default function AccountManagement() {
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading account information...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accountError || usersError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <UTMBuilderLogo />
+          </div>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="text-red-600 mb-4">
+                <h2 className="text-xl font-semibold">Authentication Error</h2>
+                <p className="text-gray-600 mt-2">Please sign in again to continue</p>
+              </div>
+              <Button onClick={() => setLocation("/")} variant="outline">
+                Return to Home
+              </Button>
             </div>
           </div>
         </div>

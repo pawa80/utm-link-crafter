@@ -23,6 +23,7 @@ const authMiddleware = async (req: any, res: any, next: any) => {
   
   const user = await storage.getUserByFirebaseUid(firebaseUid as string);
   if (!user) {
+    console.log(`User not found for Firebase UID: ${firebaseUid}`);
     return res.status(401).json({ message: "User not found" });
   }
   
