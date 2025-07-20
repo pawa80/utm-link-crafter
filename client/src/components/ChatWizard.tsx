@@ -26,6 +26,7 @@ interface ChatMessage {
   showInput?: boolean;
   inputPlaceholder?: string;
   onInput?: (value: string) => void;
+  autoFocus?: boolean;
 }
 
 interface CampaignData {
@@ -59,6 +60,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const [isTyping, setIsTyping] = useState(false);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -213,6 +215,14 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   useEffect(() => {
     scrollToBottom();
+    
+    // Auto-focus input when a message with autoFocus is added
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.autoFocus && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 1200); // Focus after the typing animation completes
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -258,7 +268,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, [existingCampaignsQuery.data, existingCampaignsQuery.isLoading, currentStep, messages]);
 
-  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", step?: string) => {
+  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", autoFocus = false, step?: string) => {
     setIsTyping(true);
     setTimeout(() => {
       const newMessage: ChatMessage = {
@@ -270,6 +280,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         showInput,
         inputPlaceholder,
         onInput: showInput ? handleUserInput : undefined,
+        autoFocus,
         step,
         isBot: true
       };
@@ -502,7 +513,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       [],
       'campaign-name',
       true,
-      "Enter campaign name (e.g., 'Summer Sale 2025')"
+      "Enter campaign name (e.g., 'Summer Sale 2025')",
+      true // Auto-focus the input field
     );
   };
 
@@ -1722,6 +1734,7 @@ This will create ${(() => {
           <div className="flex-shrink-0 p-4 border-t">
             <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
                 placeholder="Type your message..."
