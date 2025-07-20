@@ -345,8 +345,49 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           contentInputs: { ...prev.contentInputs, [contentKey]: value }
         }));
         setTimeout(() => {
-          showTagSelection();
+          showTermSelection();
         }, 500);
+        break;
+
+      case 'terms':
+        // Handle custom term input - validate and apply to all source-medium combinations
+        const sanitizedTerm = value.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, '');
+        if (sanitizedTerm) {
+          const newSelectedTerm: { [key: string]: string } = {};
+          
+          for (const source of campaignData.selectedSources) {
+            const mediums = campaignData.selectedMediums[source] || [];
+            for (const medium of mediums) {
+              const key = `${source}-${medium}`;
+              newSelectedTerm[key] = sanitizedTerm;
+            }
+          }
+          
+          setCampaignData(prev => ({
+            ...prev,
+            selectedTerm: newSelectedTerm
+          }));
+          
+          setTimeout(() => {
+            addBotMessage(
+              `✅ Custom UTM term "${sanitizedTerm}" applied to all campaign variations! Ready to add tags?`,
+              [
+                { label: "Change Term", value: "change-term", action: () => showTermSelection() },
+                { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
+              ]
+            );
+          }, 500);
+        } else {
+          setTimeout(() => {
+            addBotMessage(
+              "Please enter a valid term using only letters, numbers, hyphens, and underscores:",
+              [],
+              'terms',
+              true,
+              "Enter term value (e.g., 'summer-sale', 'mobile-users')"
+            );
+          }, 500);
+        }
         break;
 
       case 'tags':
@@ -1019,7 +1060,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addBotMessage(
       contentSummary,
       [
-        { label: "Continue with Selected Content", value: "continue", action: () => showTagSelection(), isPrimary: true },
+        { label: "Continue with Selected Content", value: "continue", action: () => showTermSelection(), isPrimary: true },
         { label: "Modify Content Selection", value: "modify", action: () => showContentModification() }
       ],
       'content'
@@ -1036,8 +1077,117 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     addBotMessage(
       "Content modification will be available in a future update. For now, you can continue with the auto-selected content.",
       [
-        { label: "Continue with Auto-Selected Content", value: "continue", action: () => showTagSelection(), isPrimary: true }
+        { label: "Continue with Auto-Selected Content", value: "continue", action: () => showTermSelection(), isPrimary: true }
       ]
+    );
+  };
+
+  const showTermSelection = async () => {
+    setCurrentStep('terms');
+    
+    try {
+      const termSuggestions = await fetchTermSuggestions();
+      
+      if (termSuggestions.length > 0) {
+        // Group suggestions by category for better organization
+        const termsByCategory = termSuggestions.reduce((acc: {[key: string]: any[]}, term) => {
+          const category = term.category || 'general';
+          if (!acc[category]) acc[category] = [];
+          acc[category].push(term);
+          return acc;
+        }, {});
+
+        let termMessage = "🎯 Great! Now let's add UTM terms for better tracking. Here are some suggestions organized by category:\n\n";
+        
+        Object.entries(termsByCategory).forEach(([category, categoryTerms]) => {
+          const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+          termMessage += `**${categoryTitle}:**\n`;
+          categoryTerms.forEach(term => {
+            const description = term.description ? ` (${term.description})` : '';
+            termMessage += `• ${term.termValue}${description}\n`;
+          });
+          termMessage += '\n';
+        });
+
+        termMessage += "💡 **Tip:** UTM terms help track specific keywords, audiences, or A/B test variations. You can also skip this step if terms aren't needed for your campaign.";
+
+        // Create term options grouped by category
+        const termOptions = termSuggestions.slice(0, 8).map(term => ({
+          label: `${term.termValue}${term.description ? ` - ${term.description}` : ''}`,
+          value: term.termValue,
+          action: () => selectTerm(term.termValue)
+        }));
+
+        addBotMessage(
+          termMessage,
+          [
+            ...termOptions,
+            { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
+            { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
+          ],
+          'terms'
+        );
+      } else {
+        addBotMessage(
+          "Would you like to add UTM terms for tracking specific keywords or audience segments?",
+          [
+            { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
+            { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
+          ],
+          'terms'
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching term suggestions:', error);
+      addBotMessage(
+        "Would you like to add UTM terms for tracking specific keywords or audience segments?",
+        [
+          { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
+          { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
+        ],
+        'terms'
+      );
+    }
+  };
+
+  const selectTerm = (termValue: string) => {
+    // Apply the same term to all source-medium combinations
+    const newSelectedTerm: { [key: string]: string } = {};
+    
+    for (const source of campaignData.selectedSources) {
+      const mediums = campaignData.selectedMediums[source] || [];
+      for (const medium of mediums) {
+        const key = `${source}-${medium}`;
+        newSelectedTerm[key] = termValue;
+      }
+    }
+    
+    setCampaignData(prev => ({
+      ...prev,
+      selectedTerm: newSelectedTerm
+    }));
+    
+    addUserMessage(termValue);
+    
+    setTimeout(() => {
+      addBotMessage(
+        `✅ UTM term "${termValue}" selected for all your campaign variations! Ready to add tags?`,
+        [
+          { label: "Change Term", value: "change-term", action: () => showTermSelection() },
+          { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
+        ],
+        'terms'
+      );
+    }, 500);
+  };
+
+  const promptForCustomTerm = () => {
+    addBotMessage(
+      "Enter your custom UTM term (e.g., 'summer-sale', 'mobile-users', 'test-a'):",
+      [],
+      'terms',
+      true,
+      "Enter term value (letters, numbers, hyphens, underscores)"
     );
   };
 
@@ -1156,16 +1306,16 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         // Create UTM links for each content variation
         for (const content of contentOptions) {
           for (const landingPage of campaignData.landingPages) {
-            const utmParams = {
-              targetUrl: landingPage.url,
-              utm_campaign: campaignData.name,
-              utm_source: source,
-              utm_medium: medium,
-              utm_content: content,
-              utm_term: ''
-            };
-
-            const fullUtmLink = generateUTMLink(utmParams);
+            const selectedTermForKey = campaignData.selectedTerm[contentKey] || '';
+            
+            const fullUtmLink = generateUTMLink(
+              landingPage.url,
+              source,
+              medium, 
+              campaignData.name,
+              content,
+              selectedTermForKey
+            );
             linksBySource[source].push({
               fullUtmLink,
               utm_medium: medium,
@@ -1329,16 +1479,16 @@ This will create ${(() => {
         // Create UTM links for each content variation
         for (const content of contentOptions) {
           for (const landingPage of currentCampaignData.landingPages) {
-            const utmParams = {
-              targetUrl: landingPage.url,
-              utm_campaign: currentCampaignData.name,
-              utm_source: source,
-              utm_medium: medium,
-              utm_content: content,
-              utm_term: ''
-            };
-
-            const fullUtmLink = generateUTMLink(utmParams);
+            const selectedTermForKey = currentCampaignData.selectedTerm[contentKey] || '';
+            
+            const fullUtmLink = generateUTMLink(
+              landingPage.url,
+              source,
+              medium, 
+              currentCampaignData.name,
+              content,
+              selectedTermForKey
+            );
             
             utmLinks.push({
               userId: user.id,
@@ -1349,7 +1499,7 @@ This will create ${(() => {
               utm_source: source,
               utm_medium: medium,
               utm_content: content,
-              utm_term: '',
+              utm_term: selectedTermForKey,
               tags: currentCampaignData.selectedTags
             });
           }
