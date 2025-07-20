@@ -245,10 +245,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         [contentKey]: suggestions
       }));
       
-      toast({
-        title: "UTM Content Added",
-        description: `Auto-populated ${suggestions.length} content suggestions for ${sourceName} ${medium}. Remove unwanted rows if needed.`,
-      });
+      // Silently auto-populate content - no toast notification needed
     }
   };
 
