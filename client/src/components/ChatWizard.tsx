@@ -1469,7 +1469,10 @@ This will create ${(() => {
     mediums.forEach(medium => {
       const key = `${source}-${medium}`;
       const contentVariations = currentData.selectedContent[key] || ['default'];
-      totalLinks += contentVariations.length * currentData.landingPages.length;
+      const termVariations = currentData.selectedTerm?.[key] || [''];  // Include terms in calculation
+      
+      // Each combination of content × term × landing page creates a separate UTM link
+      totalLinks += contentVariations.length * termVariations.length * currentData.landingPages.length;
     });
   });
   return totalLinks;
