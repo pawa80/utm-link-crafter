@@ -1601,3 +1601,398 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     </div>
   );
 }
+                          Copy Source Links
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50 border-b">
+                            {landingPages.length > 0 && (
+                              <th 
+                                className="text-left p-3 text-sm font-medium text-gray-700 w-40 cursor-pointer hover:bg-gray-100 select-none"
+                                onClick={() => handleColumnSort(sourceName, 'landingPage')}
+                              >
+                                <div className="flex items-center">
+                                  Landing Page
+                                  {sortConfig[sourceName]?.column === 'landingPage' && (
+                                    sortConfig[sourceName].direction === 'asc' ? 
+                                      <ChevronUp className="w-4 h-4 ml-1" /> : 
+                                      <ChevronDown className="w-4 h-4 ml-1" />
+                                  )}
+                                </div>
+                              </th>
+                            )}
+                            <th 
+                              className="text-left p-3 text-sm font-medium text-gray-700 w-24 cursor-pointer hover:bg-gray-100 select-none"
+                              onClick={() => handleColumnSort(sourceName, 'medium')}
+                            >
+                              <div className="flex items-center">
+                                Medium
+                                {sortConfig[sourceName]?.column === 'medium' && (
+                                  sortConfig[sourceName].direction === 'asc' ? 
+                                    <ChevronUp className="w-4 h-4 ml-1" /> : 
+                                    <ChevronDown className="w-4 h-4 ml-1" />
+                                )}
+                              </div>
+                            </th>
+                            <th 
+                              className="text-left p-3 text-sm font-medium text-gray-700 w-56 cursor-pointer hover:bg-gray-100 select-none"
+                              onClick={() => handleColumnSort(sourceName, 'content')}
+                            >
+                              <div className="flex items-center">
+                                Content
+                                {sortConfig[sourceName]?.column === 'content' && (
+                                  sortConfig[sourceName].direction === 'asc' ? 
+                                    <ChevronUp className="w-4 h-4 ml-1" /> : 
+                                    <ChevronDown className="w-4 h-4 ml-1" />
+                                )}
+                              </div>
+                            </th>
+                            <th className="text-left p-3 text-sm font-medium text-gray-700 w-60">Link name</th>
+                            <th className="text-left p-3 text-sm font-medium text-gray-700">UTM Link</th>
+                            <th className="text-center p-3 text-sm font-medium text-gray-700 w-16">Remove</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getSortedTableRows(sourceName, state).map((row) => (
+                            <tr key={row.key} className="border-b last:border-b-0 hover:bg-gray-50">
+                              {landingPages.length > 0 && (
+                                <td className="p-3">
+                                  <Select
+                                    value={row.selectedLandingPageId || ""}
+                                    onValueChange={(value) => {
+                                      const rowKey = `${sourceName}-${row.medium}-${row.contentItem}-${row.termItem}`;
+                                      setSourceStates(prev => ({
+                                        ...prev,
+                                        [sourceName]: {
+                                          ...prev[sourceName],
+                                          landingPageSelections: {
+                                            ...prev[sourceName].landingPageSelections,
+                                            [rowKey]: value
+                                          }
+                                        }
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full h-8 text-xs">
+                                      <SelectValue placeholder="Choose page" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {landingPages.map((lp) => (
+                                        <SelectItem key={lp.id} value={lp.id}>
+                                          {lp.url}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                              )}
+                              <td className="p-3">
+                                <span className="text-sm font-medium text-gray-700">{row.medium}</span>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={row.contentItem}
+                                    onChange={(e) => {
+                                      // This is now read-only since content comes from selections
+                                      // You can't edit individual content items in the table
+                                    }}
+                                    placeholder="Content..."
+                                    className="text-sm flex-1 bg-gray-50"
+                                    readOnly
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // No longer adding variants here - content comes from selection
+                                    }}
+                                    className="flex-shrink-0"
+                                    disabled
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="text-sm text-gray-600">{row.linkName}</div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs font-mono text-gray-500 break-all flex-1">
+                                    {row.utmLink}
+                                  </div>
+                                  {row.utmLink && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(row.utmLink);
+                                        toast({
+                                          title: "Copied!",
+                                          description: "UTM link copied to clipboard",
+                                        });
+                                      }}
+                                      className="flex-shrink-0"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Remove functionality disabled - content managed through selection buttons
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {getSortedTableRows(sourceName, state).map((row) => (
+                        <div key={row.key} className="bg-white border rounded-lg p-4 space-y-3">
+                          {landingPages.length > 0 && (
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">Landing Page</Label>
+                              <Select
+                                value={row.selectedLandingPageId || ""}
+                                onValueChange={(value) => {
+                                  const rowKey = `${sourceName}-${row.medium}-${row.contentItem}-${row.termItem}`;
+                                  setSourceStates(prev => ({
+                                    ...prev,
+                                    [sourceName]: {
+                                      ...prev[sourceName],
+                                      landingPageSelections: {
+                                        ...prev[sourceName].landingPageSelections,
+                                        [rowKey]: value
+                                      }
+                                    }
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Choose page" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {landingPages.map((lp) => (
+                                    <SelectItem key={lp.id} value={lp.id}>
+                                      {lp.url}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Medium</Label>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                {row.medium}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  // Add functionality disabled - content managed through selection buttons
+                                }}
+                                className="flex-shrink-0"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Content</Label>
+                            <Input
+                              value={row.contentItem}
+                              onChange={(e) => {
+                                // Content is read-only - managed through selection buttons
+                              }}
+                              placeholder="Content..."
+                              className="text-sm bg-gray-50"
+                              readOnly
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Link Name</Label>
+                            <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {row.linkName}
+                            </div>
+                          </div>
+                          
+                          {row.utmLink && (
+                            <div>
+                              <Label className="text-xs text-gray-600 mb-1 block">UTM Link</Label>
+                              <div className="flex items-center gap-2">
+                                <div className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded flex-1 break-all">
+                                  {row.utmLink}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(row.utmLink);
+                                    toast({
+                                      title: "Copied!",
+                                      description: "UTM link copied to clipboard",
+                                    });
+                                  }}
+                                  className="flex-shrink-0"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+              {/* Save Button */}
+              {getCheckedSourcesWithContent().length > 0 && (
+                <div className="flex justify-end pt-6 border-t">
+                  <Button
+                    onClick={async () => {
+                      // In edit mode, first delete existing campaign links using original name
+                      if (editMode && existingCampaignData.length > 0) {
+                        try {
+                          await deleteCampaignLinksMutation.mutateAsync(originalCampaignName);
+                        } catch (error) {
+                          console.error("Failed to delete existing campaign links:", error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to update campaign. Please try again.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                      }
+                      
+                      // First, save landing pages if any exist
+                      if (landingPages.length > 0) {
+                        try {
+                          // Delete existing landing pages for this campaign using original name
+                          await apiRequest("DELETE", `/api/campaign-landing-pages/${editMode ? originalCampaignName : campaignName}`);
+                          
+                          // Save new landing pages
+                          for (const landingPage of landingPages) {
+                            if (landingPage.url.trim()) {
+                              await apiRequest("POST", "/api/campaign-landing-pages", {
+                                campaignName,
+                                url: landingPage.url,
+                                label: landingPage.url // Use URL as label for simplicity
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          console.error("Failed to save landing pages:", error);
+                        }
+                      }
+                      
+                      // Save all valid combinations to database
+                      const validSources = getCheckedSourcesWithContent();
+                      
+                      let successCount = 0;
+                      
+                      for (const source of validSources) {
+                        try {
+                          // Get the actual target URL used for this specific link
+                          const actualTargetUrl = source.utmLink ? 
+                            (() => {
+                              try {
+                                const url = new URL(source.utmLink);
+                                return url.origin + url.pathname;
+                              } catch {
+                                return targetUrl || '';
+                              }
+                            })() : 
+                            (targetUrl || '');
+                          
+                          await createUtmLinkMutation.mutateAsync({
+                            userId: user.id,
+                            targetUrl: actualTargetUrl,
+                            utm_campaign: campaignName,
+                            utm_source: source.sourceName.toLowerCase(),
+                            utm_medium: source.medium,
+                            utm_content: source.content,
+                            fullUtmLink: source.utmLink,
+                            tags: selectedTags
+                          });
+                          successCount++;
+                        } catch (error) {
+                          console.error("Failed to save link:", error);
+                        }
+                      }
+                      
+                      if (successCount > 0) {
+                        // Invalidate specific cache to refresh campaign data
+                        await queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+                        
+                        toast({
+                          title: "Success",
+                          description: editMode 
+                            ? `Updated ${successCount} UTM links successfully`
+                            : `Generated ${successCount} UTM links successfully`,
+                        });
+                        
+                        // Navigate after cache invalidation
+                        if (onSaveSuccess) {
+                          onSaveSuccess();
+                        }
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Failed to generate UTM links. Please check your inputs.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={!campaignName.trim() || !hasValidUrl() || getCheckedSourcesWithContent().length === 0}
+                  >
+                    {editMode ? "Update Campaign" : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
+                  </Button>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {Object.entries(sourceStates).filter(([, state]) => state.checked && state.selectedMediums.length > 0).length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-500 mb-2">No sources and mediums selected</div>
+                  <div className="text-sm text-gray-400">
+                    Please select sources and mediums in the previous section.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+      </Card>
+    </div>
+  );
+}
