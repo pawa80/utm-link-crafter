@@ -1563,6 +1563,44 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 **Name:** ${currentData.name}
 **Landing Pages:** ${currentData.landingPages.map(lp => lp.url).join(', ')}
 **Sources:** ${currentData.selectedSources.join(', ')}
+**Mediums:** ${(() => {
+  const allMediums = [];
+  currentData.selectedSources.forEach(source => {
+    const mediums = currentData.selectedMediums[source] || [];
+    mediums.forEach(medium => {
+      allMediums.push(`${source} → ${medium}`);
+    });
+  });
+  return allMediums.length > 0 ? allMediums.join(', ') : 'None';
+})()}
+**Content:** ${(() => {
+  const allContent = [];
+  currentData.selectedSources.forEach(source => {
+    const mediums = currentData.selectedMediums[source] || [];
+    mediums.forEach(medium => {
+      const key = `${source}-${medium}`;
+      const content = currentData.selectedContent[key] || [];
+      if (content.length > 0) {
+        allContent.push(...content.map(c => `${source}-${medium}: ${c}`));
+      }
+    });
+  });
+  return allContent.length > 0 ? allContent.join(', ') : 'None';
+})()}
+**Terms:** ${(() => {
+  const allTerms = [];
+  currentData.selectedSources.forEach(source => {
+    const mediums = currentData.selectedMediums[source] || [];
+    mediums.forEach(medium => {
+      const key = `${source}-${medium}`;
+      const terms = currentData.selectedTerm?.[key] || [];
+      if (terms.length > 0) {
+        allTerms.push(...terms.map(t => `${source}-${medium}: ${t}`));
+      }
+    });
+  });
+  return allTerms.length > 0 ? allTerms.join(', ') : 'None';
+})()}
 **Tags:** ${currentData.selectedTags.length > 0 ? currentData.selectedTags.join(', ') : 'None'}
 
 This will create ${(() => {
