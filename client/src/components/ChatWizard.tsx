@@ -1117,7 +1117,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         }));
 
         addBotMessage(
-          "🎯 Select UTM terms for tracking (choose multiple if needed):",
+          "🎯 Select terms for tracking (choose multiple if needed):",
           [
             ...termOptions,
             { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
@@ -1127,7 +1127,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         );
       } else {
         addBotMessage(
-          "Would you like to add UTM terms for tracking?",
+          "Would you like to add terms for tracking?",
           [
             { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
             { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
@@ -1138,7 +1138,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     } catch (error) {
       console.error('Error fetching term suggestions:', error);
       addBotMessage(
-        "Would you like to add UTM terms for tracking?",
+        "Would you like to add terms for tracking?",
         [
           { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
           { label: "Skip Terms", value: "skip-terms", action: () => showTagSelection() }
@@ -1196,15 +1196,15 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Find and update the last term selection message
     setMessages(prevMessages => {
       const lastTermIndex = prevMessages.findLastIndex(msg => 
-        msg.type === 'bot' && msg.content.includes('Select UTM terms')
+        msg.type === 'bot' && msg.content.includes('Select terms')
       );
       
       if (lastTermIndex >= 0) {
         const updatedMessages = [...prevMessages];
         
-        // Create new options showing selected terms with checkmarks
+        // Create new options showing selected terms without checkmarks
         const selectedOptions = uniqueTerms.map(term => ({
-          label: `✓ ${term}`,
+          label: term,
           value: term,
           action: () => {}, // No action for selected terms
           isSelected: true
@@ -1242,7 +1242,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     const uniqueTerms = [...new Set(selectedTerms)];
     
     if (uniqueTerms.length > 0) {
-      addBotMessage(`✅ Selected UTM terms: ${uniqueTerms.join(', ')}.`);
+      addUserMessage(`Selected terms: ${uniqueTerms.join(', ')}`);
     }
     
     setTimeout(() => {
@@ -1252,7 +1252,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
   const promptForCustomTerm = () => {
     addBotMessage(
-      "Enter your custom UTM term (e.g., 'summer-sale', 'mobile-users', 'test-a'):",
+      "Enter your custom term (e.g., 'summer-sale', 'mobile-users', 'test-a'):",
       [],
       'terms',
       true,
