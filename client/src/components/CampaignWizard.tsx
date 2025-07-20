@@ -1600,11 +1600,32 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           <Button
             onClick={async () => {
               try {
+                console.log("Starting campaign save...");
+                console.log("Campaign name:", campaignName);
+                console.log("Landing pages:", landingPages);
+                console.log("Target URL:", targetUrl);
+                
+                // Check what links we're trying to save
+                const linksToSave = getCheckedSourcesWithContent();
+                console.log("Links to save:", linksToSave);
+                console.log("Number of links to save:", linksToSave.length);
+                
+                if (linksToSave.length === 0) {
+                  toast({
+                    title: "No Links to Save",
+                    description: "Please select at least one source with content to create UTM links.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
                 // First, save landing pages if any exist
                 if (landingPages.length > 0) {
+                  console.log("Deleting existing landing pages...");
                   // Delete existing landing pages for this campaign
                   await apiRequest("DELETE", `/api/campaign-landing-pages/${campaignName}`);
                   
+                  console.log("Saving new landing pages...");
                   // Save new landing pages
                   for (const landingPage of landingPages) {
                     if (landingPage.url.trim()) {
@@ -1618,7 +1639,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 }
                 
                 // Save all UTM links
-                const linksToSave = getCheckedSourcesWithContent();
                 let successCount = 0;
                 
                 for (const link of linksToSave) {
