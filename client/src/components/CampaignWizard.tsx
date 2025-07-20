@@ -134,10 +134,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   const { data: tags = [] } = useQuery({
     queryKey: ["/api/tags"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/tags");
-      return response.json();
-    },
   });
 
   // Fetch unique URLs for autocomplete
