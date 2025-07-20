@@ -1564,42 +1564,38 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 **Landing Pages:** ${currentData.landingPages.map(lp => lp.url).join(', ')}
 **Sources:** ${currentData.selectedSources.join(', ')}
 **Mediums:** ${(() => {
-  const allMediums = [];
+  const allMediums = new Set();
   currentData.selectedSources.forEach(source => {
     const mediums = currentData.selectedMediums[source] || [];
     mediums.forEach(medium => {
-      allMediums.push(`${source} → ${medium}`);
+      allMediums.add(medium);
     });
   });
-  return allMediums.length > 0 ? allMediums.join(', ') : 'None';
+  return allMediums.size > 0 ? Array.from(allMediums).join(', ') : 'None';
 })()}
 **Content:** ${(() => {
-  const allContent = [];
+  const allContent = new Set();
   currentData.selectedSources.forEach(source => {
     const mediums = currentData.selectedMediums[source] || [];
     mediums.forEach(medium => {
       const key = `${source}-${medium}`;
       const content = currentData.selectedContent[key] || [];
-      if (content.length > 0) {
-        allContent.push(...content.map(c => `${source}-${medium}: ${c}`));
-      }
+      content.forEach(c => allContent.add(c));
     });
   });
-  return allContent.length > 0 ? allContent.join(', ') : 'None';
+  return allContent.size > 0 ? Array.from(allContent).join(', ') : 'None';
 })()}
 **Terms:** ${(() => {
-  const allTerms = [];
+  const allTerms = new Set();
   currentData.selectedSources.forEach(source => {
     const mediums = currentData.selectedMediums[source] || [];
     mediums.forEach(medium => {
       const key = `${source}-${medium}`;
       const terms = currentData.selectedTerm?.[key] || [];
-      if (terms.length > 0) {
-        allTerms.push(...terms.map(t => `${source}-${medium}: ${t}`));
-      }
+      terms.forEach(t => allTerms.add(t));
     });
   });
-  return allTerms.length > 0 ? allTerms.join(', ') : 'None';
+  return allTerms.size > 0 ? Array.from(allTerms).join(', ') : 'None';
 })()}
 **Tags:** ${currentData.selectedTags.length > 0 ? currentData.selectedTags.join(', ') : 'None'}
 
