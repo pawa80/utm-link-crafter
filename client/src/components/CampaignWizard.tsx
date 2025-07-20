@@ -1510,45 +1510,59 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   </div>
                 </div>
                 
-                {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="text-left p-3 text-sm font-medium text-gray-700" style={{width: '1fr'}}>Landing Page</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-32">Medium</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-32">Content</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-32">Term</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-48">Link name</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700" style={{width: '1fr'}}>UTM Link</th>
-                        <th className="text-center p-3 text-sm font-medium text-gray-700 w-20">Copy</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sourceLinks.map((link: any, index: number) => (
-                        <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50">
-                          <td className="p-3 break-words text-sm">{landingPages.length > 0 ? landingPages[0].url : targetUrl}</td>
-                          <td className="p-3 text-sm">{link.medium}</td>
-                          <td className="p-3 text-sm">{link.content}</td>
-                          <td className="p-3 text-sm">{link.term || '—'}</td>
-                          <td className="p-3 text-sm">{campaignName} - {link.sourceName} - {link.medium}</td>
-                          <td className="p-3 break-words text-sm font-mono text-blue-600">{link.utmLink}</td>
-                          <td className="p-3 text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(link.utmLink);
-                                toast({ title: "Link copied to clipboard" });
-                              }}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Desktop View - Two-line structure like Campaign Management page */}
+                <div className="hidden md:block">
+                  {/* Headers */}
+                  <div className="mb-2 px-3">
+                    {/* First line: Landing Page, Medium, Content, Term */}
+                    <div className="grid gap-4 mb-1" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
+                      <span className="text-sm font-medium text-gray-700">Landing Page</span>
+                      <span className="text-sm font-medium text-gray-700">Medium</span>
+                      <span className="text-sm font-medium text-gray-700">Content</span>
+                      <span className="text-sm font-medium text-gray-700">Term</span>
+                    </div>
+                    {/* Second line: Link name, UTM Link, Actions */}
+                    <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
+                      <span className="text-sm font-medium text-gray-700">Link name</span>
+                      <span className="text-sm font-medium text-gray-700">UTM Link</span>
+                      <span className="text-sm font-medium text-gray-700"></span>
+                    </div>
+                  </div>
+                  
+                  {/* Links Data */}
+                  {sourceLinks.map((link: any, index: number) => (
+                    <div key={index} className="border-b last:border-b-0 py-3 px-3 hover:bg-gray-50">
+                      {/* First line: Landing Page, Medium, Content, Term */}
+                      <div className="grid gap-4 mb-2 items-center" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
+                        <span className="text-sm break-words">{landingPages.length > 0 ? landingPages[0].url : targetUrl}</span>
+                        <span className="text-sm">{link.medium}</span>
+                        <span className="text-sm">{link.content}</span>
+                        <span className="text-sm">{link.term || '—'}</span>
+                      </div>
+                      {/* Second line: Link name, UTM Link, Actions */}
+                      <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
+                        <input
+                          value={`${campaignName} - ${link.sourceName} - ${link.medium} - ${link.content}${link.term ? ' - ' + link.term : ''}`}
+                          readOnly
+                          className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
+                        />
+                        <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full font-mono text-blue-600">
+                          {link.utmLink}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(link.utmLink);
+                            toast({ title: "Link copied to clipboard" });
+                          }}
+                          className="w-full mt-1"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Mobile View */}
