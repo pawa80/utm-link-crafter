@@ -1189,7 +1189,18 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 **Sources:** ${currentData.selectedSources.join(', ')}
 **Tags:** ${currentData.selectedTags.length > 0 ? currentData.selectedTags.join(', ') : 'None'}
 
-This will create ${currentData.selectedSources.length * currentData.landingPages.length} UTM link(s) for your campaign.
+This will create ${(() => {
+  let totalLinks = 0;
+  currentData.selectedSources.forEach(source => {
+    const mediums = currentData.selectedMediums[source] || [];
+    mediums.forEach(medium => {
+      const key = `${source}-${medium}`;
+      const contentVariations = currentData.selectedContent[key] || ['default'];
+      totalLinks += contentVariations.length * currentData.landingPages.length;
+    });
+  });
+  return totalLinks;
+})()} UTM link(s) for your campaign.
       `;
 
       const buttonLabel = currentData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";

@@ -336,6 +336,10 @@ Changelog:
   - Updated UTM content API to only fetch from user templates since base templates are copied during signup
   - Enhanced tag selection flow to use review step before campaign creation for better UX
   - Fixed authentication middleware to ensure proper user account data is included in API requests
+  - Fixed API call authentication issue by correcting apiRequest function parameter order in Chat Wizard
+  - Content suggestions now properly show real UTM variations: "text-ad", "responsive-ad", "shopping-ad", etc.
+  - Campaign creation fully functional with proper content templates and tag support
+  - Fixed UTM link count calculation in campaign summary to account for multiple content variations per source-medium combination
 
 ## User Preferences
 
