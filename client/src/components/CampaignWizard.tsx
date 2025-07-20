@@ -246,8 +246,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       }));
       
       toast({
-        title: "Content Auto-populated",
-        description: `Added ${suggestions.length} content variations for ${sourceName} → ${medium}`,
+        title: "UTM Content Added",
+        description: `Auto-populated ${suggestions.length} content suggestions for ${sourceName} ${medium}. Remove unwanted rows if needed.`,
       });
     }
   };
@@ -1603,12 +1603,69 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         <div className="flex justify-end pt-6">
           <Button
             onClick={async () => {
-              // Save campaign functionality here
-              console.log("Saving campaign...");
+              try {
+                // First, save landing pages if any exist
+                if (landingPages.length > 0) {
+                  // Delete existing landing pages for this campaign
+                  await apiRequest("DELETE", `/api/campaign-landing-pages/${campaignName}`);
+                  
+                  // Save new landing pages
+                  for (const landingPage of landingPages) {
+                    if (landingPage.url.trim()) {
+                      await apiRequest("POST", "/api/campaign-landing-pages", {
+                        campaignName,
+                        url: landingPage.url,
+                        label: landingPage.url
+                      });
+                    }
+                  }
+                }
+                
+                // Save all UTM links
+                const linksToSave = getCheckedSourcesWithContent();
+                let successCount = 0;
+                
+                for (const link of linksToSave) {
+                  try {
+                    const targetUrl = landingPages.length > 0 ? landingPages[0].url : link.utmLink.split('?')[0];
+                    
+                    await apiRequest("POST", "/api/utm-links", {
+                      targetUrl,
+                      utm_source: link.sourceName,
+                      utm_medium: link.medium,
+                      utm_campaign: campaignName,
+                      utm_content: link.content,
+                      utm_term: link.term || undefined,
+                      linkName: `${campaignName} - ${link.sourceName} - ${link.medium} - ${link.content}${link.term ? ' - ' + link.term : ''}`,
+                      tags: tags
+                    });
+                    successCount++;
+                  } catch (error) {
+                    console.error("Failed to save UTM link:", error);
+                  }
+                }
+                
+                toast({
+                  title: "Campaign Saved Successfully!",
+                  description: `Created ${successCount} UTM links for "${campaignName}"`,
+                });
+                
+                // Optionally redirect or reset form
+                // navigate('/campaigns');
+                
+              } catch (error) {
+                console.error("Failed to save campaign:", error);
+                toast({
+                  title: "Error",
+                  description: "Failed to save campaign. Please try again.",
+                  variant: "destructive",
+                });
+              }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            disabled={createUtmLinkMutation.isPending}
           >
-            Save Campaign Links ({getCheckedSourcesWithContent().length})
+            {createUtmLinkMutation.isPending ? "Saving..." : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
           </Button>
         </div>
       )}
