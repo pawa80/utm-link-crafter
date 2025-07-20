@@ -554,9 +554,13 @@ export default function AccountManagement() {
                           </div>
                         </div>
                       ))}
-                      {(!accountUsers || accountUsers.length === 0) && (
+                      {(!accountUsers || accountUsers.length === 0) && !usersLoading && (
                         <div className="text-center py-8 text-gray-500">
-                          No users found in this account.
+                          <p>No users found in this account.</p>
+                          <p className="text-xs mt-2 text-red-500">Debug: accountUsers = {JSON.stringify(accountUsers)}</p>
+                          <p className="text-xs text-red-500">userAccount.accountId = {userAccount?.accountId}</p>
+                          <p className="text-xs text-red-500">usersError = {usersError?.message}</p>
+                          <p className="text-xs text-red-500">usersLoading = {usersLoading.toString()}</p>
                         </div>
                       )}
                     </div>
