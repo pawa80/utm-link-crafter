@@ -199,14 +199,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           
           contents.forEach(content => {
             terms.forEach(term => {
-              const fullUtmLink = generateUTMLink(
-                landingPage.url,
-                sourceName,
-                medium,
-                campaignName,
-                content,
-                term
-              );
+              const fullUtmLink = generateUTMLink({
+                targetUrl: landingPage.url,
+                utm_source: sourceName,
+                utm_medium: medium,
+                utm_campaign: campaignName,
+                utm_content: content,
+                utm_term: term
+              });
               
               links.push({
                 id: `${sourceName}-${medium}-${content}-${term}-${landingPage.id}`,
@@ -480,14 +480,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 medium,
                 content,
                 term,
-                utmLink: generateUTMLink(
-                  urlToUse,
-                  sourceName.toLowerCase(),
-                  medium,
-                  campaignName,
-                  content,
-                  term
-                )
+                utmLink: generateUTMLink({
+                  targetUrl: urlToUse,
+                  utm_source: sourceName.toLowerCase(),
+                  utm_medium: medium,
+                  utm_campaign: campaignName,
+                  utm_content: content,
+                  utm_term: term
+                })
               };
             })
           );
@@ -552,14 +552,14 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
         
         const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${contentItem || ''}`.trim();
-        const utmLink = contentItem.trim() && urlToUse ? generateUTMLink(
-          urlToUse,
-          sourceName.toLowerCase(),
-          medium,
-          campaignName,
-          contentItem.trim(),
-          termItem || undefined
-        ) : '';
+        const utmLink = contentItem.trim() && urlToUse ? generateUTMLink({
+          targetUrl: urlToUse,
+          utm_source: sourceName.toLowerCase(),
+          utm_medium: medium,
+          utm_campaign: campaignName,
+          utm_content: contentItem.trim(),
+          utm_term: termItem || undefined
+        }) : '';
         
         // Get landing page order for sorting (999 for no selection to sort last)
         const landingPageOrder = selectedLandingPage ? 
