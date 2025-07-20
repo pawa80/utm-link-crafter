@@ -62,29 +62,29 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-muted via-background to-accent/5">
+      <div className="max-w-lg w-full space-y-8 animate-fade-in">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-            <Link className="text-white" size={24} />
+          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-primary via-secondary to-accent rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <Link className="text-white" size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Simple UTM Builder</h1>
-          <p className="mt-2 text-gray-600">Create and manage UTM links with ease</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-4">UTM Builder</h1>
+          <p className="text-xl text-muted-foreground">Create and manage UTM links with ease</p>
         </div>
         
-        <Card>
-          <CardContent className="p-6">
+        <Card className="card-modern shadow-2xl">
+          <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="signin" className="space-y-4 mt-6">
+              <TabsContent value="signin" className="space-y-6 mt-8">
                 {/* Google Sign In Button */}
                 <Button 
                   onClick={handleGoogleSignIn} 
-                  className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="w-full h-12 bg-white border-2 border-border text-foreground hover:bg-muted hover:border-primary transition-all duration-200 font-semibold"
                   disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -128,17 +128,17 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-12 btn-gradient-primary font-semibold" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
               
-              <TabsContent value="signup" className="space-y-4 mt-6">
+              <TabsContent value="signup" className="space-y-6 mt-8">
                 {/* Google Sign In Button */}
                 <Button 
                   onClick={handleGoogleSignIn} 
-                  className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="w-full h-12 bg-white border-2 border-border text-foreground hover:bg-muted hover:border-primary transition-all duration-200 font-semibold"
                   disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -183,7 +183,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                       minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-12 btn-gradient-primary font-semibold" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Sign Up"}
                   </Button>
                 </form>

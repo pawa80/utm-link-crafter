@@ -24,12 +24,28 @@ export default function ChatWizardPage() {
         setAuthUser(firebaseUser);
         try {
           const token = await firebaseUser.getIdToken();
-          const response = await apiRequest("POST", "/api/users", {
-            firebaseUid: firebaseUser.uid,
-            email: firebaseUser.email,
-          }, {
-            "Authorization": `Bearer ${token}`,
+          const response = await fetch("/api/users", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-firebase-uid": firebaseUser.uid,
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              firebaseUid: firebaseUser.uid,
+              email: firebaseUser.email,
+              categories: [],
+              defaultSources: [],
+              defaultMediums: [],
+              defaultCampaignNames: [],
+              isSetupComplete: false,
+            }),
           });
+
+          if (!response.ok) {
+            throw new Error("Failed to create or get user");
+          }
+
           const userData = await response.json();
           setUser(userData);
         } catch (error) {
@@ -59,10 +75,10 @@ export default function ChatWizardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/20 border-t-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -73,14 +89,14 @@ export default function ChatWizardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 p-4">
+      <div className="max-w-5xl mx-auto">
         {/* Top Navigation with Logo and User */}
-        <div className="flex justify-between items-center mb-6 pt-4">
+        <div className="flex justify-between items-center mb-8 pt-4">
           <div className="flex items-center space-x-4">
             <Logo />
             <Link href="/">
-              <Button variant="ghost">
+              <Button variant="ghost" className="hover:bg-primary/10 hover:text-primary transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
               </Button>
@@ -89,23 +105,25 @@ export default function ChatWizardPage() {
           <UserHeader user={user} onLogout={handleLogout} />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Header */}
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="text-center animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-4">
               Chat Wizard
             </h1>
-            <p className="text-gray-600">
-              Let our AI assistant guide you through creating your UTM campaign step by step
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Let our AI assistant guide you through creating your UTM campaign step by step with intelligent suggestions
             </p>
           </div>
 
           {/* Chat Wizard Component */}
-          <div className="max-w-2xl mx-auto">
-            <ChatWizard 
-              user={user} 
-              onComplete={handleComplete}
-            />
+          <div className="max-w-3xl mx-auto">
+            <div className="card-modern shadow-2xl animate-fade-in">
+              <ChatWizard 
+                user={user} 
+                onComplete={handleComplete}
+              />
+            </div>
           </div>
         </div>
       </div>
