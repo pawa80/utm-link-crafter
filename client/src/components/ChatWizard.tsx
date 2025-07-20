@@ -1535,6 +1535,7 @@ This will create ${(() => {
       selectedMediums: {},
       contentInputs: {},
       selectedContent: {},
+      selectedTerm: {},
       selectedTags: []
     });
   };
