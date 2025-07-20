@@ -1675,8 +1675,27 @@ This will create ${(() => {
     });
   };
   
-  const proceedWithCampaignCreation = (currentCampaignData: CampaignData) => {
+  const proceedWithCampaignCreation = async (currentCampaignData: CampaignData) => {
     console.log('ChatWizard - proceedWithCampaignCreation - currentCampaignData.selectedTerm:', currentCampaignData.selectedTerm);
+
+    // If adding to existing campaign, get existing tags and merge with new ones
+    let finalTags = currentCampaignData.selectedTags;
+    if (currentCampaignData.isExistingCampaign) {
+      try {
+        const response = await apiRequest("/api/utm-links", { method: "GET" });
+        const existingLinks = await response.json();
+        const existingCampaignLinks = existingLinks.filter((link: any) => link.utm_campaign === currentCampaignData.name);
+        
+        if (existingCampaignLinks.length > 0) {
+          const existingTags = existingCampaignLinks[0].tags || [];
+          // Merge existing tags with new tags, removing duplicates
+          finalTags = [...new Set([...existingTags, ...currentCampaignData.selectedTags])];
+        }
+      } catch (error) {
+        console.error('Error fetching existing campaign tags:', error);
+        // Continue with just the new tags if there's an error
+      }
+    }
 
     // Transform campaign data to match API format
     const utmLinks = [];
@@ -1713,7 +1732,7 @@ This will create ${(() => {
                 utm_medium: medium,
                 utm_content: content,
                 utm_term: '',
-                tags: currentCampaignData.selectedTags
+                tags: finalTags
               });
             } else {
               // Create a separate UTM link for each selected term
@@ -1737,7 +1756,7 @@ This will create ${(() => {
                   utm_medium: medium,
                   utm_content: content,
                   utm_term: term,
-                  tags: currentCampaignData.selectedTags
+                  tags: finalTags
                 });
               }
             }

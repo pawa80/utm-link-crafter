@@ -422,6 +422,12 @@ Changelog:
   - Modified duplicate campaign validation to skip duplicate checks when adding to existing campaigns
   - Chat Wizard now properly passes isExistingCampaign flag when creating landing pages for existing campaigns
   - Users can now successfully add UTM links with different tags to their existing campaigns through Chat Wizard
+- July 20, 2025. Chat Wizard tag merging for existing campaigns:
+  - Fixed issue where new tags were replacing existing campaign tags instead of being added to them
+  - Implemented tag merging functionality that fetches existing campaign tags and combines them with new ones
+  - When adding to existing campaigns, Chat Wizard now preserves original tags while adding new tags (no duplicates)
+  - New UTM links created through existing campaign updates maintain complete tag history from both sessions
+  - Enhanced campaign tag management ensures no data loss when extending campaigns with additional tags
 
 ## User Preferences
 
