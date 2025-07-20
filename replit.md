@@ -328,6 +328,10 @@ Changelog:
   - Redesigned AuthScreen with professional styling and improved user experience
   - Fixed ChatWizard authentication issues and applied modern design consistency
   - Enhanced typography hierarchy and added subtle animations throughout the application
+- July 20, 2025. Home page button styling consistency:
+  - Changed "Manage Campaigns" button from cyan outline style to blue gradient (`btn-gradient-primary`)
+  - Now matches the same professional blue styling as "Start New Campaign" button
+  - Ensures consistent visual hierarchy and modern design across all main action buttons
 - July 20, 2025. Chat Wizard bug fixes and template architecture correction:
   - Fixed content variations showing "default" instead of proper UTM content suggestions
   - Resolved tag display issue in campaign summary by fixing stale closure problems
