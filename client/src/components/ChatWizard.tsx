@@ -89,7 +89,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   // Function to fetch content suggestions for a source-medium combination
   const fetchContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
     try {
-      const response = await apiRequest("GET", `/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`);
+      const response = await apiRequest(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`, { method: "GET" });
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API error fetching content for ${source}-${medium}:`, response.status, errorText);
@@ -112,7 +112,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       // Create landing pages first
       for (const landingPage of data.landingPages) {
         try {
-          const response = await apiRequest("POST", "/api/campaign-landing-pages", landingPage);
+          const response = await apiRequest("/api/campaign-landing-pages", { method: "POST", body: JSON.stringify(landingPage) });
           
           if (!response.ok) {
             const errorText = await response.text();
@@ -136,7 +136,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       // Create UTM links
       for (const utmLink of data.utmLinks) {
         try {
-          const response = await apiRequest("POST", "/api/utm-links", utmLink);
+          const response = await apiRequest("/api/utm-links", { method: "POST", body: JSON.stringify(utmLink) });
           
           if (!response.ok) {
             const errorText = await response.text();
