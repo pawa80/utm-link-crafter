@@ -279,7 +279,7 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
     });
   }
 
-  // Apply sorting - Debug the dates to see what's happening
+  // Apply sorting
   campaignGroups = campaignGroups.sort((a, b) => {
     const aAllLinks = a.sources.flatMap(source => source.links);
     const bAllLinks = b.sources.flatMap(source => source.links);
@@ -303,6 +303,10 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
         const aMostRecentTime = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
         const bMostRecentTime = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
         
+        // Add temporary debug for specific campaigns
+        if (a.campaignName === "Test 4 manual" || b.campaignName === "Test 4 manual") {
+          console.log(`DEBUG: Comparing ${a.campaignName}(${new Date(aMostRecentTime).toISOString()}) vs ${b.campaignName}(${new Date(bMostRecentTime).toISOString()}) = ${bMostRecentTime - aMostRecentTime}`);
+        }
 
         return bMostRecentTime - aMostRecentTime;
       case "created-oldest":
