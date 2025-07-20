@@ -126,10 +126,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
 
   const { data: sourceTemplates = [] } = useQuery({
     queryKey: ["/api/source-templates"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/source-templates");
-      return response.json();
-    },
   });
 
   const { data: tags = [] } = useQuery({
@@ -139,10 +135,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Fetch unique URLs for autocomplete
   const { data: uniqueUrls = [] } = useQuery({
     queryKey: ["/api/unique-urls"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/unique-urls");
-      return response.json();
-    },
   });
 
   // Function to fetch UTM content suggestions for source and medium
