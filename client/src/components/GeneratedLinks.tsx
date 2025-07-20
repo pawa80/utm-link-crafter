@@ -448,7 +448,8 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                       let copyText = `Campaign: ${campaignName}\nSource: ${sourceName}\n\n`;
                       sourceLinks.forEach(link => {
                         const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
-                        copyText += `${linkName} - ${link.fullUtmLink}\n`;
+                        const utmLink = link.fullUtmLink || `${link.targetUrl}?utm_source=${encodeURIComponent(link.utm_source)}&utm_medium=${encodeURIComponent(link.utm_medium)}&utm_campaign=${encodeURIComponent(link.utm_campaign)}&utm_content=${encodeURIComponent(link.utm_content || '')}&utm_term=${encodeURIComponent(link.utm_term || '')}`;
+                        copyText += `${linkName} - ${utmLink}\n`;
                       });
 
                       try {
@@ -483,52 +484,72 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                             </Button>
                           </div>
                       
-                          {/* Desktop: Headers */}
-                          <div className="hidden md:grid gap-4 mb-2 px-3" style={{ gridTemplateColumns: '1fr 120px 220px 180px 1fr 80px' }}>
-                            <span className="text-sm font-medium">Landing Page</span>
-                            <span className="text-sm font-medium">Medium</span>
-                            <span className="text-sm font-medium">Content</span>
-                            <span className="text-sm font-medium">Link name</span>
-                            <span className="text-sm font-medium">UTM Link</span>
-                            <span className="text-sm font-medium"></span>
+                          {/* Desktop: Headers - Two Line Layout */}
+                          <div className="hidden md:block mb-2 px-3">
+                            {/* First line: Landing Page, Medium, Content, Term */}
+                            <div className="grid gap-4 mb-1" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
+                              <span className="text-sm font-medium">Landing Page</span>
+                              <span className="text-sm font-medium">Medium</span>
+                              <span className="text-sm font-medium">Content</span>
+                              <span className="text-sm font-medium">Term</span>
+                            </div>
+                            {/* Second line: Link name, UTM Link, Actions */}
+                            <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
+                              <span className="text-sm font-medium">Link name</span>
+                              <span className="text-sm font-medium">UTM Link</span>
+                              <span className="text-sm font-medium"></span>
+                            </div>
                           </div>
                           
-                          {/* Desktop: Grid rows */}
-                          <div className="hidden md:block space-y-2">
+                          {/* Desktop: Grid rows - Two Line Layout */}
+                          <div className="hidden md:block space-y-4">
                             {sourceLinks.map((link) => {
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                              // Generate UTM link if missing
+                              const utmLink = link.fullUtmLink || `${link.targetUrl}?utm_source=${encodeURIComponent(link.utm_source)}&utm_medium=${encodeURIComponent(link.utm_medium)}&utm_campaign=${encodeURIComponent(link.utm_campaign)}&utm_content=${encodeURIComponent(link.utm_content || '')}&utm_term=${encodeURIComponent(link.utm_term || '')}`;
                               
                               return (
-                                <div key={link.id} className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 120px 220px 180px 1fr 80px' }}>
-                                  <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
-                                    {link.targetUrl}
+                                <div key={link.id} className="border rounded-lg p-3 space-y-2">
+                                  {/* First line: Landing Page, Medium, Content, Term */}
+                                  <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
+                                    <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
+                                      {link.targetUrl}
+                                    </div>
+                                    <input 
+                                      value={link.utm_medium} 
+                                      readOnly 
+                                      className="bg-gray-50 border rounded px-3 py-2 text-sm w-full" 
+                                    />
+                                    <input
+                                      value={link.utm_content || ''}
+                                      readOnly
+                                      className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
+                                    />
+                                    <input
+                                      value={link.utm_term || ''}
+                                      readOnly
+                                      className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
+                                    />
                                   </div>
-                                  <input 
-                                    value={link.utm_medium} 
-                                    readOnly 
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full" 
-                                  />
-                                  <input
-                                    value={link.utm_content || ''}
-                                    readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
-                                  />
-                                  <input
-                                    value={linkName}
-                                    readOnly
-                                    className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
-                                  />
-                                  <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
-                                    {link.fullUtmLink}
+                                  {/* Second line: Link name, UTM Link, Actions */}
+                                  <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
+                                    <input
+                                      value={linkName}
+                                      readOnly
+                                      className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
+                                    />
+                                    <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full">
+                                      {utmLink}
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleCopyToClipboard(utmLink)}
+                                      className="w-full mt-1"
+                                    >
+                                      <Copy className="w-4 h-4" />
+                                    </Button>
                                   </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleCopyToClipboard(link.fullUtmLink)}
-                                    className="w-full mt-1"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
                                 </div>
                               );
                             })}
@@ -538,6 +559,8 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                           <div className="md:hidden space-y-4">
                             {sourceLinks.map((link) => {
                               const linkName = `${sourceName} ${link.utm_medium.charAt(0).toUpperCase() + link.utm_medium.slice(1)} ${link.utm_content || ''}`.trim();
+                              // Generate UTM link if missing
+                              const utmLink = link.fullUtmLink || `${link.targetUrl}?utm_source=${encodeURIComponent(link.utm_source)}&utm_medium=${encodeURIComponent(link.utm_medium)}&utm_campaign=${encodeURIComponent(link.utm_campaign)}&utm_content=${encodeURIComponent(link.utm_content || '')}&utm_term=${encodeURIComponent(link.utm_term || '')}`;
                               
                               return (
                                 <div key={link.id} className="border rounded-lg p-3 space-y-3">
@@ -568,6 +591,16 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                                       />
                                     </div>
                                   </div>
+
+                                  {/* Term field */}
+                                  <div>
+                                    <span className="text-xs text-gray-600 mb-1 block">Term</span>
+                                    <input
+                                      value={link.utm_term || ''}
+                                      readOnly
+                                      className="bg-gray-50 border rounded px-2 py-1 text-sm w-full"
+                                    />
+                                  </div>
                                   
                                   {/* Link name below */}
                                   <div>
@@ -583,7 +616,7 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                                   <div>
                                     <span className="text-xs text-gray-600 mb-1 block">UTM Link</span>
                                     <div className="bg-gray-50 border rounded p-2 min-h-[60px] break-all text-xs leading-relaxed">
-                                      {link.fullUtmLink}
+                                      {utmLink}
                                     </div>
                                   </div>
                                   
@@ -592,7 +625,7 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleCopyToClipboard(link.fullUtmLink)}
+                                      onClick={() => handleCopyToClipboard(utmLink)}
                                       className="w-full"
                                     >
                                       <Copy className="w-4 h-4 mr-2" />

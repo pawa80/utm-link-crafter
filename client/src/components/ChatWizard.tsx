@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { generateUTMLink, validateUrl } from "@/lib/utm";
+import { generateUTMLink } from "@shared/validation";
+import { validateUrl } from "@/lib/utm";
 import { MessageCircle, Send, Bot, User as UserIcon, Plus, Check } from "lucide-react";
 import type { User, SourceTemplate, Tag } from "@shared/schema";
 
