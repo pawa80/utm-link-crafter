@@ -20,6 +20,20 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Component definitions at the top to prevent hoisting issues
+function UTMBuilderLogo() {
+  return (
+    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+      <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+        <Zap className="w-5 h-5 text-white" />
+      </div>
+      <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        UTM Builder
+      </span>
+    </Link>
+  );
+}
+
 interface Account {
   id: number;
   name: string;
@@ -66,19 +80,6 @@ interface Invitation {
   status: "pending" | "accepted" | "expired";
   invitedBy: number;
   createdAt: string;
-}
-
-function UTMBuilderLogo() {
-  return (
-    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-      <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-        <Zap className="w-5 h-5 text-white" />
-      </div>
-      <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-        UTM Builder
-      </span>
-    </Link>
-  );
 }
 
 function RoleIcon({ role }: { role: string }) {
