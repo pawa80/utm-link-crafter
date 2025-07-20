@@ -1430,7 +1430,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         const selectedTermItems = selectedTerms[contentKey] || [];
                         
                         return (
-                          <div key={medium} className="border-l-4 border-purple-200 pl-4">
+                          <div key={medium} className="border-l-4 border-green-200 pl-4">
                             <h4 className="font-medium text-gray-800 mb-2">{sourceName} → {medium}</h4>
                             <div className="flex flex-wrap gap-2">
                               {termTemplates.map((term: any) => (
@@ -1438,7 +1438,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                   key={term.id}
                                   variant={selectedTermItems.includes(term.termValue) ? "default" : "outline"}
                                   size="sm"
-                                  className={selectedTermItems.includes(term.termValue) ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}
+                                  className={selectedTermItems.includes(term.termValue) ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                                   onClick={() => toggleTermItem(contentKey, term.termValue)}
                                 >
                                   {term.termValue}
@@ -1456,99 +1456,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         </Card>
       )}
 
-      {/* Section 6: UTM Links Preview */}
+      {/* Section 6: Generated UTM Links Preview */}
       {generatedUtmLinks.length > 0 && (
-        <Card>
-          <SectionHeader title="Generated UTM Links" />
-          <div className="p-6">
-            <div className="text-sm text-gray-600 mb-4">
-              Preview of your campaign UTM links organized by source.
-            </div>
-            
-            {/* Group links by source for display like Campaign Management page */}
-            {Object.entries(
-              generatedUtmLinks.reduce((acc: any, link) => {
-                if (!acc[link.sourceName]) {
-                  acc[link.sourceName] = [];
-                }
-                acc[link.sourceName].push(link);
-                return acc;
-              }, {})
-            ).map(([sourceName, links]: [string, any[]]) => (
-              <div key={sourceName} className="mb-6 border rounded-lg overflow-hidden">
-                <div className="bg-blue-50 p-3 border-b">
-                  <h3 className="text-lg font-semibold text-gray-900">{sourceName}</h3>
-                </div>
-                
-                {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="text-left p-3 text-sm font-medium text-gray-700" style={{width: '1fr'}}>Landing Page</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-24">Medium</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-32">Content</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700 w-32">Term</th>
-                        <th className="text-left p-3 text-sm font-medium text-gray-700" style={{width: '1fr'}}>UTM Link</th>
-                        <th className="text-center p-3 text-sm font-medium text-gray-700 w-20">Copy</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {links.map((link, index) => (
-                        <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50">
-                          <td className="p-3 break-words text-sm">{link.landingPageLabel || link.landingPageUrl}</td>
-                          <td className="p-3 text-sm">{link.medium}</td>
-                          <td className="p-3 text-sm">{link.content}</td>
-                          <td className="p-3 text-sm">{link.term || '—'}</td>
-                          <td className="p-3 break-words text-sm font-mono text-blue-600">{link.fullUtmLink}</td>
-                          <td className="p-3 text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(link.fullUtmLink);
-                                toast({ title: "Link copied to clipboard" });
-                              }}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile View */}
-                <div className="md:hidden">
-                  {links.map((link, index) => (
-                    <div key={index} className="p-4 border-b last:border-b-0">
-                      <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Landing Page:</span> {link.landingPageLabel || link.landingPageUrl}</div>
-                        <div><span className="font-medium">Medium:</span> {link.medium}</div>
-                        <div><span className="font-medium">Content:</span> {link.content}</div>
-                        {link.term && <div><span className="font-medium">Term:</span> {link.term}</div>}
-                        <div className="flex justify-between items-center mt-3">
-                          <span className="font-mono text-xs text-blue-600 break-all flex-1 mr-2">{link.fullUtmLink}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(link.fullUtmLink);
-                              toast({ title: "Link copied to clipboard" });
-                            }}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <GeneratedLinks 
+          data={generatedUtmLinks} 
+          isPreview={true}
+          campaignName={campaignName}
+        />
       )}
 
       {/* Section 7: Campaign Links (Original) */}
