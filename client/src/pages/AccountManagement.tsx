@@ -150,11 +150,11 @@ export default function AccountManagement() {
     retry: 3,
   });
 
-  // Get account users for user's account - SIMPLIFIED FOR DEBUGGING
+  // Get account users for user's account
   const { data: accountUsers, isLoading: usersLoading, error: usersError } = useQuery<AccountUser[]>({
     queryKey: ["/api/accounts", userAccount?.accountId, "users"],
-    enabled: false, // DISABLE THIS QUERY FOR NOW
-    retry: false,
+    enabled: !!userAccount?.accountId && !!authUser,
+    retry: 1,
   });
 
   // Role permissions
