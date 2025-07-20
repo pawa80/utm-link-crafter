@@ -47,7 +47,7 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem asChild>
-            <Link href="/settings">
+            <Link href="/settings" className="hover:bg-primary hover:text-white">
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </Link>
