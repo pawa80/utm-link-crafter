@@ -27,6 +27,10 @@
   --accent: 217 91% 40%; /* #1e40af - same as primary */
   --accent-foreground: 0 0% 100%; /* White text on blue */
   
+  /* Cyan: For visual gradients and design elements */
+  --cyan: 188 94% 42.7%; /* #06b6d4 - original cyan color */
+  --cyan-foreground: 0 0% 100%; /* White text on cyan */
+  
   /* Success: Emerald Green (#10b981) */
   --success: 158 64% 52%; /* #10b981 */
   --success-foreground: 0 0% 100%;
@@ -73,6 +77,9 @@
   
   --accent: 217 91% 60%; /* Lighter blue for dark mode (matching primary) */
   --accent-foreground: 210 24% 16%; /* Dark text */
+  
+  --cyan: 188 94% 60%; /* Lighter cyan for dark mode */
+  --cyan-foreground: 210 24% 16%; /* Dark text */
   
   --success: 158 64% 60%; /* Lighter green */
   --success-foreground: 210 24% 16%;

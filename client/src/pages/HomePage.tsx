@@ -62,7 +62,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-muted via-background to-cyan/5 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Top Navigation with Logo and User */}
         <div className="flex justify-between items-center mb-8 pt-4">
@@ -72,7 +72,7 @@ export default function HomePage() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-foreground via-primary to-cyan bg-clip-text text-transparent mb-6">
             UTM Builder
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -86,7 +86,7 @@ export default function HomePage() {
           {/* Chat Wizard Card - First Quadrant */}
           <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
             <CardHeader className="text-center pb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-secondary via-accent to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-secondary via-cyan to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <MessageCircle size={40} className="text-white" />
               </div>
               <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
@@ -105,7 +105,7 @@ export default function HomePage() {
           {/* New Campaign Card */}
           <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
             <CardHeader className="text-center pb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary via-accent to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary via-cyan to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Plus size={40} className="text-white" />
               </div>
               <CardTitle className="text-2xl font-bold">New Campaign</CardTitle>
@@ -125,7 +125,7 @@ export default function HomePage() {
           {/* Manage Campaigns Card */}
           <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
             <CardHeader className="text-center pb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-accent via-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan via-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Settings size={40} className="text-white" />
               </div>
               <CardTitle className="text-2xl font-bold">Manage Campaigns</CardTitle>
@@ -147,11 +147,11 @@ export default function HomePage() {
 
         {/* Features Section */}
         <div className="mt-20 text-center animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-cyan bg-clip-text text-transparent mb-12">
             Why Choose UTM Builder?
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-cyan/5 hover:from-primary/10 hover:to-cyan/10 transition-all duration-300 group">
               <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <span className="text-3xl">📊</span>
               </div>
@@ -169,7 +169,7 @@ export default function HomePage() {
                 Create professional UTM links in minutes with AI-powered assistance
               </p>
             </div>
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/5 to-accent/5 hover:from-secondary/10 hover:to-accent/10 transition-all duration-300 group">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/5 to-cyan/5 hover:from-secondary/10 hover:to-cyan/10 transition-all duration-300 group">
               <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <span className="text-3xl">🎯</span>
               </div>
