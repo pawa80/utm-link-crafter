@@ -1457,7 +1457,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       )}
 
       {/* Section 6: Campaign Links Preview */}
-      {generatedUtmLinks.length > 0 && (
+      {getCheckedSourcesWithContent().length > 0 && (
         <Card>
           <SectionHeader title="Campaign Links" />
           <div className="p-6">
@@ -1465,11 +1465,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  const allLinks = generatedUtmLinks.map(link => link.fullUtmLink).join('\n');
+                  const allLinks = getCheckedSourcesWithContent().map(link => link.utmLink).join('\n');
                   navigator.clipboard.writeText(allLinks);
                   toast({
                     title: "All links copied!",
-                    description: `Copied ${generatedUtmLinks.length} UTM links to clipboard`,
+                    description: `Copied ${getCheckedSourcesWithContent().length} UTM links to clipboard`,
                   });
                 }}
               >
@@ -1480,7 +1480,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             
             {/* Group links by source like Campaign Management page */}
             {Object.entries(
-              generatedUtmLinks.reduce((acc: Record<string, any[]>, link) => {
+              getCheckedSourcesWithContent().reduce((acc: Record<string, any[]>, link) => {
                 if (!acc[link.sourceName]) {
                   acc[link.sourceName] = [];
                 }
@@ -1496,7 +1496,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       variant="outline" 
                       size="sm"
                       onClick={() => {
-                        const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
+                        const sourceLinksText = sourceLinks.map(link => link.utmLink).join('\n');
                         navigator.clipboard.writeText(sourceLinksText);
                         toast({
                           title: "Source links copied!",
@@ -1527,18 +1527,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                     <tbody>
                       {sourceLinks.map((link: any, index: number) => (
                         <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50">
-                          <td className="p-3 break-words text-sm">{link.landingPageLabel || link.landingPageUrl}</td>
+                          <td className="p-3 break-words text-sm">{landingPages.length > 0 ? landingPages[0].url : targetUrl}</td>
                           <td className="p-3 text-sm">{link.medium}</td>
-                          <td className="p-3 text-sm">{link.contentItem || link.content}</td>
-                          <td className="p-3 text-sm">{link.termItem || link.term || '—'}</td>
-                          <td className="p-3 text-sm">{link.linkName}</td>
-                          <td className="p-3 break-words text-sm font-mono text-blue-600">{link.fullUtmLink}</td>
+                          <td className="p-3 text-sm">{link.content}</td>
+                          <td className="p-3 text-sm">{link.term || '—'}</td>
+                          <td className="p-3 text-sm">{campaignName} - {link.sourceName} - {link.medium}</td>
+                          <td className="p-3 break-words text-sm font-mono text-blue-600">{link.utmLink}</td>
                           <td className="p-3 text-center">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                navigator.clipboard.writeText(link.fullUtmLink);
+                                navigator.clipboard.writeText(link.utmLink);
                                 toast({ title: "Link copied to clipboard" });
                               }}
                             >
@@ -1556,18 +1556,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   {sourceLinks.map((link: any, index: number) => (
                     <div key={index} className="p-4 border-b last:border-b-0">
                       <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Landing Page:</span> {link.landingPageLabel || link.landingPageUrl}</div>
+                        <div><span className="font-medium">Landing Page:</span> {landingPages.length > 0 ? landingPages[0].url : targetUrl}</div>
                         <div><span className="font-medium">Medium:</span> {link.medium}</div>
-                        <div><span className="font-medium">Content:</span> {link.contentItem || link.content}</div>
-                        {(link.termItem || link.term) && <div><span className="font-medium">Term:</span> {link.termItem || link.term}</div>}
-                        <div><span className="font-medium">Link name:</span> {link.linkName}</div>
+                        <div><span className="font-medium">Content:</span> {link.content}</div>
+                        {link.term && <div><span className="font-medium">Term:</span> {link.term}</div>}
+                        <div><span className="font-medium">Link name:</span> {campaignName} - {link.sourceName} - {link.medium}</div>
                         <div className="flex justify-between items-center mt-3">
-                          <span className="font-mono text-xs text-blue-600 break-all flex-1 mr-2">{link.fullUtmLink}</span>
+                          <span className="font-mono text-xs text-blue-600 break-all flex-1 mr-2">{link.utmLink}</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              navigator.clipboard.writeText(link.fullUtmLink);
+                              navigator.clipboard.writeText(link.utmLink);
                               toast({ title: "Link copied to clipboard" });
                             }}
                           >
