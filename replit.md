@@ -340,6 +340,9 @@ Changelog:
   - Content suggestions now properly show real UTM variations: "text-ad", "responsive-ad", "shopping-ad", etc.
   - Campaign creation fully functional with proper content templates and tag support
   - Fixed UTM link count calculation in campaign summary to account for multiple content variations per source-medium combination
+  - Fixed tag persistence bug: Custom tags now properly saved to database via createTagMutation API call
+  - Tags are created with proper userId and accountId for account isolation and persist across campaigns
+  - Enhanced landing page input with clear URL format guidance (must include https://)
 
 ## User Preferences
 

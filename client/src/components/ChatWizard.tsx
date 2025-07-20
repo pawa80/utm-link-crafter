@@ -308,11 +308,11 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         } else {
           setTimeout(() => {
             addBotMessage(
-              "That doesn't look like a valid URL. Please enter a complete URL starting with http:// or https://",
+              "That doesn't look like a valid URL. Please enter a complete URL starting with https:// (like https://example.com)",
               [],
               'landing-pages',
               true,
-              "Enter a valid URL (e.g., 'https://example.com')"
+              "Enter a complete URL starting with https:// (e.g., 'https://example.com')"
             );
           }, 500);
         }
@@ -459,7 +459,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
 
     const currentCount = campaignData.landingPages.length;
     const message = currentCount === 0 
-      ? "Great! Now let's add landing pages. You can choose from your most-used URLs or add a new one:"
+      ? `Great! Now let's add landing pages. You can choose from your most-used URLs or add a new one.
+
+💡 **Tip:** When adding a custom URL, make sure to include the full URL starting with https:// (e.g., https://example.com)`
       : `You currently have ${currentCount} landing page(s): ${campaignData.landingPages.map(lp => lp.url).join(', ')}. Choose more URLs:`;
 
     const options = [
