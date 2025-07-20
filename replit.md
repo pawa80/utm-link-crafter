@@ -328,6 +328,14 @@ Changelog:
   - Redesigned AuthScreen with professional styling and improved user experience
   - Fixed ChatWizard authentication issues and applied modern design consistency
   - Enhanced typography hierarchy and added subtle animations throughout the application
+- July 20, 2025. Chat Wizard bug fixes and template architecture correction:
+  - Fixed content variations showing "default" instead of proper UTM content suggestions
+  - Resolved tag display issue in campaign summary by fixing stale closure problems
+  - Fixed campaign creation API failures by adding required accountId fields to all requests
+  - Corrected template architecture: Base templates are copied to user accounts during registration (not referenced)
+  - Updated UTM content API to only fetch from user templates since base templates are copied during signup
+  - Enhanced tag selection flow to use review step before campaign creation for better UX
+  - Fixed authentication middleware to ensure proper user account data is included in API requests
 
 ## User Preferences
 

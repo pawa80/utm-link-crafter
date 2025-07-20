@@ -49,7 +49,7 @@ export interface IStorage {
   unarchiveUserUtmTemplate(id: number, userId: number): Promise<boolean>;
   
   // User account setup
-  createUserTemplatesFromBase(userId: number): Promise<boolean>;
+  createUserTemplatesFromBase(userId: number, accountId?: number): Promise<boolean>;
   
   // Get all unique URLs that have been used across the account
   getAllUniqueUrls(userId: number): Promise<string[]>;
