@@ -265,7 +265,8 @@ export default function AccountManagement() {
   };
 
   const handleAuthSuccess = async () => {
-    // Auth state change will be handled by the useEffect
+    // Force a page reload to ensure fresh authentication state
+    window.location.reload();
   };
 
   const handleLogout = async () => {
@@ -294,7 +295,7 @@ export default function AccountManagement() {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
-  if (accountsLoading) {
+  if (loading || accountsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
         <div className="max-w-7xl mx-auto">
@@ -312,6 +313,10 @@ export default function AccountManagement() {
     );
   }
 
+  if (!authUser) {
+    return <AuthScreen onAuthSuccess={() => window.location.reload()} />;
+  }
+
   if (accountError || usersError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
@@ -324,10 +329,25 @@ export default function AccountManagement() {
               <div className="text-red-600 mb-4">
                 <h2 className="text-xl font-semibold">Authentication Error</h2>
                 <p className="text-gray-600 mt-2">Please sign in again to continue</p>
+                {accountError && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Error: {accountError.message}
+                  </p>
+                )}
+                {usersError && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Users Error: {usersError.message}
+                  </p>
+                )}
               </div>
-              <Button onClick={() => setLocation("/")} variant="outline">
-                Return to Home
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => window.location.reload()} variant="default">
+                  Refresh Page
+                </Button>
+                <Button onClick={() => setLocation("/")} variant="outline">
+                  Return to Home
+                </Button>
+              </div>
             </div>
           </div>
         </div>

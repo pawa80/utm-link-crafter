@@ -722,9 +722,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = parseInt(req.params.id);
       
       // Check if user is admin or super_admin for this account
-      const user = await storage.getUser(req.user.id);
+      const user = req.user; // Use the user from middleware directly
       if (!user || user.accountId !== accountId || !['admin', 'super_admin'].includes(user.role)) {
-        return res.status(403).json({ message: "Only admins can view account users" });
+        return res.status(403).json({ 
+          message: "Only admins can view account users",
+          debug: {
+            userAccountId: user?.accountId,
+            requestedAccountId: accountId,
+            userRole: user?.role,
+            hasPermission: user ? ['admin', 'super_admin'].includes(user.role) : false
+          }
+        });
       }
       
       const accountUsers = await storage.getAccountUsers(accountId);
