@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
 import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions";
+import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError } from "@shared/validation";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 
@@ -128,18 +129,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create UTM link
+  // Create UTM link with validation
   app.post("/api/utm-links", authMiddleware, requirePermission('create_campaigns'), async (req: any, res) => {
     try {
+      // Validate landing page URL first
+      const { targetUrl, utm_source, utm_medium, utm_campaign, utm_content, utm_term } = req.body;
+      
+      // URL validation
+      const urlValidation = validateUrl(targetUrl);
+      if (!urlValidation.isValid) {
+        return res.status(400).json({ 
+          message: "Invalid landing page URL",
+          details: urlValidation.error 
+        });
+      }
+
+      // UTM parameter validation and sanitization
+      const sanitizedSource = sanitizeUtmParameter(utm_source);
+      const sanitizedMedium = sanitizeUtmParameter(utm_medium);
+      const sanitizedCampaign = sanitizeUtmParameter(utm_campaign);
+      const sanitizedContent = utm_content ? sanitizeUtmParameter(utm_content) : undefined;
+      const sanitizedTerm = utm_term ? sanitizeUtmParameter(utm_term) : undefined;
+
+      // Parameter length validation
+      if (!sanitizedSource || sanitizedSource.length === 0) {
+        return res.status(400).json({ message: "Source is required and cannot be empty after sanitization" });
+      }
+      if (!sanitizedMedium || sanitizedMedium.length === 0) {
+        return res.status(400).json({ message: "Medium is required and cannot be empty after sanitization" });
+      }
+      if (!sanitizedCampaign || sanitizedCampaign.length === 0) {
+        return res.status(400).json({ message: "Campaign is required and cannot be empty after sanitization" });
+      }
+      if (sanitizedSource.length > 100) {
+        return res.status(400).json({ message: "Source must be 100 characters or less" });
+      }
+      if (sanitizedMedium.length > 50) {
+        return res.status(400).json({ message: "Medium must be 50 characters or less" });
+      }
+      if (sanitizedCampaign.length > 100) {
+        return res.status(400).json({ message: "Campaign must be 100 characters or less" });
+      }
+      if (sanitizedContent && sanitizedContent.length > 100) {
+        return res.status(400).json({ message: "Content must be 100 characters or less" });
+      }
+      if (sanitizedTerm && sanitizedTerm.length > 100) {
+        return res.status(400).json({ message: "Term must be 100 characters or less" });
+      }
+
+      // Generate the final UTM link
+      const finalUtmLink = generateUTMLink(
+        urlValidation.cleanUrl!,
+        sanitizedSource,
+        sanitizedMedium,
+        sanitizedCampaign,
+        sanitizedContent,
+        sanitizedTerm
+      );
+
+      // Create the UTM link data
       const utmLinkData = insertUtmLinkSchema.parse({
         ...req.body,
         userId: req.user.id,
         accountId: req.user.accountId,
+        targetUrl: urlValidation.cleanUrl, // Store clean URL
+        utm_source: sanitizedSource,
+        utm_medium: sanitizedMedium,
+        utm_campaign: sanitizedCampaign,
+        utm_content: sanitizedContent || '',
+        utm_term: sanitizedTerm || '',
+        generatedUrl: finalUtmLink
       });
       
       const utmLink = await storage.createUtmLink(utmLinkData);
       res.json(utmLink);
     } catch (error: any) {
+      if (error.name === 'ZodError') {
+        const fieldErrors = formatValidationError(error);
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: fieldErrors 
+        });
+      }
       res.status(400).json({ message: error.message });
     }
   });
@@ -330,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/source-templates", authMiddleware, async (req: any, res) => {
+  app.post("/api/source-templates", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
     try {
       const validatedData = insertSourceTemplateSchema.parse({
         ...req.body,
@@ -344,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/source-templates/:id", authMiddleware, async (req: any, res) => {
+  app.patch("/api/source-templates/:id", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -360,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/source-templates/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/source-templates/:id", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteSourceTemplate(id, req.user.id);
@@ -385,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tags", authMiddleware, async (req: any, res) => {
+  app.post("/api/tags", authMiddleware, requirePermission('manage_tags'), async (req: any, res) => {
     try {
       // Handle the case where req.body is incorrectly structured
       let requestBody = req.body;
@@ -418,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tags/:id", authMiddleware, async (req: any, res) => {
+  app.put("/api/tags/:id", authMiddleware, requirePermission('manage_tags'), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const { name } = req.body;
@@ -445,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tags/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/tags/:id", authMiddleware, requirePermission('manage_tags'), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteTag(id, req.user.id);
@@ -512,17 +583,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/campaign-landing-pages", authMiddleware, async (req: any, res) => {
+  app.post("/api/campaign-landing-pages", authMiddleware, requirePermission('create_campaigns'), async (req: any, res) => {
     try {
+      const { url, campaignName } = req.body;
+      
+      // URL validation
+      const urlValidation = validateUrl(url);
+      if (!urlValidation.isValid) {
+        return res.status(400).json({ 
+          message: "Invalid landing page URL",
+          details: urlValidation.error 
+        });
+      }
+
+      // Campaign name validation and sanitization
+      if (!campaignName || campaignName.trim().length === 0) {
+        return res.status(400).json({ message: "Campaign name is required" });
+      }
+
+      const sanitizedCampaignName = sanitizeUtmParameter(campaignName);
+      if (!sanitizedCampaignName || sanitizedCampaignName.length === 0) {
+        return res.status(400).json({ message: "Campaign name cannot be empty after sanitization" });
+      }
+      if (sanitizedCampaignName.length > 100) {
+        return res.status(400).json({ message: "Campaign name must be 100 characters or less" });
+      }
+
+      // Check for duplicate campaign names (only when creating new campaigns)
+      const existingLinks = await storage.getUserUtmLinks(req.user.id, 1000, 0);
+      const existingCampaigns = [...new Set(existingLinks.map(link => link.utm_campaign))];
+      const duplicateCheck = checkDuplicateCampaign(sanitizedCampaignName, existingCampaigns);
+      
+      if (duplicateCheck.isDuplicate) {
+        return res.status(400).json({ message: duplicateCheck.error });
+      }
+
       const landingPageData = insertCampaignLandingPageSchema.parse({
         ...req.body,
         userId: req.user.id,
         accountId: req.user.accountId,
+        url: urlValidation.cleanUrl, // Store clean URL
+        campaignName: sanitizedCampaignName
       });
       
       const landingPage = await storage.createCampaignLandingPage(landingPageData);
       res.json(landingPage);
     } catch (error: any) {
+      if (error.name === 'ZodError') {
+        const fieldErrors = formatValidationError(error);
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: fieldErrors 
+        });
+      }
       res.status(400).json({ message: error.message });
     }
   });

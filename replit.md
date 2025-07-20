@@ -337,16 +337,27 @@ Changelog:
   - Restored cyan colors for home page visual gradients and design elements by adding dedicated `--cyan` variables
   - Created perfect balance: cyan for visual appeal (gradients, icons), blue for interactions (buttons, hovers)
   - Renamed "Account Settings" to "Profile Settings" for clearer distinction from "Account Management"
-- July 20, 2025. Multi-User Role-Based Permission System Implementation (IN PROGRESS):
+- July 20, 2025. Multi-User Role-Based Permission System Implementation (COMPLETED):
   - **PERMISSION MATRIX IMPLEMENTED**: Created comprehensive role hierarchy (Viewer, Editor, Admin, Super Admin) with exact permission specifications
-  - **SECURITY MIDDLEWARE**: Built permission validation system with role-based access control functions
+  - **SECURITY MIDDLEWARE**: Built permission validation system with role-based access control functions in server/permissions.ts
   - **ACCOUNT ISOLATION**: Added validateAccountAccess() function and account-scoped data validation
-  - **API PROTECTION**: Applied role-based permission checks to campaign management, template management, and user management endpoints
+  - **API PROTECTION**: Applied role-based permission checks to all major endpoints (campaigns, templates, tags, user management)
   - **USER ROLE MANAGEMENT**: Implemented secure user role changes with proper hierarchy validation (Admin cannot manage Super Admin)
   - **INVITATION SYSTEM**: Role-based user invitation system with token-based acceptance and proper permission validation
-  - **PARTIAL IMPLEMENTATION**: Core permission framework complete, some API endpoints still need permission integration
   - **DATABASE SECURITY**: Added account_id validation to prevent cross-account data access
   - **ROLE HIERARCHY ENFORCEMENT**: Super Admin > Admin > Editor > Viewer with cascading permissions properly implemented
+- July 20, 2025. Stable Campaign Creation and UTM Link Generation Implementation (COMPLETED):
+  - **COMPREHENSIVE VALIDATION SYSTEM**: Created shared/validation.ts with URL validation, UTM parameter sanitization, and character limits
+  - **URL VALIDATION**: Landing page URLs validated for http/https format, stripped of existing UTM parameters, 2000 char limit enforced
+  - **UTM PARAMETER VALIDATION**: Source (1-100 chars), Medium (1-50 chars), Campaign (1-100 chars), Content/Term (0-100 chars) with alphanumeric + hyphens/underscores only
+  - **AUTO-SANITIZATION**: Spaces converted to hyphens, lowercase conversion, special character removal, whitespace trimming
+  - **DUPLICATE PREVENTION**: Campaign name duplicate checking with proper sanitization comparison
+  - **ERROR HANDLING**: Clear validation messages, prevented invalid submissions, comprehensive error reporting
+  - **FRONTEND VALIDATION HOOKS**: Created useValidation.ts hooks for real-time form validation and character counting
+  - **VALIDATED UI COMPONENTS**: Built ValidatedInput, CharacterCounter, and ValidatedCampaignForm with live validation feedback
+  - **API ENDPOINT UPDATES**: Enhanced UTM link creation and campaign landing page endpoints with comprehensive validation
+  - **CHARACTER COUNT INDICATORS**: Added real-time character counting with over-limit warnings for all text inputs
+  - **UTM LINK GENERATION**: Implemented generateUTMLink() function with final URL length validation and proper parameter encoding
 - July 20, 2025. Chat Wizard bug fixes and template architecture correction:
   - Fixed content variations showing "default" instead of proper UTM content suggestions
   - Resolved tag display issue in campaign summary by fixing stale closure problems
