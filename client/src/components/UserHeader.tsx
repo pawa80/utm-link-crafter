@@ -34,7 +34,7 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
     <div className="flex items-center gap-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 h-10">
+          <Button variant="ghost" className="flex items-center gap-2 h-10 hover:bg-primary hover:text-white">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/10 text-primary text-sm">
                 {user.email ? getInitials(user.email) : <UserIcon size={16} />}
