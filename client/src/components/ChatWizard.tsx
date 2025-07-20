@@ -106,6 +106,18 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       for (const landingPage of data.landingPages) {
         try {
           const response = await apiRequest("POST", "/api/campaign-landing-pages", landingPage);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Landing page creation failed: ${response.status} - ${errorText}`);
+          }
+          
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const errorText = await response.text();
+            throw new Error(`Expected JSON response but got: ${contentType}. Response: ${errorText.substring(0, 200)}...`);
+          }
+          
           const result = await response.json();
           results.push(result);
         } catch (error) {
@@ -118,6 +130,18 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       for (const utmLink of data.utmLinks) {
         try {
           const response = await apiRequest("POST", "/api/utm-links", utmLink);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`UTM link creation failed: ${response.status} - ${errorText}`);
+          }
+          
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const errorText = await response.text();
+            throw new Error(`Expected JSON response but got: ${contentType}. Response: ${errorText.substring(0, 200)}...`);
+          }
+          
           const result = await response.json();
           results.push(result);
         } catch (error) {
@@ -1227,6 +1251,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
             
             utmLinks.push({
               userId: user.id,
+              accountId: user.accountId,
               targetUrl: landingPage.url,
               fullUtmLink,
               utm_campaign: currentCampaignData.name,
@@ -1244,6 +1269,7 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
     // Also create landing pages
     const landingPagesToCreate = currentCampaignData.landingPages.map(lp => ({
       userId: user.id,
+      accountId: user.accountId,
       campaignName: currentCampaignData.name,
       url: lp.url,
       label: lp.label
@@ -1303,7 +1329,14 @@ This will create ${campaignData.selectedSources.length * campaignData.landingPag
                         ? 'bg-primary text-white' 
                         : 'bg-gray-100 text-gray-900'
                     }`}>
-                      <div className="text-sm whitespace-pre-line">{message.content}</div>
+                      <div 
+                        className="text-sm whitespace-pre-line"
+                        dangerouslySetInnerHTML={{
+                          __html: message.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        }}
+                      />
                     </div>
                     
                     {message.options && message.options.length > 0 && (
