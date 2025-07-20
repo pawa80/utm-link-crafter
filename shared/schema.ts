@@ -113,6 +113,27 @@ export const userUtmTemplates = pgTable("user_utm_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Term Templates - Similar to content templates for utm_term parameter
+export const baseTermTemplates = pgTable("base_term_templates", {
+  id: serial("id").primaryKey(),
+  termValue: text("term_value").notNull(),
+  description: text("description"), // Optional description for the term
+  category: text("category").default("general"), // general, keywords, testing, audience
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userTermTemplates = pgTable("user_term_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(),
+  termValue: text("term_value").notNull(),
+  description: text("description"),
+  category: text("category").default("general"),
+  isCustom: boolean("is_custom").default(false),
+  isArchived: boolean("is_archived").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -181,6 +202,16 @@ export const insertUserUtmTemplateSchema = createInsertSchema(userUtmTemplates).
   createdAt: true,
 });
 
+export const insertBaseTermTemplateSchema = createInsertSchema(baseTermTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserTermTemplateSchema = createInsertSchema(userTermTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
 // New account management schema definitions
 export const insertAccountSchema = createInsertSchema(accounts).omit({
   id: true,
@@ -214,6 +245,10 @@ export type InsertBaseUtmTemplate = z.infer<typeof insertBaseUtmTemplateSchema>;
 export type BaseUtmTemplate = typeof baseUtmTemplates.$inferSelect;
 export type InsertUserUtmTemplate = z.infer<typeof insertUserUtmTemplateSchema>;
 export type UserUtmTemplate = typeof userUtmTemplates.$inferSelect;
+export type InsertBaseTermTemplate = z.infer<typeof insertBaseTermTemplateSchema>;
+export type BaseTermTemplate = typeof baseTermTemplates.$inferSelect;
+export type InsertUserTermTemplate = z.infer<typeof insertUserTermTemplateSchema>;
+export type UserTermTemplate = typeof userTermTemplates.$inferSelect;
 
 // New account management types
 export type InsertAccount = z.infer<typeof insertAccountSchema>;

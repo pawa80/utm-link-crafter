@@ -1,0 +1,186 @@
+UTM Term Parameter Integration - Detailed Implementation information
+
+Implementation Overview
+We need you to add utm_term as a fifth UTM parameter throughout the UTM Builder application. This parameter should be treated as a template-based parameter similar to utm_content, integrated seamlessly into all campaign creation flows and management interfaces.
+Detailed Implementation Prompt for Replit
+
+
+# UTM Term Parameter Integration - Complete Implementation
+## CONTEXT
+Add utm_term as a fifth UTM parameter to UTM Builder with full template support. This parameter is commonly used for paid search keywords and A/B testing variations. It should be integrated into all existing UTM parameter workflows.
+## DATABASE SCHEMA UPDATES
+### 1. Update Existing Tables
+-- Add utm_term column to campaigns table  ALTER TABLE campaigns ADD COLUMN utm_term VARCHAR(100);
+-- Add utm_term to any existing UTM link storage if applicable  -- Update any existing campaign records to have empty string for utm_term  UPDATE campaigns SET utm_term = '' WHERE utm_term IS NULL;
+
+
+### 2. Template System Updates
+-- Add term templates table (similar to existing content templates)  CREATE TABLE term_templates (  id SERIAL PRIMARY KEY,  account_id INTEGER REFERENCES accounts(id),  term_value VARCHAR(100) NOT NULL,  is_base_template BOOLEAN DEFAULT FALSE,  created_at TIMESTAMP DEFAULT NOW(),  updated_at TIMESTAMP DEFAULT NOW()  );
+-- Insert base term templates commonly used in marketing  INSERT INTO term_templates (account_id, term_value, is_base_template) VALUES  (NULL, 'brand-keywords', TRUE),  (NULL, 'competitor-keywords', TRUE),  (NULL, 'product-keywords', TRUE),  (NULL, 'generic-keywords', TRUE),  (NULL, 'long-tail-keywords', TRUE),  (NULL, 'variant-a', TRUE),  (NULL, 'variant-b', TRUE),  (NULL, 'test-group-1', TRUE),  (NULL, 'test-group-2', TRUE),  (NULL, 'mobile-users', TRUE),  (NULL, 'desktop-users', TRUE),  (NULL, 'returning-visitors', TRUE),  (NULL, 'new-visitors', TRUE);
+
+
+## FRONTEND IMPLEMENTATION
+### 3. Manual Campaign Creation Page Updates
+**Layout Changes:**
+- Keep existing Source, Medium, Content, Term fields in the top row
+- Add UTM Term field between Content and the action buttons
+- Move generated UTM Links to a second row below each campaign entry
+- Ensure responsive design maintains usability on mobile devices
+**Component Structure:**
+// Campaign row structure
+ <div className="campaign-row">   <div className="campaign-fields-row">     <SourceField />     <MediumField />     <ContentField />     <TermField />  {/* NEW FIELD */}     <ActionButtons />   </div>   <div className="utm-links-row">     <UTMLinksDisplay />  {/* MOVED TO SECOND ROW */}   </div> </div> ```
+UTM Term Field Requirements:
+Dropdown with template suggestions (similar to content field)
+Allow custom term input with validation
+Character limit: 100 characters
+Auto-sanitization: spaces to hyphens, lowercase conversion
+Placeholder text: "Enter campaign term (optional)"
+Template badge system: green for base templates, blue for custom
+4. Chat Wizard Integration
+AI Prompt Updates:  The Chat Wizard should naturally ask about UTM terms when relevant:
+After collecting source, medium, and content information
+Suggest terms based on campaign type (e.g., "Is this for specific keywords or audience segments?")
+Provide contextual examples based on the campaign source/medium combination
+Chat Flow Enhancement:
+
+
+// Add to chat wizard conversation logic
+const termSuggestions = {
+  'google-ads': ['brand-keywords', 'competitor-keywords', 'product-keywords'],
+  'facebook-ads': ['interest-targeting', 'lookalike-audience', 'custom-audience'],
+  'email': ['subscribers', 'leads', 'customers'],
+  'linkedin': ['job-title', 'industry', 'company-size']
+};
+Response Parsing:
+Extract utm_term from AI responses alongside other UTM parameters
+Apply same validation rules as manual input
+Allow users to edit AI-suggested terms before saving
+5. Campaign Management Page Updates
+Table Layout Redesign:
+
+
+// New campaign management row structure
+<div className="campaign-management-row">
+  <div className="campaign-info-row">
+    <CampaignName />
+    <Source />
+    <Medium />
+    <Content />
+    <Term />  {/* NEW COLUMN */}
+    <Actions />
+  </div>
+  <div className="utm-links-row">
+    <UTMLinksWithCopyButtons />  {/* MOVED TO SECOND ROW */}
+    <LinkCount />
+  </div>
+</div>
+Responsive Design Considerations:
+On mobile: Stack fields vertically within each row
+Ensure UTM links remain easily copyable on all screen sizes
+Maintain visual hierarchy between campaign info and UTM links
+BACKEND API UPDATES
+6. API Endpoint Modifications
+Update All Campaign Endpoints:
+
+
+// POST /api/campaigns - Include utm_term in request body validation
+// PUT /api/campaigns/:id - Include utm_term in update validation
+// GET /api/campaigns - Include utm_term in response data
+// Validation schema update
+const campaignSchema = {
+  // ... existing fields
+  utm_term: {
+    type: 'string',
+    maxLength: 100,
+    required: false,
+    sanitize: true  // Apply same sanitization as other UTM parameters
+  }
+};
+7. UTM Link Generation Logic
+Update UTM URL Builder:
+
+
+function generateUTMUrl(baseUrl, utmParams) {
+  const { source, medium, campaign, content, term } = utmParams;
+  const urlParams = new URLSearchParams();
+  urlParams.append('utm_source', source);
+  urlParams.append('utm_medium', medium);
+  urlParams.append('utm_campaign', campaign);
+  if (content) urlParams.append('utm_content', content);
+  if (term) urlParams.append('utm_term', term);  // NEW PARAMETER
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${urlParams.toString()}`;
+}
+8. Template Management System
+Term Templates API Endpoints:
+
+
+// GET /api/templates/terms - Get all term templates for account
+// POST /api/templates/terms - Create new term template
+// DELETE /api/templates/terms/:id - Delete custom term template
+// PUT /api/templates/terms/:id - Update custom term template
+Template System Integration:
+Include term templates in the existing template management UI
+Allow users to add/edit/delete custom term templates
+Maintain base templates (cannot be deleted by users)
+Show template usage statistics in template management
+DATA MIGRATION & VALIDATION
+9. Existing Data Handling
+Add utm_term column with default empty string to existing campaigns
+Ensure all existing UTM link generation continues to work
+Update any cached or stored UTM URLs to include term parameter when present
+Maintain backward compatibility for existing API consumers
+10. Input Validation & Sanitization
+Apply Same Rules as Other UTM Parameters:
+Convert spaces to hyphens
+Convert to lowercase
+Remove special characters except hyphens and underscores
+Trim whitespace
+Maximum length: 100 characters
+Allow empty/null values (term is optional)
+TESTING REQUIREMENTS
+11. Comprehensive Testing Checklist
+ Manual campaign creation includes term field with template dropdown
+ Chat Wizard asks for and processes term parameter correctly
+ Campaign management page displays term column and maintains layout
+ UTM links generate correctly with term parameter when provided
+ UTM links generate correctly without term parameter when empty
+ Template system works for term templates (CRUD operations)
+ Data export includes utm_term column in CSV/Excel exports
+ Mobile responsive design maintains usability
+ Existing campaigns continue to work without term parameter
+ API endpoints accept and validate utm_term parameter correctly
+12. User Experience Testing
+Verify field placement feels natural in the workflow
+Confirm UTM links on second row improves readability
+Test template suggestions are helpful and relevant
+Ensure mobile layout remains user-friendly
+Validate that the term field doesn't feel overwhelming or mandatory
+DOCUMENTATION UPDATES
+Update any help text or tooltips to mention utm_term
+Add utm_term to onboarding flow explanations
+Include term parameter in any API documentation
+Update template management help text to include term templates
+SUCCESS CRITERIA
+Users can create campaigns with utm_term parameter seamlessly
+Existing functionality remains unchanged for users who don't use terms
+Template system provides relevant suggestions for term parameter
+Layout improvements make UTM link management more readable
+No performance degradation in campaign creation or management flows
+
+
+## Implementation Priority & Timeline
+**Phase 1: Database & Backend**
+- Database schema updates
+- API endpoint modifications
+- UTM URL generation updates
+- Template system backend
+**Phase 2: Frontend Integration**
+- Manual campaign creation page updates
+- Campaign management page redesign
+- Template dropdown implementation
+**Phase 3: Chat Wizard & Polish**
+- Chat Wizard integration
+- Mobile responsive testing
+- Data export updates
+- User experience testing
+This implementation ensures that utm_term is integrated naturally into your existing workflows while improving the overall layout and readability of your campaign management interface.

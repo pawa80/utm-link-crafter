@@ -381,6 +381,18 @@ Changelog:
     * All mutations: ✅ Fixed apiRequest format for proper authentication (POST/PATCH/DELETE operations)
     * Content fetching: ✅ fetchUtmContentSuggestions now works correctly with API
     * Campaign creation: ✅ Complete workflow from manual New Campaign page fully functional
+- July 20, 2025. UTM Term Parameter Integration - Complete 5-Parameter Support Implementation:
+  - Added comprehensive UTM Term parameter support as fifth UTM tracking parameter alongside source, medium, campaign, and content
+  - Created baseTermTemplates and userTermTemplates database tables with 15 pre-populated base templates covering keywords, A/B testing, and audience segmentation
+  - Implemented complete Term Template API endpoints: GET/POST/DELETE /api/term-templates with role-based permissions and category filtering
+  - Added TermTemplateInput React component with dropdown template selection, category filtering, and real-time validation
+  - Updated ValidatedCampaignForm to use new TermTemplateInput for enhanced user experience with template suggestions
+  - Enhanced generateUTMLink function to properly include utm_term parameter in final URL generation
+  - Added term template creation during user account setup - new users automatically receive copies of all base term templates
+  - Updated Chat Wizard data structure to include selectedTerm tracking for conversational campaign creation
+  - All UTM parameters now fully support template-based input with user customization and account-level data isolation
+  - Term templates categorized into: keywords (brand, competitor, product), testing (variant-a/b, test-groups), audience (mobile, retargeting, lookalike), and general categories
+  - Complete 5-parameter UTM system: source, medium, campaign, content, term - all with validation, sanitization, and template support
 
 ## User Preferences
 

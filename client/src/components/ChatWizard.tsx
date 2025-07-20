@@ -36,12 +36,13 @@ interface CampaignData {
   selectedMediums: { [source: string]: string[] };
   contentInputs: { [key: string]: string };
   selectedContent: { [key: string]: string[] }; // key: source-medium, value: array of selected content
+  selectedTerm: { [key: string]: string }; // key: source-medium, value: selected term
   selectedTags: string[];
 }
 
 export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'campaign-type' | 'campaign-name' | 'existing-campaign' | 'landing-pages' | 'sources' | 'mediums' | 'content' | 'tags' | 'review' | 'complete'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'campaign-type' | 'campaign-name' | 'existing-campaign' | 'landing-pages' | 'sources' | 'mediums' | 'content' | 'terms' | 'tags' | 'review' | 'complete'>('welcome');
   const [campaignData, setCampaignData] = useState<CampaignData>({
     name: '',
     isExistingCampaign: false,
@@ -50,6 +51,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     selectedMediums: {},
     contentInputs: {},
     selectedContent: {},
+    selectedTerm: {},
     selectedTags: []
   });
   const [currentInput, setCurrentInput] = useState('');
@@ -100,6 +102,23 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return data;
     } catch (error) {
       console.error(`Error fetching content for ${source}-${medium}:`, error);
+      return [];
+    }
+  };
+
+  // Function to fetch term template suggestions
+  const fetchTermSuggestions = async (category?: string): Promise<Array<{id: number; termValue: string; description?: string; category: string}>> => {
+    try {
+      const params = category ? `?category=${category}` : '';
+      const response = await apiRequest(`/api/term-templates${params}`, { method: "GET" });
+      if (!response.ok) {
+        console.error('Term templates API error');
+        return [];
+      }
+      const terms = await response.json();
+      return Array.isArray(terms) ? terms : [];
+    } catch (error) {
+      console.error('Error fetching term suggestions:', error);
       return [];
     }
   };

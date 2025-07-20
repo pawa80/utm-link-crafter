@@ -1,4 +1,4 @@
-import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, accounts, invitations, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate, type Account, type InsertAccount, type Invitation, type InsertInvitation } from "@shared/schema";
+import { users, utmLinks, sourceTemplates, tags, campaignLandingPages, baseUtmTemplates, userUtmTemplates, baseTermTemplates, userTermTemplates, accounts, invitations, type User, type InsertUser, type UtmLink, type InsertUtmLink, type SourceTemplate, type InsertSourceTemplate, type UpdateUser, type Tag, type InsertTag, type CampaignLandingPage, type InsertCampaignLandingPage, type BaseUtmTemplate, type InsertBaseUtmTemplate, type UserUtmTemplate, type InsertUserUtmTemplate, type BaseTermTemplate, type InsertBaseTermTemplate, type UserTermTemplate, type InsertUserTermTemplate, type Account, type InsertAccount, type Invitation, type InsertInvitation } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -48,8 +48,21 @@ export interface IStorage {
   archiveUserUtmTemplate(id: number, userId: number): Promise<boolean>;
   unarchiveUserUtmTemplate(id: number, userId: number): Promise<boolean>;
   
+  // Base Term Template operations (admin/developer managed)
+  getBaseTermTemplates(): Promise<BaseTermTemplate[]>;
+  getBaseTermTemplatesByCategory(category?: string): Promise<BaseTermTemplate[]>;
+  
+  // User Term Template operations (user-specific copies)
+  createUserTermTemplate(template: InsertUserTermTemplate): Promise<UserTermTemplate>;
+  getUserTermTemplates(userId: number): Promise<UserTermTemplate[]>;
+  getUserTermTemplatesByCategory(userId: number, category?: string): Promise<UserTermTemplate[]>;
+  deleteUserTermTemplate(id: number, userId: number): Promise<boolean>;
+  archiveUserTermTemplate(id: number, userId: number): Promise<boolean>;
+  unarchiveUserTermTemplate(id: number, userId: number): Promise<boolean>;
+  
   // User account setup
   createUserTemplatesFromBase(userId: number, accountId?: number): Promise<boolean>;
+  createUserTermTemplatesFromBase(userId: number, accountId: number): Promise<boolean>;
   
   // Get all unique URLs that have been used across the account
   getAllUniqueUrls(userId: number): Promise<string[]>;
@@ -420,6 +433,70 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Base Term Template operations
+  async getBaseTermTemplates(): Promise<BaseTermTemplate[]> {
+    return await db.select().from(baseTermTemplates);
+  }
+
+  async getBaseTermTemplatesByCategory(category?: string): Promise<BaseTermTemplate[]> {
+    if (category) {
+      return await db.select().from(baseTermTemplates)
+        .where(eq(baseTermTemplates.category, category));
+    }
+    return await this.getBaseTermTemplates();
+  }
+
+  // User Term Template operations
+  async createUserTermTemplate(template: InsertUserTermTemplate): Promise<UserTermTemplate> {
+    const [userTermTemplate] = await db
+      .insert(userTermTemplates)
+      .values(template)
+      .returning();
+    return userTermTemplate;
+  }
+
+  async getUserTermTemplates(userId: number): Promise<UserTermTemplate[]> {
+    return await db.select().from(userTermTemplates)
+      .where(and(
+        eq(userTermTemplates.userId, userId),
+        eq(userTermTemplates.isArchived, false)
+      ));
+  }
+
+  async getUserTermTemplatesByCategory(userId: number, category?: string): Promise<UserTermTemplate[]> {
+    const conditions = [
+      eq(userTermTemplates.userId, userId),
+      eq(userTermTemplates.isArchived, false)
+    ];
+    
+    if (category) {
+      conditions.push(eq(userTermTemplates.category, category));
+    }
+    
+    return await db.select().from(userTermTemplates)
+      .where(and(...conditions));
+  }
+
+  async deleteUserTermTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(userTermTemplates)
+      .where(and(eq(userTermTemplates.id, id), eq(userTermTemplates.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async archiveUserTermTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userTermTemplates)
+      .set({ isArchived: true })
+      .where(and(eq(userTermTemplates.id, id), eq(userTermTemplates.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async unarchiveUserTermTemplate(id: number, userId: number): Promise<boolean> {
+    const result = await db.update(userTermTemplates)
+      .set({ isArchived: false })
+      .where(and(eq(userTermTemplates.id, id), eq(userTermTemplates.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   // User account setup - creates user template copies from base templates
   async createUserTemplatesFromBase(userId: number, accountId?: number): Promise<boolean> {
     try {
@@ -455,6 +532,34 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error creating user templates from base:', error);
+      return false;
+    }
+  }
+
+  // Creates user term template copies from base term templates
+  async createUserTermTemplatesFromBase(userId: number, accountId: number): Promise<boolean> {
+    try {
+      // Get all base term templates
+      const baseTermTemplates = await this.getBaseTermTemplates();
+      
+      // Create user term template copies
+      const userTermTemplateInserts = baseTermTemplates.map(base => ({
+        userId,
+        accountId,
+        termValue: base.termValue,
+        description: base.description,
+        category: base.category,
+        isArchived: false,
+        isCustom: false // false because it's from base template
+      }));
+
+      if (userTermTemplateInserts.length > 0) {
+        await db.insert(userTermTemplates).values(userTermTemplateInserts);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error creating user term templates from base:', error);
       return false;
     }
   }

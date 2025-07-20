@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ValidatedInput } from "@/components/ui/character-counter";
+import { TermTemplateInput } from "@/components/ui/term-template-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, Plus, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -351,13 +352,11 @@ export function ValidatedCampaignForm({
                   placeholder="e.g., header-banner, sidebar-ad"
                 />
 
-                <ValidatedInput
+                <TermTemplateInput
                   label="Term"
-                  value={link.term}
-                  onChange={(e) => handleUtmLinkChange(index, 'term', e.target.value)}
+                  value={link.term || ''}
+                  onChange={(value) => handleUtmLinkChange(index, 'term', value)}
                   error={fieldErrors[`utmLink_${index}_term`]}
-                  maxLength={100}
-                  showCounter
                   placeholder="e.g., running-shoes, summer-sale"
                 />
 

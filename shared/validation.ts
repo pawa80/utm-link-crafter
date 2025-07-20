@@ -95,6 +95,19 @@ export const utmTermSchema = z
   .optional()
   .or(z.literal(''));
 
+// Term template validation schemas
+export const termTemplateSchema = z.object({
+  termValue: z
+    .string()
+    .min(1, "Term value is required")
+    .max(100, "Term value must be 100 characters or less")
+    .refine(val => /^[a-zA-Z0-9\-_\s]+$/.test(val), {
+      message: "Term value can only contain letters, numbers, spaces, hyphens, and underscores"
+    }),
+  description: z.string().max(255, "Description must be 255 characters or less").optional(),
+  category: z.enum(["general", "keywords", "testing", "audience"]).default("general")
+});
+
 // Landing page URL validation schema
 export const landingPageUrlSchema = z
   .string()

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
 import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions";
-import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError } from "@shared/validation";
+import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "@shared/validation";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 
@@ -76,6 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
+      
+      // Create user term template copies from base term templates
+      await storage.createUserTermTemplatesFromBase(user.id, account.id);
       
       // Create default source templates for new users with account context
       const defaultSources = getUniqueSourcesAndMediums();
@@ -756,6 +759,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteUserUtmTemplate(id, req.user.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Term Templates API routes
+  app.get("/api/term-templates", authMiddleware, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const userTermTemplates = await storage.getUserTermTemplatesByCategory(req.user.id, category);
+      res.json(userTermTemplates);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/term-templates", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
+    try {
+      const validatedData = termTemplateSchema.parse(req.body);
+      
+      const userTermTemplate = await storage.createUserTermTemplate({
+        ...validatedData,
+        userId: req.user.id,
+        accountId: req.user.accountId,
+        isCustom: true // true because user-created
+      });
+      
+      res.json(userTermTemplate);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/base-term-templates", authMiddleware, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const baseTermTemplates = await storage.getBaseTermTemplatesByCategory(category);
+      res.json(baseTermTemplates);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/term-templates/:id/archive", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.archiveUserTermTemplate(id, req.user.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/term-templates/:id/unarchive", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.unarchiveUserTermTemplate(id, req.user.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/term-templates/:id", authMiddleware, requirePermission('manage_templates'), async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteUserTermTemplate(id, req.user.id);
       res.json({ success });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
