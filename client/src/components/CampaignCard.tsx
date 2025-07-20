@@ -186,7 +186,7 @@ export default function CampaignCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="text-primary hover:text-primary/80"
+                className="text-primary hover:text-white hover:bg-primary"
               >
                 <Edit className="mr-2" size={16} />
                 Edit
@@ -197,7 +197,7 @@ export default function CampaignCard({
             onClick={onToggleCollapse}
             variant="outline"
             size="sm"
-            className="text-primary hover:text-primary/80"
+            className="text-primary hover:text-white hover:bg-primary"
           >
             {isCollapsed ? (
               <>
@@ -215,7 +215,7 @@ export default function CampaignCard({
             onClick={handleCopyAllCampaignLinks}
             variant="outline"
             size="sm"
-            className="text-primary hover:text-primary/80"
+            className="text-primary hover:text-white hover:bg-primary"
           >
             <Copy className="mr-2" size={16} />
             Copy Links
@@ -225,7 +225,7 @@ export default function CampaignCard({
               onClick={handleUnarchiveCampaign}
               variant="outline"
               size="sm"
-              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+              className="text-green-600 hover:text-white hover:bg-green-600 border-green-300 hover:border-green-600"
               disabled={unarchiveCampaignMutation.isPending}
             >
               <ArchiveRestore className="mr-2" size={16} />
@@ -236,7 +236,7 @@ export default function CampaignCard({
               onClick={() => setShowArchiveDialog(true)}
               variant="outline"
               size="sm"
-              className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+              className="text-red-600 hover:text-white hover:bg-red-600 border-red-300 hover:border-red-600"
             >
               <Archive className="mr-2" size={16} />
               Archive
@@ -282,7 +282,7 @@ export default function CampaignCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-primary hover:text-primary/80 flex-1"
+                  className="text-primary hover:text-white hover:bg-primary flex-1"
                 >
                   <Edit className="mr-2" size={16} />
                   Edit
@@ -293,7 +293,7 @@ export default function CampaignCard({
               onClick={onToggleCollapse}
               variant="outline"
               size="sm"
-              className="text-primary hover:text-primary/80 flex-1"
+              className="text-primary hover:text-white hover:bg-primary flex-1"
             >
               {isCollapsed ? (
                 <>
@@ -312,7 +312,7 @@ export default function CampaignCard({
             onClick={handleCopyAllCampaignLinks}
             variant="outline"
             size="sm"
-            className="text-primary hover:text-primary/80"
+            className="text-primary hover:text-white hover:bg-primary"
           >
             <Copy className="mr-2" size={16} />
             Copy Links
@@ -322,7 +322,7 @@ export default function CampaignCard({
               onClick={handleUnarchiveCampaign}
               variant="outline"
               size="sm"
-              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+              className="text-green-600 hover:text-white hover:bg-green-600 border-green-300 hover:border-green-600"
               disabled={unarchiveCampaignMutation.isPending}
             >
               <ArchiveRestore className="mr-2" size={16} />
@@ -333,7 +333,7 @@ export default function CampaignCard({
               onClick={() => setShowArchiveDialog(true)}
               variant="outline"
               size="sm"
-              className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+              className="text-red-600 hover:text-white hover:bg-red-600 border-red-300 hover:border-red-600"
             >
               <Archive className="mr-2" size={16} />
               Archive
