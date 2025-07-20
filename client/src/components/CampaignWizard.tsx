@@ -190,7 +190,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     checkedSources.forEach(([sourceName, state]) => {
       state.selectedMediums.forEach(medium => {
         const contentKey = `${sourceName}-${medium}`;
-        const contents = selectedContent[contentKey] || ['default'];
+        const contents = selectedContent[contentKey] || [];
+        if (contents.length === 0) return; // Skip if no content selected
         const terms = selectedTerms[contentKey] || [''];
         
         landingPages.forEach(landingPage => {
@@ -269,7 +270,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       
       return {
         ...prev,
-        [contentKey]: updated.length > 0 ? updated : ['default'] // Always keep at least default
+        [contentKey]: updated // Allow empty selection
       };
     });
   };
@@ -1231,10 +1232,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       [mediumKey]: newVariants
                                     }));
 
-                                    // Auto-select all content suggestions
+                                    // Initialize empty content selection - user must manually select
                                     setSelectedContent(prev => ({
                                       ...prev,
-                                      [contentKey]: contentSuggestions
+                                      [contentKey]: []
                                     }));
                                     
                                     toast({
@@ -1249,10 +1250,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                       [mediumKey]: [{ id: `${mediumKey}-0`, content: '' }]
                                     }));
                                     
-                                    // Set default content
+                                    // Initialize empty content selection - user must manually select
                                     setSelectedContent(prev => ({
                                       ...prev,
-                                      [contentKey]: ['default']
+                                      [contentKey]: []
                                     }));
                                   }
                                 } else {
