@@ -987,7 +987,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           { 
             label: campaignData.isExistingCampaign ? "Skip Tags & Add Links" : "Skip Tags", 
             value: "skip-tags", 
-            action: () => createCampaign(), 
+            action: () => showReview(), 
             disabled: isCreatingCampaign 
           }
         ],
@@ -1001,7 +1001,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           { 
             label: campaignData.isExistingCampaign ? "Skip Tags & Add Links" : "Skip Tags", 
             value: "skip", 
-            action: () => createCampaign(), 
+            action: () => showReview(), 
             disabled: isCreatingCampaign 
           }
         ],
@@ -1011,23 +1011,28 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectTag = (tagName: string) => {
-    setCampaignData(prev => ({
-      ...prev,
-      selectedTags: [...prev.selectedTags, tagName]
-    }));
-    addUserMessage(tagName);
-
-    setTimeout(() => {
-      const buttonLabel = campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
+    setCampaignData(prev => {
+      const updatedData = {
+        ...prev,
+        selectedTags: [...prev.selectedTags, tagName]
+      };
       
-      addBotMessage(
-        `✅ Tag "${tagName}" added! Ready to complete your campaign?`,
-        [
-          { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
-          { label: buttonLabel, value: "create", action: () => createCampaign(), isPrimary: true, disabled: isCreatingCampaign }
-        ]
-      );
-    }, 500);
+      // Use setTimeout to ensure state update is completed
+      setTimeout(() => {
+        const buttonLabel = updatedData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
+        
+        addBotMessage(
+          `✅ Tag "${tagName}" added! Ready to review your campaign?`,
+          [
+            { label: "Add Another Tag", value: "add-tag", action: () => showTagSelection() },
+            { label: "Review Campaign", value: "review", action: () => showReview(), isPrimary: true }
+          ]
+        );
+      }, 500);
+      
+      return updatedData;
+    });
+    addUserMessage(tagName);
   };
 
   const promptForCustomTag = () => {
@@ -1157,32 +1162,37 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showReview = () => {
-    const summary = `
+    // Use functional update to get latest campaignData
+    setCampaignData(currentData => {
+      const summary = `
 📋 **Campaign Summary:**
 
-**Type:** ${campaignData.isExistingCampaign ? 'Adding to existing campaign' : 'New campaign'}
-**Name:** ${campaignData.name}
-**Landing Pages:** ${campaignData.landingPages.map(lp => lp.url).join(', ')}
-**Sources:** ${campaignData.selectedSources.join(', ')}
-**Tags:** ${campaignData.selectedTags.length > 0 ? campaignData.selectedTags.join(', ') : 'None'}
+**Type:** ${currentData.isExistingCampaign ? 'Adding to existing campaign' : 'New campaign'}
+**Name:** ${currentData.name}
+**Landing Pages:** ${currentData.landingPages.map(lp => lp.url).join(', ')}
+**Sources:** ${currentData.selectedSources.join(', ')}
+**Tags:** ${currentData.selectedTags.length > 0 ? currentData.selectedTags.join(', ') : 'None'}
 
-This will create ${campaignData.selectedSources.length * campaignData.landingPages.length} UTM link(s) for your campaign.
-    `;
+This will create ${currentData.selectedSources.length * currentData.landingPages.length} UTM link(s) for your campaign.
+      `;
 
-    const buttonLabel = campaignData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
+      const buttonLabel = currentData.isExistingCampaign ? "Add Links to Campaign" : "Create Campaign";
 
-    addBotMessage(
-      summary,
-      [
-        { 
-          label: buttonLabel, 
-          value: "create", 
-          action: () => createCampaign() 
-        },
-        { label: "Make Changes", value: "edit", action: () => restartWizard() }
-      ],
-      'review'
-    );
+      addBotMessage(
+        summary,
+        [
+          { 
+            label: buttonLabel, 
+            value: "create", 
+            action: () => createCampaign() 
+          },
+          { label: "Make Changes", value: "edit", action: () => restartWizard() }
+        ],
+        'review'
+      );
+      
+      return currentData; // Return unchanged data
+    });
   };
 
   const createCampaign = () => {

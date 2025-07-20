@@ -120,6 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const utmLinkData = insertUtmLinkSchema.parse({
         ...req.body,
         userId: req.user.id,
+        accountId: req.user.accountId,
       });
       
       const utmLink = await storage.createUtmLink(utmLinkData);
@@ -502,6 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const landingPageData = insertCampaignLandingPageSchema.parse({
         ...req.body,
         userId: req.user.id,
+        accountId: req.user.accountId,
       });
       
       const landingPage = await storage.createCampaignLandingPage(landingPageData);
@@ -558,11 +560,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Source and medium are required" });
       }
       
-      // Get user's template content for this source-medium combination
-      const userTemplates = await storage.getUserUtmContentByCombination(req.user.id, source, medium);
-      const contentOptions = userTemplates.map(t => t.utmContent);
+      // Get both user's template content and base template content for this source-medium combination
+      const [userTemplates, baseTemplates] = await Promise.all([
+        storage.getUserUtmContentByCombination(req.user.id, source, medium),
+        storage.getBaseUtmContentByCombination(source, medium)
+      ]);
       
-      res.json(contentOptions);
+      const userContent = userTemplates.map(t => t.utmContent);
+      const baseContent = baseTemplates.map(t => t.utmContent);
+      
+      // Combine and deduplicate content options
+      const allContent = [...new Set([...userContent, ...baseContent])];
+      
+      res.json(allContent);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
