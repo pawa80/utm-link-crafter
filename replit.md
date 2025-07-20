@@ -393,6 +393,14 @@ Changelog:
   - All UTM parameters now fully support template-based input with user customization and account-level data isolation
   - Term templates categorized into: keywords (brand, competitor, product), testing (variant-a/b, test-groups), audience (mobile, retargeting, lookalike), and general categories
   - Complete 5-parameter UTM system: source, medium, campaign, content, term - all with validation, sanitization, and template support
+- July 20, 2025. Chat Wizard UTM Term Integration completed:
+  - Added term selection step in conversation flow (after content selection, before tags)
+  - Implemented term template suggestions with category organization (keywords, testing, audience, general)
+  - Added custom term input with validation and sanitization
+  - Term selection applies to all source-medium combinations for consistency
+  - Updated UTM link generation to include selected term parameter
+  - Fixed missing user term templates by copying base templates to user accounts
+  - Chat Wizard now supports complete 5-parameter UTM link creation with professional template suggestions
 
 ## User Preferences
 
