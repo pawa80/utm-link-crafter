@@ -401,7 +401,6 @@ export default function AccountManagement() {
                           {userAccount.account?.subscriptionTier} plan
                         </p>
                       </div>
-                      <RoleBadge role={userAccount.role} />
                     </div>
                   </div>
                 )}

@@ -312,6 +312,13 @@ Changelog:
   - All existing users migrated to individual company accounts with super_admin roles
   - Firebase authentication now properly configured with complete environment variables
   - Application fully functional with Google sign-in and company-based account architecture
+- July 20, 2025. Account Management authentication and hierarchy fixes:
+  - Resolved critical authentication session mismatches between Firebase UID and database records
+  - Cleaned database of duplicate users and conflicting account associations
+  - Fixed React Query key structure causing API failures for users endpoint
+  - Implemented proper company-based account hierarchy: new user signup creates company account, user becomes Super Admin
+  - Account Management page now correctly displays users in their company accounts
+  - Ready for Agency User level implementation as per the implementation plan
 
 ## User Preferences
 
