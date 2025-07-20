@@ -279,50 +279,60 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
     });
   }
 
-  // Apply sorting
+  // Apply sorting - Debug the dates to see what's happening
   campaignGroups = campaignGroups.sort((a, b) => {
     const aAllLinks = a.sources.flatMap(source => source.links);
     const bAllLinks = b.sources.flatMap(source => source.links);
     
-    const aMostRecent = aAllLinks.sort((x, y) => {
-      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
-      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
-      return yDate - xDate;
-    })[0];
-    const bMostRecent = bAllLinks.sort((x, y) => {
-      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
-      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
-      return yDate - xDate;
-    })[0];
+    // Get the most recent link from each campaign (newest createdAt)
+    const aMostRecent = aAllLinks.reduce((latest, current) => {
+      const latestTime = latest?.createdAt ? new Date(latest.createdAt).getTime() : 0;
+      const currentTime = current?.createdAt ? new Date(current.createdAt).getTime() : 0;
+      return currentTime > latestTime ? current : latest;
+    }, aAllLinks[0]);
     
-    const aOldest = aAllLinks.sort((x, y) => {
-      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
-      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
-      return xDate - yDate;
-    })[0];
-    const bOldest = bAllLinks.sort((x, y) => {
-      const xDate = x.createdAt ? new Date(x.createdAt).getTime() : 0;
-      const yDate = y.createdAt ? new Date(y.createdAt).getTime() : 0;
-      return xDate - yDate;
-    })[0];
+    const bMostRecent = bAllLinks.reduce((latest, current) => {
+      const latestTime = latest?.createdAt ? new Date(latest.createdAt).getTime() : 0;
+      const currentTime = current?.createdAt ? new Date(current.createdAt).getTime() : 0;
+      return currentTime > latestTime ? current : latest;
+    }, bAllLinks[0]);
 
     switch (sortBy) {
       case "created-newest":
-        const aMostRecentDate = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
-        const bMostRecentDate = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
-        return bMostRecentDate - aMostRecentDate;
+        // Sort by most recent link in each campaign (descending - newest first)
+        const aMostRecentTime = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentTime = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        
+        // Debug logging
+        console.log(`Comparing ${a.campaignName}(${new Date(aMostRecentTime).toISOString()}) vs ${b.campaignName}(${new Date(bMostRecentTime).toISOString()})`);
+        
+        return bMostRecentTime - aMostRecentTime;
       case "created-oldest":
-        const aOldestDate = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
-        const bOldestDate = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
-        return aOldestDate - bOldestDate;
+        // Get oldest link from each campaign
+        const aOldest = aAllLinks.reduce((oldest, current) => {
+          const oldestTime = oldest?.createdAt ? new Date(oldest.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+          const currentTime = current?.createdAt ? new Date(current.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+          return currentTime < oldestTime ? current : oldest;
+        }, aAllLinks[0]);
+        
+        const bOldest = bAllLinks.reduce((oldest, current) => {
+          const oldestTime = oldest?.createdAt ? new Date(oldest.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+          const currentTime = current?.createdAt ? new Date(current.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+          return currentTime < oldestTime ? current : oldest;
+        }, bAllLinks[0]);
+        
+        const aOldestTime = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
+        const bOldestTime = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
+        return aOldestTime - bOldestTime;
       case "updated-newest":
-        const aMostRecentDateUpdated = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
-        const bMostRecentDateUpdated = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
-        return bMostRecentDateUpdated - aMostRecentDateUpdated;
+        // Same as created-newest for now
+        const aMostRecentTimeUpdated = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentTimeUpdated = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return bMostRecentTimeUpdated - aMostRecentTimeUpdated;
       case "updated-oldest":
-        const aMostRecentDateOldest = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
-        const bMostRecentDateOldest = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
-        return aMostRecentDateOldest - bMostRecentDateOldest;
+        const aMostRecentTimeOldest = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentTimeOldest = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return aMostRecentTimeOldest - bMostRecentTimeOldest;
       case "tag-alphabetical":
         const aTags = aMostRecent?.tags?.[0] || "zzz"; // Put untagged at end
         const bTags = bMostRecent?.tags?.[0] || "zzz";
