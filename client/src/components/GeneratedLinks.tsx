@@ -303,9 +303,7 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
         const aMostRecentTime = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
         const bMostRecentTime = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
         
-        // Debug logging
-        console.log(`Comparing ${a.campaignName}(${new Date(aMostRecentTime).toISOString()}) vs ${b.campaignName}(${new Date(bMostRecentTime).toISOString()})`);
-        
+
         return bMostRecentTime - aMostRecentTime;
       case "created-oldest":
         // Get oldest link from each campaign

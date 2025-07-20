@@ -1,0 +1,25 @@
+GeneratedLinks - Links count: 0
+GeneratedLinks.tsx:132 GeneratedLinks - Links data: (70) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:133 GeneratedLinks - Links count: 70
+GeneratedLinks.tsx:135 GeneratedLinks - Sample link: {id: 538, userId: 14, accountId: 16, targetUrl: 'https://playmops.io/', utm_campaign: 'test-18-chat-terms', …}
+GeneratedLinks.tsx:136 GeneratedLinks - All campaign names: (70) ['test-18-chat-terms', 'test-18-chat-terms', 'test-20-chat-terms', 'test-22-chat-terms', 'test-22-chat-terms', 'test-22-chat-terms', 'test-22-chat-terms', 'test-22-chat-terms', 'test-22-chat-terms', 'test-20-chat-terms', 'test-20-chat-terms', 'test-18-chat-terms', 'test-18-chat-terms', 'test-18-chat-terms', 'test-17-chat-terms', 'test-17-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-14-chat-terms', 'test-12-chat-terms', 'test-12-chat-terms', 'test-12-chat-terms', 'test-12-chat-terms', 'test-12-chat-terms', 'test-12-chat-terms', 'test-11-chat-term', 'test-11-chat-term', 'test-11-chat-term', 'test-9-chat-term', 'test-9-chat-term', 'test-9-chat-term', 'test-9-chat-term', 'test-8-chat-term', 'test-8-chat-term', 'test-8-chat-term', 'test-7-chat-term', 'test-7-chat-term', 'test-6-chat-term', 'test-6-chat-term', 'test-6-chat-term', 'test-5-chat', 'test-5-chat', 'test-5-chat', 'Test 4 manual', 'Test 4 manual', 'Test 4 manual', 'Test 4 manual', 'Test 4 manual', 'Test 3', 'Test 3', 'Test 3', 'Test 3', 'Test 3', 'Test 2', 'Test 2', 'Test 2', 'Test 2', 'Test 2', 'Test 2', 'Test 1', 'Test 1', 'Test 1', 'Test 1', 'Test 1', 'Test 1']
+GeneratedLinks.tsx:137 GeneratedLinks - Unique campaigns: (16) ['test-18-chat-terms', 'test-20-chat-terms', 'test-22-chat-terms', 'test-17-chat-terms', 'test-14-chat-terms', 'test-12-chat-terms', 'test-11-chat-term', 'test-9-chat-term', 'test-8-chat-term', 'test-7-chat-term', 'test-6-chat-term', 'test-5-chat', 'Test 4 manual', 'Test 3', 'Test 2', 'Test 1']
+GeneratedLinks.tsx:221 GeneratedLinks - Grouped by campaign: {test-18-chat-terms: Array(5), test-20-chat-terms: Array(3), test-22-chat-terms: Array(6), test-17-chat-terms: Array(2), test-14-chat-terms: Array(8), …}
+GeneratedLinks.tsx:262 GeneratedLinks - Campaign groups before filtering: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:307 Comparing test-20-chat-terms(2025-07-20T22:00:31.589Z) vs test-18-chat-terms(2025-07-20T22:09:36.970Z)
+GeneratedLinks.tsx:307 Comparing test-22-chat-terms(2025-07-20T21:54:02.037Z) vs test-20-chat-terms(2025-07-20T22:00:31.589Z)
+GeneratedLinks.tsx:307 Comparing test-17-chat-terms(2025-07-20T21:19:15.662Z) vs test-22-chat-terms(2025-07-20T21:54:02.037Z)
+GeneratedLinks.tsx:307 Comparing test-14-chat-terms(2025-07-20T21:00:08.530Z) vs test-17-chat-terms(2025-07-20T21:19:15.662Z)
+GeneratedLinks.tsx:307 Comparing test-12-chat-terms(2025-07-20T20:56:03.434Z) vs test-14-chat-terms(2025-07-20T21:00:08.530Z)
+GeneratedLinks.tsx:307 Comparing test-11-chat-term(2025-07-20T20:47:49.024Z) vs test-12-chat-terms(2025-07-20T20:56:03.434Z)
+GeneratedLinks.tsx:307 Comparing test-9-chat-term(2025-07-20T20:10:08.522Z) vs test-11-chat-term(2025-07-20T20:47:49.024Z)
+GeneratedLinks.tsx:307 Comparing test-8-chat-term(2025-07-20T19:56:49.945Z) vs test-9-chat-term(2025-07-20T20:10:08.522Z)
+GeneratedLinks.tsx:307 Comparing test-7-chat-term(2025-07-20T17:54:00.786Z) vs test-8-chat-term(2025-07-20T19:56:49.945Z)
+GeneratedLinks.tsx:307 Comparing test-6-chat-term(2025-07-20T16:48:34.811Z) vs test-7-chat-term(2025-07-20T17:54:00.786Z)
+GeneratedLinks.tsx:307 Comparing test-5-chat(2025-07-20T16:19:15.581Z) vs test-6-chat-term(2025-07-20T16:48:34.811Z)
+GeneratedLinks.tsx:307 Comparing Test 4 manual(2025-07-20T07:30:15.586Z) vs test-5-chat(2025-07-20T16:19:15.581Z)
+GeneratedLinks.tsx:307 Comparing Test 3(2025-07-20T06:56:48.206Z) vs Test 4 manual(2025-07-20T07:30:15.586Z)
+GeneratedLinks.tsx:307 Comparing Test 2(2025-07-20T06:48:55.752Z) vs Test 3(2025-07-20T06:56:48.206Z)
+GeneratedLinks.tsx:307 Comparing Test 1(2025-07-20T06:43:03.905Z) vs Test 2(2025-07-20T06:48:55.752Z)
+GeneratedLinks.tsx:345 GeneratedLinks - Final campaign groups: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+GeneratedLinks.tsx:346 GeneratedLinks - Campaign groups length: 16
