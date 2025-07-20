@@ -409,6 +409,13 @@ Changelog:
   - Clean, streamlined interface: "Select UTM terms for tracking (choose multiple if needed)"
   - Enhanced visual feedback with selected terms showing checkmarks and remaining options available
   - Multiple terms generate multiplication of UTM links (2 terms × 2 content = 4 links per landing page)
+- July 20, 2025. Chat Wizard content selection system enhancement:
+  - Fixed content variations clicking to work like sources/mediums/terms with individual selection control
+  - Enabled content toggle (click to select, click again to deselect) 
+  - Fixed green background issue - only actually selected content shows green
+  - Custom content input works without affecting other content options
+  - Enhanced campaign summary to show comprehensive details: mediums, content, and terms with clean display
+  - Removed "Make Changes" button from campaign summary for cleaner interface
 
 ## User Preferences
 

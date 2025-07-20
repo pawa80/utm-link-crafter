@@ -1624,9 +1624,9 @@ This will create ${(() => {
           { 
             label: buttonLabel, 
             value: "create", 
-            action: () => createCampaign() 
-          },
-          { label: "Make Changes", value: "edit", action: () => restartWizard() }
+            action: () => createCampaign(),
+            isPrimary: true
+          }
         ],
         'review'
       );
