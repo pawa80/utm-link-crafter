@@ -135,7 +135,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <Link href="/campaigns">
-                <Button variant="outline" className="w-full h-14 text-lg font-semibold border-2 hover:border-primary hover:bg-primary/5">
+                <Button variant="outline" className="w-full h-14 text-lg font-semibold border-2 hover:border-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10 transition-all duration-300">
                   Manage Campaigns
                 </Button>
               </Link>
