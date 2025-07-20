@@ -58,24 +58,17 @@ export interface IStorage {
   createAccount(account: InsertAccount): Promise<Account>;
   getAccount(id: number): Promise<Account | undefined>;
   updateAccount(id: number, updates: Partial<InsertAccount>): Promise<Account | undefined>;
-  getUserAccounts(userId: number): Promise<Account[]>;
+  createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string): Promise<{ user: User; account: Account }>;
   
-  // User account relationship operations
-  addUserToAccount(userAccount: InsertUserAccount): Promise<UserAccount>;
-  getUserAccountRelation(userId: number, accountId: number): Promise<UserAccount | undefined>;
-  getAccountUsers(accountId: number): Promise<UserAccount[]>;
-  updateUserRole(userId: number, accountId: number, role: string): Promise<UserAccount | undefined>;
-  removeUserFromAccount(userId: number, accountId: number): Promise<boolean>;
+  // User management operations within account
+  getAccountUsers(accountId: number): Promise<User[]>;
+  updateUserRole(userId: number, newRole: string): Promise<User | undefined>;
   
   // Invitation operations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   getInvitationByToken(token: string): Promise<Invitation | undefined>;
   getAccountInvitations(accountId: number): Promise<Invitation[]>;
   updateInvitationStatus(id: number, status: string): Promise<Invitation | undefined>;
-  
-  // User context operations
-  getUserAccountsWithRole(userId: number): Promise<(UserAccount & { account: Account })[]>;
-  getDefaultAccountForUser(userId: number): Promise<Account | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {

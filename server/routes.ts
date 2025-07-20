@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertUserAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
+import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 
@@ -96,6 +97,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
 
+  // Get current user's account
+  app.get("/api/user/account", authMiddleware, async (req: any, res) => {
+    try {
+      const account = await storage.getUserAccount(req.user.id);
+      if (!account) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+      res.json({ ...req.user, account });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Update user settings
   app.patch("/api/user", authMiddleware, async (req: any, res) => {
     try {
@@ -115,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create UTM link
-  app.post("/api/utm-links", authMiddleware, async (req: any, res) => {
+  app.post("/api/utm-links", authMiddleware, requirePermission('create_campaigns'), async (req: any, res) => {
     try {
       const utmLinkData = insertUtmLinkSchema.parse({
         ...req.body,
@@ -131,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's UTM links
-  app.get("/api/utm-links", authMiddleware, async (req: any, res) => {
+  app.get("/api/utm-links", authMiddleware, requirePermission('read_campaigns'), async (req: any, res) => {
     try {
       // Validate and sanitize input parameters
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Cap at 1000
@@ -147,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete UTM links by campaign (for editing campaigns)
-  app.delete("/api/utm-links/campaign/:campaignName", authMiddleware, async (req: any, res) => {
+  app.delete("/api/utm-links/campaign/:campaignName", authMiddleware, requirePermission('edit_campaigns'), async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
       
@@ -170,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Archive campaign
-  app.post("/api/campaigns/:campaignName/archive", authMiddleware, async (req: any, res) => {
+  app.post("/api/campaigns/:campaignName/archive", authMiddleware, requirePermission('delete_campaigns'), async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
       
@@ -193,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unarchive campaign
-  app.post("/api/campaigns/:campaignName/unarchive", authMiddleware, async (req: any, res) => {
+  app.post("/api/campaigns/:campaignName/unarchive", authMiddleware, requirePermission('delete_campaigns'), async (req: any, res) => {
     try {
       const campaignName = decodeURIComponent(req.params.campaignName);
       
@@ -216,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export user's UTM links as CSV
-  app.get("/api/utm-links/export", authMiddleware, async (req: any, res) => {
+  app.get("/api/utm-links/export", authMiddleware, requirePermission('read_campaigns'), async (req: any, res) => {
     try {
       // Get all user's links for export
       const links = await storage.getUserUtmLinks(req.user.id, 1000, 0);
@@ -891,6 +905,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
         account: account ? { id: account.id, name: account.name } : null,
         inviter: inviter ? { email: inviter.email } : null
       });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // =====================================
+  // ACCOUNT MANAGEMENT ENDPOINTS WITH ROLE-BASED PERMISSIONS
+  // =====================================
+
+  // Get account users (Super Admin and Admin only)
+  app.get("/api/accounts/:accountId/users", authMiddleware, requireAccountAccess('accountId'), requirePermission('manage_users'), async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.accountId);
+      const users = await storage.getAccountUsers(accountId);
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update user role (Super Admin and Admin only, with restrictions)
+  app.patch("/api/users/:userId/role", authMiddleware, requirePermission('change_user_roles'), async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { role } = req.body;
+
+      // Validate role
+      if (!['viewer', 'editor', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Get target user
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Validate account access
+      if (!validateAccountAccess(req.user, targetUser.accountId)) {
+        return res.status(403).json({ message: "Access denied. User does not belong to your account." });
+      }
+
+      // Check if current user can change this user's role to the new role
+      if (!canChangeUserRole(req.user, targetUser, role)) {
+        return res.status(403).json({ 
+          message: "Cannot change user role. Insufficient permissions.",
+          details: req.user.role === 'admin' && (targetUser.role === 'super_admin' || role === 'super_admin') 
+            ? "Admins cannot manage Super Admin roles" 
+            : "You can only modify users with lower privileges"
+        });
+      }
+
+      const updatedUser = await storage.updateUserRole(userId, role);
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user role" });
+      }
+
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Create invitation (Super Admin and Admin only)
+  app.post("/api/invitations", authMiddleware, requirePermission('invite_users'), async (req: any, res) => {
+    try {
+      const { email, role } = req.body;
+
+      // Validate role
+      if (!['viewer', 'editor', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Admin cannot invite Super Admin
+      if (req.user.role === 'admin' && role === 'super_admin') {
+        return res.status(403).json({ message: "Admins cannot invite Super Admins" });
+      }
+
+      // Generate invitation token
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      const invitation = await storage.createInvitation({
+        accountId: req.user.accountId,
+        email,
+        role,
+        token,
+        expiresAt,
+        invitedBy: req.user.id
+      });
+
+      res.json({
+        ...invitation,
+        inviteUrl: `${req.get('origin') || 'http://localhost:5000'}/invite/${token}`
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get account invitations (Super Admin and Admin only)
+  app.get("/api/accounts/:accountId/invitations", authMiddleware, requireAccountAccess('accountId'), requirePermission('invite_users'), async (req: any, res) => {
+    try {
+      const accountId = parseInt(req.params.accountId);
+      const invitations = await storage.getAccountInvitations(accountId);
+      res.json(invitations);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete user from account (Super Admin only)
+  app.delete("/api/users/:userId", authMiddleware, requirePermission('delete_users'), async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+
+      // Get target user
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Validate account access
+      if (!validateAccountAccess(req.user, targetUser.accountId)) {
+        return res.status(403).json({ message: "Access denied. User does not belong to your account." });
+      }
+
+      // Cannot delete yourself
+      if (req.user.id === userId) {
+        return res.status(400).json({ message: "Cannot delete yourself" });
+      }
+
+      // Only Super Admin can delete users
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Only Super Admins can delete users" });
+      }
+
+      const success = await storage.removeUserFromAccount(userId);
+      if (success) {
+        res.json({ message: "User deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete user" });
+      }
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

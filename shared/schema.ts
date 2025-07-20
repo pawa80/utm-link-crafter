@@ -15,24 +15,12 @@ export const accounts = pgTable("accounts", {
 
 // REMOVED: userAccounts table - users now belong to ONE account only
 
-export const invitations = pgTable("invitations", {
-  id: serial("id").primaryKey(),
-  accountId: integer("account_id").references(() => accounts.id).notNull(),
-  email: text("email").notNull(),
-  role: text("role").notNull().default("user"),
-  token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  status: text("status").notNull().default("pending"), // pending, accepted, expired
-  invitedBy: integer("invited_by").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   firebaseUid: text("firebase_uid").notNull().unique(),
   email: text("email").notNull(),
   accountId: integer("account_id").references(() => accounts.id).notNull(), // User belongs to ONE account
-  role: text("role").notNull().default("user"), // user, developer, admin, super_admin
+  role: text("role").notNull().default("viewer"), // viewer, editor, admin, super_admin
   invitedBy: integer("invited_by").references(() => users.id), // Who invited this user
   categories: text("categories").array().default([]),
   defaultSources: text("default_sources").array().default([]),
@@ -56,9 +44,21 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("viewer"), // viewer, editor, admin, super_admin
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, expired
+  invitedBy: integer("invited_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const sourceTemplates = pgTable("source_templates", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   sourceName: text("source_name").notNull(),
   mediums: text("mediums").array().default([]),
@@ -71,7 +71,7 @@ export const sourceTemplates = pgTable("source_templates", {
 
 export const tags = pgTable("tags", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   name: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -79,7 +79,7 @@ export const tags = pgTable("tags", {
 
 export const campaignLandingPages = pgTable("campaign_landing_pages", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   campaignName: text("campaign_name").notNull(),
   url: text("url").notNull(),
@@ -102,7 +102,7 @@ export const baseUtmTemplates = pgTable("base_utm_templates", {
 // User-specific template copies (created on account setup)
 export const userUtmTemplates = pgTable("user_utm_templates", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   utmSource: text("utm_source").notNull(),
   utmMedium: text("utm_medium").notNull(),
@@ -115,7 +115,7 @@ export const userUtmTemplates = pgTable("user_utm_templates", {
 
 export const utmLinks = pgTable("utm_links", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   accountId: integer("account_id").references(() => accounts.id), // nullable for backwards compatibility
   targetUrl: text("target_url").notNull(),
   utm_campaign: text("utm_campaign").notNull(),
@@ -194,8 +194,8 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   createdAt: true,
 });
 
-// User role enum for validation
-export const userRoleSchema = z.enum(["user", "developer", "admin", "super_admin"]);
+// User role enum for validation (updated to match new hierarchy)
+export const userRoleSchema = z.enum(["viewer", "editor", "admin", "super_admin"]);
 export const subscriptionTierSchema = z.enum(["trial", "basic", "pro", "enterprise"]);
 export const invitationStatusSchema = z.enum(["pending", "accepted", "expired"]);
 
