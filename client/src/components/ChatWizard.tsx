@@ -1163,6 +1163,8 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       }
     }
     
+    console.log('ChatWizard - selectTerm:', termValue, 'newSelectedTerm:', newSelectedTerm);
+    
     setCampaignData(prev => ({
       ...prev,
       selectedTerm: newSelectedTerm
@@ -1468,6 +1470,7 @@ This will create ${(() => {
   };
   
   const proceedWithCampaignCreation = (currentCampaignData: CampaignData) => {
+    console.log('ChatWizard - proceedWithCampaignCreation - currentCampaignData.selectedTerm:', currentCampaignData.selectedTerm);
 
     // Transform campaign data to match API format
     const utmLinks = [];
@@ -1481,6 +1484,7 @@ This will create ${(() => {
         for (const content of contentOptions) {
           for (const landingPage of currentCampaignData.landingPages) {
             const selectedTermForKey = currentCampaignData.selectedTerm[contentKey] || '';
+            console.log('ChatWizard - selectedTermForKey for', contentKey, ':', selectedTermForKey);
             
             const fullUtmLink = generateUTMLink(
               landingPage.url,
