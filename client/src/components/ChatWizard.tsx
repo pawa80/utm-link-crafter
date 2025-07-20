@@ -37,7 +37,7 @@ interface CampaignData {
   selectedMediums: { [source: string]: string[] };
   contentInputs: { [key: string]: string };
   selectedContent: { [key: string]: string[] }; // key: source-medium, value: array of selected content
-  selectedTerm: { [key: string]: string }; // key: source-medium, value: selected term
+  selectedTerm: { [key: string]: string[] }; // key: source-medium, value: array of selected terms
   selectedTags: string[];
 }
 
@@ -354,29 +354,36 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         // Handle custom term input - validate and apply to all source-medium combinations
         const sanitizedTerm = value.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, '');
         if (sanitizedTerm) {
-          const newSelectedTerm: { [key: string]: string } = {};
-          
-          for (const source of campaignData.selectedSources) {
-            const mediums = campaignData.selectedMediums[source] || [];
-            for (const medium of mediums) {
-              const key = `${source}-${medium}`;
-              newSelectedTerm[key] = sanitizedTerm;
+          setCampaignData(prev => {
+            const newCampaignData = { ...prev };
+            
+            // Initialize selectedTerm if it doesn't exist
+            if (!newCampaignData.selectedTerm) {
+              newCampaignData.selectedTerm = {};
             }
-          }
+
+            // Apply the custom term to all source-medium combinations
+            for (const source of newCampaignData.selectedSources) {
+              const mediums = newCampaignData.selectedMediums[source] || [];
+              for (const medium of mediums) {
+                const key = `${source}-${medium}`;
+                if (!newCampaignData.selectedTerm[key]) {
+                  newCampaignData.selectedTerm[key] = [];
+                }
+                // Add term if not already selected
+                if (!newCampaignData.selectedTerm[key].includes(sanitizedTerm)) {
+                  newCampaignData.selectedTerm[key].push(sanitizedTerm);
+                }
+              }
+            }
+            
+            return newCampaignData;
+          });
           
-          setCampaignData(prev => ({
-            ...prev,
-            selectedTerm: newSelectedTerm
-          }));
+          addUserMessage(sanitizedTerm);
           
           setTimeout(() => {
-            addBotMessage(
-              `✅ Custom UTM term "${sanitizedTerm}" applied to all campaign variations! Ready to add tags?`,
-              [
-                { label: "Change Term", value: "change-term", action: () => showTermSelection() },
-                { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
-              ]
-            );
+            updateTermSelectionDisplay();
           }, 500);
         } else {
           setTimeout(() => {
@@ -1152,36 +1159,103 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const selectTerm = (termValue: string) => {
-    // Apply the same term to all source-medium combinations
-    const newSelectedTerm: { [key: string]: string } = {};
-    
-    for (const source of campaignData.selectedSources) {
-      const mediums = campaignData.selectedMediums[source] || [];
-      for (const medium of mediums) {
-        const key = `${source}-${medium}`;
-        newSelectedTerm[key] = termValue;
+    setCampaignData(prev => {
+      const newCampaignData = { ...prev };
+      
+      // Initialize selectedTerm if it doesn't exist
+      if (!newCampaignData.selectedTerm) {
+        newCampaignData.selectedTerm = {};
       }
-    }
-    
-    console.log('ChatWizard - selectTerm:', termValue, 'newSelectedTerm:', newSelectedTerm);
-    
-    setCampaignData(prev => ({
-      ...prev,
-      selectedTerm: newSelectedTerm
-    }));
+
+      // Apply the term to all source-medium combinations
+      for (const source of newCampaignData.selectedSources) {
+        const mediums = newCampaignData.selectedMediums[source] || [];
+        for (const medium of mediums) {
+          const key = `${source}-${medium}`;
+          if (!newCampaignData.selectedTerm[key]) {
+            newCampaignData.selectedTerm[key] = [];
+          }
+          // Add term if not already selected
+          if (!newCampaignData.selectedTerm[key].includes(termValue)) {
+            newCampaignData.selectedTerm[key].push(termValue);
+          }
+        }
+      }
+      
+      console.log('ChatWizard - selectTerm:', termValue, 'newSelectedTerm:', newCampaignData.selectedTerm);
+      return newCampaignData;
+    });
     
     addUserMessage(termValue);
     
+    // Update the term selection display
     setTimeout(() => {
-      addBotMessage(
-        `✅ UTM term "${termValue}" selected for all your campaign variations! Ready to add tags?`,
-        [
-          { label: "Change Term", value: "change-term", action: () => showTermSelection() },
-          { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
-        ],
-        'terms'
+      updateTermSelectionDisplay();
+    }, 100);
+  };
+
+  const updateTermSelectionDisplay = async () => {
+    const currentData = campaignData;
+    
+    // Count total selected terms across all combinations
+    const totalTerms = Object.values(currentData.selectedTerm || {}).reduce((sum, terms) => sum + terms.length, 0);
+    
+    if (totalTerms === 0) {
+      return;
+    }
+
+    // Show selected terms
+    const selectedTerms = Object.values(currentData.selectedTerm || {}).flat();
+    const uniqueTerms = [...new Set(selectedTerms)];
+    
+    const message = `✅ Selected UTM terms: ${uniqueTerms.join(', ')}. Choose more terms or continue to tags.`;
+    
+    // Get term suggestions for remaining options
+    const termSuggestions = await fetchTermSuggestions();
+    
+    // Find and update the last term selection message
+    setMessages(prevMessages => {
+      const lastTermIndex = prevMessages.findLastIndex(msg => 
+        msg.type === 'bot' && (msg.content.includes('UTM terms') || msg.content.includes('Selected UTM terms'))
       );
-    }, 500);
+      
+      if (lastTermIndex >= 0) {
+        const updatedMessages = [...prevMessages];
+        
+        // Create new options showing selected terms
+        const selectedOptions = uniqueTerms.map(term => ({
+          label: `✓ ${term}`,
+          value: term,
+          action: () => {}, // No action for selected terms
+          isSelected: true
+        }));
+
+        // Get remaining term options (not selected)
+        const remainingTermOptions = termSuggestions
+          .filter(term => !uniqueTerms.includes(term.termValue))
+          .slice(0, 4) // Limit remaining options
+          .map(term => ({
+            label: `${term.termValue}${term.description ? ` - ${term.description}` : ''}`,
+            value: term.termValue,
+            action: () => selectTerm(term.termValue)
+          }));
+
+        const options = [
+          ...selectedOptions,
+          ...remainingTermOptions,
+          { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
+          { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
+        ];
+
+        updatedMessages[lastTermIndex] = {
+          ...updatedMessages[lastTermIndex],
+          content: message,
+          options: options
+        };
+        return updatedMessages;
+      }
+      return prevMessages;
+    });
   };
 
   const promptForCustomTerm = () => {
@@ -1483,30 +1557,58 @@ This will create ${(() => {
         // Create UTM links for each content variation
         for (const content of contentOptions) {
           for (const landingPage of currentCampaignData.landingPages) {
-            const selectedTermForKey = currentCampaignData.selectedTerm[contentKey] || '';
-            console.log('ChatWizard - selectedTermForKey for', contentKey, ':', selectedTermForKey);
+            const selectedTermsForKey = currentCampaignData.selectedTerm[contentKey] || [];
+            console.log('ChatWizard - selectedTermsForKey for', contentKey, ':', selectedTermsForKey);
             
-            const fullUtmLink = generateUTMLink(
-              landingPage.url,
-              source,
-              medium, 
-              currentCampaignData.name,
-              content,
-              selectedTermForKey
-            );
-            
-            utmLinks.push({
-              userId: user.id,
-              accountId: user.accountId,
-              targetUrl: landingPage.url,
-              fullUtmLink,
-              utm_campaign: currentCampaignData.name,
-              utm_source: source,
-              utm_medium: medium,
-              utm_content: content,
-              utm_term: selectedTermForKey,
-              tags: currentCampaignData.selectedTags
-            });
+            // If no terms selected, create one link with empty term
+            if (selectedTermsForKey.length === 0) {
+              const fullUtmLink = generateUTMLink(
+                landingPage.url,
+                source,
+                medium, 
+                currentCampaignData.name,
+                content,
+                ''
+              );
+              
+              utmLinks.push({
+                userId: user.id,
+                accountId: user.accountId,
+                targetUrl: landingPage.url,
+                fullUtmLink,
+                utm_campaign: currentCampaignData.name,
+                utm_source: source,
+                utm_medium: medium,
+                utm_content: content,
+                utm_term: '',
+                tags: currentCampaignData.selectedTags
+              });
+            } else {
+              // Create a separate UTM link for each selected term
+              for (const term of selectedTermsForKey) {
+                const fullUtmLink = generateUTMLink(
+                  landingPage.url,
+                  source,
+                  medium, 
+                  currentCampaignData.name,
+                  content,
+                  term
+                );
+                
+                utmLinks.push({
+                  userId: user.id,
+                  accountId: user.accountId,
+                  targetUrl: landingPage.url,
+                  fullUtmLink,
+                  utm_campaign: currentCampaignData.name,
+                  utm_source: source,
+                  utm_medium: medium,
+                  utm_content: content,
+                  utm_term: term,
+                  tags: currentCampaignData.selectedTags
+                });
+              }
+            }
           }
         }
       }
