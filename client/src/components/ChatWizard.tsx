@@ -383,7 +383,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           addUserMessage(sanitizedTerm);
           
           setTimeout(() => {
-            updateTermSelectionDisplay();
+            updateTermSelectionOptions();
           }, 500);
         } else {
           setTimeout(() => {
@@ -1166,27 +1166,18 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     
     addUserMessage(termValue);
     
-    // Update the term selection display
+    // Update the term selection display without summary message
     setTimeout(() => {
-      updateTermSelectionDisplay();
+      updateTermSelectionOptions();
     }, 100);
   };
 
-  const updateTermSelectionDisplay = async () => {
+  const updateTermSelectionOptions = async () => {
     const currentData = campaignData;
     
-    // Count total selected terms across all combinations
-    const totalTerms = Object.values(currentData.selectedTerm || {}).reduce((sum, terms) => sum + terms.length, 0);
-    
-    if (totalTerms === 0) {
-      return;
-    }
-
     // Show selected terms
     const selectedTerms = Object.values(currentData.selectedTerm || {}).flat();
     const uniqueTerms = [...new Set(selectedTerms)];
-    
-    const message = `✅ Selected UTM terms: ${uniqueTerms.join(', ')}. Choose more terms or continue to tags.`;
     
     // Get term suggestions for remaining options
     const termSuggestions = await fetchTermSuggestions();
@@ -1194,13 +1185,13 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     // Find and update the last term selection message
     setMessages(prevMessages => {
       const lastTermIndex = prevMessages.findLastIndex(msg => 
-        msg.type === 'bot' && (msg.content.includes('UTM terms') || msg.content.includes('Selected UTM terms'))
+        msg.type === 'bot' && msg.content.includes('Select UTM terms')
       );
       
       if (lastTermIndex >= 0) {
         const updatedMessages = [...prevMessages];
         
-        // Create new options showing selected terms
+        // Create new options showing selected terms with checkmarks
         const selectedOptions = uniqueTerms.map(term => ({
           label: `✓ ${term}`,
           value: term,
@@ -1208,10 +1199,10 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           isSelected: true
         }));
 
-        // Get remaining term options (not selected) - clean labels without descriptions
+        // Get remaining term options (not selected)
         const remainingTermOptions = termSuggestions
           .filter(term => !uniqueTerms.includes(term.termValue))
-          .slice(0, 6) // Show more remaining options
+          .slice(0, 6)
           .map(term => ({
             label: term.termValue,
             value: term.termValue,
@@ -1222,18 +1213,30 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
           ...selectedOptions,
           ...remainingTermOptions,
           { label: "Add Custom Term", value: "custom-term", action: () => promptForCustomTerm() },
-          { label: "Continue to Tags", value: "continue-tags", action: () => showTagSelection(), isPrimary: true }
+          { label: "Continue to Tags", value: "continue-tags", action: () => showTermsSelectedAndContinue(), isPrimary: true }
         ];
 
         updatedMessages[lastTermIndex] = {
           ...updatedMessages[lastTermIndex],
-          content: message,
           options: options
         };
         return updatedMessages;
       }
       return prevMessages;
     });
+  };
+
+  const showTermsSelectedAndContinue = () => {
+    const selectedTerms = Object.values(campaignData.selectedTerm || {}).flat();
+    const uniqueTerms = [...new Set(selectedTerms)];
+    
+    if (uniqueTerms.length > 0) {
+      addBotMessage(`✅ Selected UTM terms: ${uniqueTerms.join(', ')}.`);
+    }
+    
+    setTimeout(() => {
+      showTagSelection();
+    }, 500);
   };
 
   const promptForCustomTerm = () => {
