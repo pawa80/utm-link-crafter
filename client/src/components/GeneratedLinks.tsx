@@ -308,21 +308,21 @@ export default function GeneratedLinks({ showArchived = false, expandCampaign }:
 
     switch (sortBy) {
       case "created-newest":
-        const aOldestDate = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
-        const bOldestDate = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
-        return bOldestDate - aOldestDate;
-      case "created-oldest":
-        const aOldestDate2 = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
-        const bOldestDate2 = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
-        return aOldestDate2 - bOldestDate2;
-      case "updated-newest":
         const aMostRecentDate = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
         const bMostRecentDate = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
         return bMostRecentDate - aMostRecentDate;
+      case "created-oldest":
+        const aOldestDate = aOldest?.createdAt ? new Date(aOldest.createdAt).getTime() : 0;
+        const bOldestDate = bOldest?.createdAt ? new Date(bOldest.createdAt).getTime() : 0;
+        return aOldestDate - bOldestDate;
+      case "updated-newest":
+        const aMostRecentDateUpdated = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentDateUpdated = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return bMostRecentDateUpdated - aMostRecentDateUpdated;
       case "updated-oldest":
-        const aMostRecentDate2 = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
-        const bMostRecentDate2 = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
-        return aMostRecentDate2 - bMostRecentDate2;
+        const aMostRecentDateOldest = aMostRecent?.createdAt ? new Date(aMostRecent.createdAt).getTime() : 0;
+        const bMostRecentDateOldest = bMostRecent?.createdAt ? new Date(bMostRecent.createdAt).getTime() : 0;
+        return aMostRecentDateOldest - bMostRecentDateOldest;
       case "tag-alphabetical":
         const aTags = aMostRecent?.tags?.[0] || "zzz"; // Put untagged at end
         const bTags = bMostRecent?.tags?.[0] || "zzz";
