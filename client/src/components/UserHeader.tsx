@@ -34,13 +34,13 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
     <div className="flex items-center gap-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 h-10 hover:bg-primary hover:text-white">
+          <Button variant="ghost" className="flex items-center gap-2 h-10 hover:bg-primary hover:text-white group">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/10 text-primary text-sm">
                 {user.email ? getInitials(user.email) : <UserIcon size={16} />}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-gray-700 hidden sm:block">
+            <span className="text-sm text-gray-700 hidden sm:block group-hover:text-white">
               {user.email || 'User'}
             </span>
           </Button>
