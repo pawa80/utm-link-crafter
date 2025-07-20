@@ -461,30 +461,36 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       .filter(([, state]) => state.checked)
       .flatMap(([sourceName, state]) =>
         state.selectedMediums.flatMap(medium => {
-          const variants = getContentVariantsForMedium(sourceName, medium);
-          return variants
-            .filter(variant => variant.content.trim() !== '')
-            .map(variant => {
-              // Get selected landing page for this specific row using the correct rowKey
-              const rowKey = `${sourceName}-${medium}-${variant.id}`;
-              const selectedLandingPageId = state.landingPageSelections[rowKey];
-              const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
-              // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
-              const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
+          const contentKey = `${sourceName}-${medium}`;
+          const selectedContentItems = selectedContent[contentKey] || [];
+          const selectedTermItems = selectedTerms[contentKey] || [''];
+          
+          // Only return results if content is actually selected
+          if (selectedContentItems.length === 0) {
+            return [];
+          }
+          
+          return selectedContentItems.flatMap(content =>
+            selectedTermItems.map(term => {
+              // Use the first landing page or targetUrl as fallback for this legacy function
+              const urlToUse = landingPages.length > 0 ? landingPages[0].url : targetUrl;
               
               return {
                 sourceName,
                 medium,
-                content: variant.content,
-                utmLink: generateUTMLink({
-                  targetUrl: urlToUse,
-                  utm_campaign: campaignName,
-                  utm_source: sourceName.toLowerCase(),
-                  utm_medium: medium,
-                  utm_content: variant.content
-                })
+                content,
+                term,
+                utmLink: generateUTMLink(
+                  urlToUse,
+                  sourceName.toLowerCase(),
+                  medium,
+                  campaignName,
+                  content,
+                  term
+                )
               };
-            });
+            })
+          );
         })
       );
   };
@@ -493,22 +499,31 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const getSortedTableRows = (sourceName: string, state: SourceState) => {
     // Collect all rows with their landing page order for sorting
     const allRows = state.selectedMediums.flatMap((medium: string) => {
-      const variants = getContentVariantsForMedium(sourceName, medium);
-      return variants.map((variant: any) => {
-        // Get selected landing page for this specific row (unique by source-medium-variantId)
-        const rowKey = `${sourceName}-${medium}-${variant.id}`;
-        let selectedLandingPageId = state.landingPageSelections[rowKey];
+      const contentKey = `${sourceName}-${medium}`;
+      const selectedContentItems = selectedContent[contentKey] || [];
+      const selectedTermItems = selectedTerms[contentKey] || [''];
+      
+      // Only show variants if content is selected for this medium
+      if (selectedContentItems.length === 0) {
+        return [];
+      }
+      
+      return selectedContentItems.flatMap(contentItem =>
+        selectedTermItems.map(termItem => {
+          // Create a unique key for this combination
+          const rowKey = `${sourceName}-${medium}-${contentItem}-${termItem}`;
+          let selectedLandingPageId = state.landingPageSelections[rowKey];
         
         // FALLBACK: In edit mode, if we can't find by rowKey, try to find by content match
         if (editMode && !selectedLandingPageId && existingCampaignData) {
           const matchingLink = existingCampaignData.find(link => {
-            const sourceTemplate = sourceTemplates.find((template: SourceTemplate) => 
+            const sourceTemplate = (sourceTemplates as SourceTemplate[]).find((template: SourceTemplate) => 
               template.sourceName.toLowerCase() === link.utm_source.toLowerCase()
             );
             const linkSourceName = sourceTemplate ? sourceTemplate.sourceName : link.utm_source;
             return linkSourceName === sourceName && 
                    link.utm_medium === medium && 
-                   (link.utm_content || '') === variant.content;
+                   (link.utm_content || '') === contentItem;
           });
           
           if (matchingLink) {
@@ -521,7 +536,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             
             if (matchingLandingPage) {
               selectedLandingPageId = matchingLandingPage.id;
-              console.log(`FALLBACK: Found landing page ${matchingLandingPage.id} for content="${variant.content}"`);
+              console.log(`FALLBACK: Found landing page ${matchingLandingPage.id} for content="${contentItem}"`);
             }
           }
         }
@@ -530,30 +545,31 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         if (editMode) {
           console.log(`RENDER: Looking for rowKey=${rowKey}, found=${selectedLandingPageId ? 'YES' : 'NO'}`);
           console.log(`Available selections:`, Object.keys(state.landingPageSelections));
-          console.log(`Current contentVariants for ${sourceName}-${medium}:`, contentVariants[`${sourceName}-${medium}`]?.map(v => v.id));
         }
 
         const selectedLandingPage = landingPages.find(lp => lp.id === selectedLandingPageId);
         // Use selected landing page URL, fall back to default targetUrl, or first landing page if available
         const urlToUse = selectedLandingPage?.url || targetUrl || (landingPages.length > 0 ? landingPages[0].url : '');
         
-        const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${variant.content || ''}`.trim();
-        const utmLink = variant.content.trim() && urlToUse ? generateUTMLink({
-          targetUrl: urlToUse,
-          utm_campaign: campaignName,
-          utm_source: sourceName.toLowerCase(),
-          utm_medium: medium,
-          utm_content: variant.content.trim()
-        }) : '';
+        const linkName = `${sourceName} ${medium.charAt(0).toUpperCase() + medium.slice(1)} ${contentItem || ''}`.trim();
+        const utmLink = contentItem.trim() && urlToUse ? generateUTMLink(
+          urlToUse,
+          sourceName.toLowerCase(),
+          medium,
+          campaignName,
+          contentItem.trim(),
+          termItem || undefined
+        ) : '';
         
         // Get landing page order for sorting (999 for no selection to sort last)
         const landingPageOrder = selectedLandingPage ? 
           landingPages.findIndex(lp => lp.id === selectedLandingPage.id) : 999;
         
         return {
-          key: `${variant.id}-${medium}`,
+          key: `${sourceName}-${medium}-${contentItem}-${termItem}`,
           medium,
-          variant,
+          contentItem,
+          termItem,
           selectedLandingPageId,
           selectedLandingPage,
           urlToUse,
@@ -561,7 +577,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           utmLink,
           landingPageOrder
         };
-      });
+        })
+      );
     });
     
     // Apply column sorting if it exists for this source
@@ -580,8 +597,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             bValue = b.medium;
             break;
           case 'content':
-            aValue = a.variant.content;
-            bValue = b.variant.content;
+            aValue = a.contentItem;
+            bValue = b.contentItem;
             break;
           default:
             aValue = '';
