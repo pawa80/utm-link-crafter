@@ -1176,8 +1176,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return newCampaignData;
     });
     
-    addUserMessage(termValue);
-    
+    // DON'T add user message here - just update the options
     // Update the term selection display without summary message
     setTimeout(() => {
       updateTermSelectionOptions();
@@ -1698,7 +1697,7 @@ This will create ${(() => {
                             }`}
                             disabled={option.isSelected || option.disabled}
                           >
-                            {option.isSelected ? `✓ ${option.label}` : option.label}
+                            {option.label}
                           </Button>
                         ))}
                       </div>
