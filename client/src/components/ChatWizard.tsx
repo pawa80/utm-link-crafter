@@ -59,6 +59,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const [currentInput, setCurrentInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [currentSourceMedium, setCurrentSourceMedium] = useState<{source: string; medium: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -350,15 +351,37 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
         break;
 
       case 'content':
-        // Handle content input for specific source-medium combination
-        const contentKey = `${campaignData.selectedSources[0]}-${campaignData.selectedMediums[campaignData.selectedSources[0]]?.[0]}`;
-        setCampaignData(prev => ({
-          ...prev,
-          contentInputs: { ...prev.contentInputs, [contentKey]: value }
-        }));
-        setTimeout(() => {
-          showTermSelection();
-        }, 500);
+        // Handle custom content input for specific source-medium combination
+        if (currentSourceMedium) {
+          const sanitizedContent = value.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, '');
+          if (sanitizedContent) {
+            const { source, medium } = currentSourceMedium;
+            
+            // Add custom content to database (future enhancement)
+            // For now, just add to local state
+            selectContent(source, medium, sanitizedContent);
+            
+            setTimeout(() => {
+              addBotMessage(
+                `✅ Added custom content "${sanitizedContent}" for ${source} → ${medium}! Continue selecting content or proceed to terms.`,
+                [
+                  { label: "Add Another Content", value: "add-another", action: () => promptForCustomContent(source, medium) },
+                  { label: "Continue to Terms", value: "continue-terms", action: () => showContentSelectedAndContinue() }
+                ]
+              );
+            }, 500);
+          } else {
+            setTimeout(() => {
+              addBotMessage(
+                "Please enter a valid content variation using only letters, numbers, hyphens, and underscores:",
+                [],
+                'content',
+                true,
+                "Enter content variation (letters, numbers, hyphens, underscores)"
+              );
+            }, 500);
+          }
+        }
         break;
 
       case 'terms':
@@ -968,18 +991,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }, 500);
   };
 
-  const selectContent = (source: string, medium: string, content: string) => {
-    const contentKey = `${source}-${medium}`;
-    setCampaignData(prev => ({
-      ...prev,
-      contentInputs: { ...prev.contentInputs, [contentKey]: content }
-    }));
-    addUserMessage(content);
 
-    setTimeout(() => {
-      showTagSelection();
-    }, 500);
-  };
 
   const promptForCustomSource = () => {
     addBotMessage(
@@ -1001,15 +1013,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     );
   };
 
-  const promptForCustomContent = (source: string, medium: string) => {
-    addBotMessage(
-      `What content description would you like for your ${source} ${medium} campaign?`,
-      [],
-      'content',
-      true,
-      "Enter content description (e.g., 'summer-sale-banner')"
-    );
-  };
+
 
   const showContentSelectionWithState = async (currentCampaignData: CampaignData) => {
     setCurrentStep('content');
@@ -1028,62 +1032,160 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       return;
     }
 
-    // Fetch content suggestions for all combinations
-    const contentSuggestions = {};
-    for (const { source, medium } of sourceMediumCombinations) {
-      try {
-        console.log(`Fetching content suggestions for ${source}-${medium}...`);
-        const suggestions = await fetchContentSuggestions(source, medium);
-        const key = `${source}-${medium}`;
-        contentSuggestions[key] = suggestions;
-        console.log(`Successfully fetched content for ${key}:`, suggestions);
-      } catch (error) {
-        console.error(`Error fetching content for ${source}-${medium}:`, error);
-        const key = `${source}-${medium}`;
-        contentSuggestions[key] = [];
-      }
-    }
-
-    // Auto-select all content suggestions
-    const newSelectedContent = {};
-    for (const { source, medium } of sourceMediumCombinations) {
-      const key = `${source}-${medium}`;
-      const suggestions = contentSuggestions[key] || [];
-      console.log(`Processing content for ${key}:`, suggestions);
-      if (suggestions.length === 0) {
-        suggestions.push('default'); // Fallback only if no suggestions found
-      }
-      newSelectedContent[key] = suggestions;
-    }
-
-    // Update campaign data with selected content
-    setCampaignData(prev => ({
-      ...prev,
-      selectedContent: newSelectedContent
-    }));
-
-    // Show content selection summary
-    let contentSummary = "📝 Here are the content variations I've found for your campaign:\n\n";
+    // Fetch content suggestions for first combination only
+    const firstCombination = sourceMediumCombinations[0];
+    const { source, medium } = firstCombination;
     
-    for (const { source, medium } of sourceMediumCombinations) {
-      const key = `${source}-${medium}`;
-      const suggestions = contentSuggestions[key] || [];
-      if (suggestions.length === 0) {
-        suggestions.push('default'); // Fallback only if no suggestions found
+    try {
+      console.log(`Fetching content suggestions for ${source}-${medium}...`);
+      const suggestions = await fetchContentSuggestions(source, medium);
+      console.log(`Successfully fetched content for ${source}-${medium}:`, suggestions);
+      
+      if (suggestions.length > 0) {
+        const contentOptions = suggestions.map(content => ({
+          label: content,
+          value: content,
+          action: () => selectContent(source, medium, content)
+        }));
+
+        addBotMessage(
+          `🎨 Select content variations for ${source} → ${medium} (choose multiple if needed):`,
+          [
+            ...contentOptions,
+            { label: "Add Custom Content", value: "custom-content", action: () => promptForCustomContent(source, medium) },
+            { label: "Continue to Terms", value: "continue-terms", action: () => showContentSelectedAndContinue(), isPrimary: true }
+          ],
+          'content'
+        );
+      } else {
+        // No suggestions, go straight to custom content
+        promptForCustomContent(source, medium);
       }
-      contentSummary += `**${source.charAt(0).toUpperCase() + source.slice(1)} → ${medium.charAt(0).toUpperCase() + medium.slice(1)}:**\n`;
-      contentSummary += suggestions.map(content => `• ${content}`).join('\n') + '\n\n';
+    } catch (error) {
+      console.error(`Error fetching content for ${source}-${medium}:`, error);
+      // No suggestions available, allow custom content only
+      addBotMessage(
+        `🎨 No content suggestions found for ${source} → ${medium}. Please add custom content:`,
+        [
+          { label: "Add Custom Content", value: "custom-content", action: () => promptForCustomContent(source, medium) },
+          { label: "Skip Content", value: "skip-content", action: () => showTermSelection() }
+        ],
+        'content'
+      );
     }
+  };
 
-    contentSummary += "All content variations have been automatically selected. Each will create a separate UTM link for tracking different ad variations.";
+  const selectContent = (source: string, medium: string, content: string) => {
+    setCampaignData(prev => {
+      const key = `${source}-${medium}`;
+      const existingContent = prev.selectedContent[key] || [];
+      
+      // Add content if not already selected
+      let updatedContent;
+      if (!existingContent.includes(content)) {
+        updatedContent = [...existingContent, content];
+      } else {
+        updatedContent = existingContent;
+      }
+      
+      return {
+        ...prev,
+        selectedContent: {
+          ...prev.selectedContent,
+          [key]: updatedContent
+        }
+      };
+    });
+    
+    // Update the content selection display
+    setTimeout(() => {
+      updateContentSelectionOptions(source, medium);
+    }, 100);
+  };
 
+  const updateContentSelectionOptions = async (source: string, medium: string) => {
+    const key = `${source}-${medium}`;
+    const selectedContent = campaignData.selectedContent[key] || [];
+    
+    // Get content suggestions
+    let suggestions = [];
+    try {
+      suggestions = await fetchContentSuggestions(source, medium);
+    } catch (error) {
+      console.error(`Error fetching content suggestions:`, error);
+    }
+    
+    // Find and update the last content selection message
+    setMessages(prevMessages => {
+      const lastContentIndex = prevMessages.findLastIndex(msg => 
+        msg.type === 'bot' && msg.content.includes('Select content variations')
+      );
+      
+      if (lastContentIndex >= 0) {
+        const updatedMessages = [...prevMessages];
+        
+        // Create options showing selected content without checkmarks
+        const selectedOptions = selectedContent.map(content => ({
+          label: content,
+          value: content,
+          action: () => {}, // No action for selected content
+          isSelected: true
+        }));
+
+        // Get remaining content options (not selected)
+        const remainingContentOptions = suggestions
+          .filter(content => !selectedContent.includes(content))
+          .map(content => ({
+            label: content,
+            value: content,
+            action: () => selectContent(source, medium, content)
+          }));
+
+        const options = [
+          ...selectedOptions,
+          ...remainingContentOptions,
+          { label: "Add Custom Content", value: "custom-content", action: () => promptForCustomContent(source, medium) },
+          { label: "Continue to Terms", value: "continue-terms", action: () => showContentSelectedAndContinue(), isPrimary: true }
+        ];
+
+        updatedMessages[lastContentIndex] = {
+          ...updatedMessages[lastContentIndex],
+          options: options
+        };
+        return updatedMessages;
+      }
+      return prevMessages;
+    });
+  };
+
+  const showContentSelectedAndContinue = () => {
+    // Get all selected content across all source-medium combinations
+    const contentSummary = Object.entries(campaignData.selectedContent)
+      .filter(([key, content]) => content.length > 0)
+      .map(([key, content]) => {
+        const [source, medium] = key.split('-');
+        return `${source}-${medium}: ${content.join(', ')}`;
+      })
+      .join('; ');
+    
+    if (contentSummary) {
+      addUserMessage(`Selected content: ${contentSummary}`);
+    }
+    
+    setTimeout(() => {
+      showTermSelection();
+    }, 500);
+  };
+
+  const promptForCustomContent = (source: string, medium: string) => {
+    // Store the current source and medium for later use
+    setCurrentSourceMedium({ source, medium });
     addBotMessage(
-      contentSummary,
-      [
-        { label: "Continue with Selected Content", value: "continue", action: () => showTermSelection(), isPrimary: true },
-        { label: "Modify Content Selection", value: "modify", action: () => showContentModification() }
-      ],
-      'content'
+      `Enter your custom content variation for ${source} → ${medium} (e.g., 'banner-ad', 'text-link', 'cta-button'):`,
+      [],
+      'content',
+      true,
+      "Enter content variation (letters, numbers, hyphens, underscores)"
     );
   };
 
