@@ -344,6 +344,13 @@ Changelog:
   - Tags are created with proper userId and accountId for account isolation and persist across campaigns
   - Enhanced landing page input with clear URL format guidance (must include https://)
   - FINAL FIX: Resolved tag display inconsistency between Chat Wizard and New Campaign page by correcting CampaignWizard useQuery format - both interfaces now properly display existing tags
+  - COMPREHENSIVE API FIX: Fixed all CampaignWizard API call formats for complete functionality:
+    * Source templates: ✅ Now display properly (14 templates: google, facebook, instagram, etc.)
+    * Tags: ✅ Both "Testing" and "Marketing" tags display and can be selected
+    * Content auto-population: ✅ UTM content variations now auto-populate with real suggestions ("text-ad", "responsive-ad", "carousel-ad", "collection-ad")
+    * All mutations: ✅ Fixed apiRequest format for proper authentication (POST/PATCH/DELETE operations)
+    * Content fetching: ✅ fetchUtmContentSuggestions now works correctly with API
+    * Campaign creation: ✅ Complete workflow from manual New Campaign page fully functional
 
 ## User Preferences
 
