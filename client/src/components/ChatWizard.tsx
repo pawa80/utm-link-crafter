@@ -22,11 +22,19 @@ interface ChatMessage {
   type: 'bot' | 'user';
   content: string;
   timestamp: Date;
-  options?: Array<{ label: string; value: string; action?: () => void }>;
+  options?: Array<{ 
+    label: string; 
+    value: string; 
+    action?: () => void; 
+    isPrimary?: boolean; 
+    isSelected?: boolean; 
+    disabled?: boolean;
+  }>;
   showInput?: boolean;
   inputPlaceholder?: string;
   onInput?: (value: string) => void;
   autoFocus?: boolean;
+  step?: string;
 }
 
 interface CampaignData {
@@ -1080,32 +1088,35 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       const key = `${source}-${medium}`;
       const existingContent = prev.selectedContent[key] || [];
       
-      // Add content if not already selected
+      // Toggle content selection (add if not selected, remove if already selected)
       let updatedContent;
       if (!existingContent.includes(content)) {
         updatedContent = [...existingContent, content];
       } else {
-        updatedContent = existingContent;
+        // Remove content if already selected
+        updatedContent = existingContent.filter(c => c !== content);
       }
       
-      return {
+      const newCampaignData = {
         ...prev,
         selectedContent: {
           ...prev.selectedContent,
           [key]: updatedContent
         }
       };
+      
+      // Update the content selection display immediately with new state
+      setTimeout(() => {
+        updateContentSelectionOptionsWithState(source, medium, newCampaignData);
+      }, 50);
+      
+      return newCampaignData;
     });
-    
-    // Update the content selection display
-    setTimeout(() => {
-      updateContentSelectionOptions(source, medium);
-    }, 100);
   };
 
-  const updateContentSelectionOptions = async (source: string, medium: string) => {
+  const updateContentSelectionOptionsWithState = async (source: string, medium: string, currentState: CampaignData) => {
     const key = `${source}-${medium}`;
-    const selectedContent = campaignData.selectedContent[key] || [];
+    const selectedContent = currentState.selectedContent[key] || [];
     
     // Get content suggestions
     let suggestions = [];
@@ -1124,26 +1135,16 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
       if (lastContentIndex >= 0) {
         const updatedMessages = [...prevMessages];
         
-        // Create options showing selected content without checkmarks
-        const selectedOptions = selectedContent.map(content => ({
+        // Create all content options (both selected and unselected)
+        const allContentOptions = suggestions.map(content => ({
           label: content,
           value: content,
-          action: () => {}, // No action for selected content
-          isSelected: true
+          action: () => selectContent(source, medium, content),
+          isSelected: selectedContent.includes(content)
         }));
 
-        // Get remaining content options (not selected)
-        const remainingContentOptions = suggestions
-          .filter(content => !selectedContent.includes(content))
-          .map(content => ({
-            label: content,
-            value: content,
-            action: () => selectContent(source, medium, content)
-          }));
-
         const options = [
-          ...selectedOptions,
-          ...remainingContentOptions,
+          ...allContentOptions,
           { label: "Add Custom Content", value: "custom-content", action: () => promptForCustomContent(source, medium) },
           { label: "Continue to Terms", value: "continue-terms", action: () => showContentSelectedAndContinue(), isPrimary: true }
         ];
@@ -1800,7 +1801,7 @@ This will create ${(() => {
                                   ? 'bg-green-500 hover:bg-green-600 text-white border-none cursor-default' 
                                   : ''
                             }`}
-                            disabled={option.isSelected || option.disabled}
+                            disabled={option.disabled}
                           >
                             {option.label}
                           </Button>
