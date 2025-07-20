@@ -152,7 +152,7 @@ export default function AccountManagement() {
 
   // Get account users for user's account
   const { data: accountUsers, isLoading: usersLoading, error: usersError } = useQuery<AccountUser[]>({
-    queryKey: ["/api/accounts", userAccount?.accountId, "users"],
+    queryKey: [`/api/accounts/${userAccount?.accountId}/users`],
     enabled: !!userAccount?.accountId && !!authUser,
     retry: 1,
   });
@@ -170,7 +170,7 @@ export default function AccountManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts", userAccount?.accountId, "users"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/accounts/${userAccount?.accountId}/users`] });
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("user");
@@ -196,7 +196,7 @@ export default function AccountManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts", userAccount?.accountId, "users"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/accounts/${userAccount?.accountId}/users`] });
       toast({
         title: "User removed",
         description: "The user has been removed from the account.",
@@ -556,11 +556,7 @@ export default function AccountManagement() {
                       ))}
                       {(!accountUsers || accountUsers.length === 0) && !usersLoading && (
                         <div className="text-center py-8 text-gray-500">
-                          <p>No users found in this account.</p>
-                          <p className="text-xs mt-2 text-red-500">Debug: accountUsers = {JSON.stringify(accountUsers)}</p>
-                          <p className="text-xs text-red-500">userAccount.accountId = {userAccount?.accountId}</p>
-                          <p className="text-xs text-red-500">usersError = {usersError?.message}</p>
-                          <p className="text-xs text-red-500">usersLoading = {usersLoading.toString()}</p>
+                          No users found in this account.
                         </div>
                       )}
                     </div>
