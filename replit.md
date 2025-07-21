@@ -416,6 +416,14 @@ Changelog:
   - Custom content input works without affecting other content options
   - Enhanced campaign summary to show comprehensive details: mediums, content, and terms with clean display
   - Removed "Make Changes" button from campaign summary for cleaner interface
+- July 21, 2025. Critical Campaign Wizard save functionality bug fix completed:
+  - Fixed manual Campaign Wizard save button failure that prevented campaigns from being saved to database
+  - Replaced direct apiRequest calls with proper createCampaignMutation system (same as Chat Wizard)
+  - Added missing userId and accountId fields to all API requests for proper account isolation
+  - Implemented robust error handling, cache invalidation, and success feedback
+  - Added link count display to save button showing number of UTM links being created
+  - Manual campaigns now save successfully and appear in Campaign Management page sorted by newest first
+  - Both Chat Wizard and Campaign Wizard now use identical, reliable save mechanisms
 - July 20, 2025. Chat Wizard existing campaign updates with different tags bug fix:
   - Fixed critical issue where adding links to existing campaigns with different tags failed with "campaign name already exists" error
   - Updated POST /api/campaign-landing-pages endpoint to accept isExistingCampaign parameter

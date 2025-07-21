@@ -386,7 +386,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       return results;
     },
     onSuccess: (results) => {
-      console.log("Campaign created successfully:", results);
       queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
       
@@ -1722,7 +1721,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
             disabled={createCampaignMutation.isPending}
           >
-            {createCampaignMutation.isPending ? "Saving..." : "Save Campaign Links"}
+            {createCampaignMutation.isPending ? "Saving..." : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
           </Button>
         </div>
       )}
