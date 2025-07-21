@@ -49,7 +49,7 @@ const VendorTemplatesNew: React.FC = () => {
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
 
   // Fetch UTM templates grouped by source
-  const { data: utmTemplateGroups, isLoading: utmLoading } = useQuery<SourceTemplateGroup[]>({
+  const { data: utmTemplateGroups, isLoading: utmLoading, error: utmError } = useQuery<SourceTemplateGroup[]>({
     queryKey: ['/vendor-api/base-templates/utm-grouped'],
     queryFn: async () => {
       const response = await fetch('/vendor-api/base-templates/utm-grouped', {
@@ -58,7 +58,10 @@ const VendorTemplatesNew: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch UTM templates');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch UTM templates: ${errorText}`);
+      }
       return response.json();
     },
     enabled: !!token && activeTab === 'utm'
@@ -317,6 +320,11 @@ const VendorTemplatesNew: React.FC = () => {
                 {utmTemplateGroups?.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     No UTM templates found. Create your first template to get started.
+                  </div>
+                )}
+                {utmError && (
+                  <div className="text-center py-8 text-red-500">
+                    Error loading templates: {utmError.message}
                   </div>
                 )}
               </div>
