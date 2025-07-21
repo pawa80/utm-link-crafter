@@ -329,10 +329,29 @@ router.get('/base-templates/:type', authenticateVendor, async (req: Request, res
     let templates;
     switch (type) {
       case 'utm':
-        templates = await db.select().from(baseUtmTemplates).orderBy(baseUtmTemplates.createdAt);
+        const utmTemplates = await db.select().from(baseUtmTemplates).orderBy(baseUtmTemplates.createdAt);
+        // Map to expected format
+        templates = utmTemplates.map(template => ({
+          id: template.id,
+          source: template.utmSource,
+          medium: template.utmMedium,
+          content: template.utmContent,
+          isActive: template.isActive,
+          vendorManaged: template.vendorManaged,
+          createdAt: template.createdAt
+        }));
         break;
       case 'term':
-        templates = await db.select().from(baseTermTemplates).orderBy(baseTermTemplates.createdAt);
+        const termTemplates = await db.select().from(baseTermTemplates).orderBy(baseTermTemplates.createdAt);
+        // Map to expected format
+        templates = termTemplates.map(template => ({
+          id: template.id,
+          term: template.termValue,
+          category: template.category,
+          isActive: true, // baseTermTemplates doesn't have isActive field
+          vendorManaged: template.vendorManaged,
+          createdAt: template.createdAt
+        }));
         break;
       default:
         return res.status(400).json({ error: 'Invalid template type' });
@@ -347,14 +366,27 @@ router.get('/base-templates/:type', authenticateVendor, async (req: Request, res
 
 router.post('/base-templates/utm', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    const templateData = req.body;
+    const { source, medium, content } = req.body;
     
     const [newTemplate] = await db
       .insert(baseUtmTemplates)
-      .values({ ...templateData, vendorManaged: true })
+      .values({ 
+        utmSource: source,
+        utmMedium: medium,
+        utmContent: content,
+        vendorManaged: true 
+      })
       .returning();
     
-    res.json(newTemplate);
+    res.json({
+      id: newTemplate.id,
+      source: newTemplate.utmSource,
+      medium: newTemplate.utmMedium,
+      content: newTemplate.utmContent,
+      isActive: newTemplate.isActive,
+      vendorManaged: newTemplate.vendorManaged,
+      createdAt: newTemplate.createdAt
+    });
   } catch (error) {
     console.error('Base UTM template creation error:', error);
     res.status(500).json({ error: 'Failed to create base UTM template' });
@@ -363,14 +395,25 @@ router.post('/base-templates/utm', authenticateVendor, async (req: Request, res:
 
 router.post('/base-templates/term', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    const templateData = req.body;
+    const { term, category } = req.body;
     
     const [newTemplate] = await db
       .insert(baseTermTemplates)
-      .values({ ...templateData, vendorManaged: true })
+      .values({ 
+        termValue: term,
+        category: category,
+        vendorManaged: true 
+      })
       .returning();
     
-    res.json(newTemplate);
+    res.json({
+      id: newTemplate.id,
+      term: newTemplate.termValue,
+      category: newTemplate.category,
+      isActive: true, // baseTermTemplates doesn't have isActive field
+      vendorManaged: newTemplate.vendorManaged,
+      createdAt: newTemplate.createdAt
+    });
   } catch (error) {
     console.error('Base term template creation error:', error);
     res.status(500).json({ error: 'Failed to create base term template' });
@@ -380,22 +423,34 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Get UTM templates grouped by source
 router.get('/base-templates/utm-grouped', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    const templates = await db.select().from(baseUtmTemplates).orderBy(baseUtmTemplates.source, baseUtmTemplates.medium);
+    const templates = await db.select().from(baseUtmTemplates).orderBy(baseUtmTemplates.utmSource, baseUtmTemplates.utmMedium);
     
     // Group templates by source
     const sourceGroups: Record<string, { mediums: Record<string, { content: string[], templates: any[] }> }> = {};
     
     templates.forEach(template => {
-      if (!sourceGroups[template.source]) {
-        sourceGroups[template.source] = { mediums: {} };
+      const source = template.utmSource;
+      const medium = template.utmMedium;
+      const content = template.utmContent;
+      
+      if (!sourceGroups[source]) {
+        sourceGroups[source] = { mediums: {} };
       }
       
-      if (!sourceGroups[template.source].mediums[template.medium]) {
-        sourceGroups[template.source].mediums[template.medium] = { content: [], templates: [] };
+      if (!sourceGroups[source].mediums[medium]) {
+        sourceGroups[source].mediums[medium] = { content: [], templates: [] };
       }
       
-      sourceGroups[template.source].mediums[template.medium].content.push(template.content);
-      sourceGroups[template.source].mediums[template.medium].templates.push(template);
+      sourceGroups[source].mediums[medium].content.push(content);
+      sourceGroups[source].mediums[medium].templates.push({
+        id: template.id,
+        source: template.utmSource,
+        medium: template.utmMedium,
+        content: template.utmContent,
+        isActive: template.isActive,
+        vendorManaged: template.vendorManaged,
+        createdAt: template.createdAt
+      });
     });
     
     // Convert to array format
