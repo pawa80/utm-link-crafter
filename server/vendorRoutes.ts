@@ -73,14 +73,16 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
     const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
-    // Get UTM sources usage from actual links
+    // Get UTM sources usage with proper base/custom classification
     const sourcesData = await db
       .select({
         name: utmLinks.utm_source,
         count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN ${utmLinks.utm_source} IN ('google', 'facebook', 'instagram', 'youtube', 'linkedin', 'twitter', 'pinterest', 'tiktok', 'snapchat', 'email', 'affiliate', 'display') 
-          THEN 'base'::text 
+          WHEN EXISTS (
+            SELECT 1 FROM ${baseUtmTemplates} 
+            WHERE ${baseUtmTemplates.utmSource} = ${utmLinks.utm_source}
+          ) THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
@@ -95,14 +97,16 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .groupBy(utmLinks.utm_source)
       .orderBy(desc(count(utmLinks.id)));
 
-    // Get UTM mediums usage from actual links  
+    // Get UTM mediums usage with proper base/custom classification
     const mediumsData = await db
       .select({
         name: utmLinks.utm_medium,
         count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN ${utmLinks.utm_medium} IN ('cpc', 'social', 'email', 'organic', 'referral', 'affiliate', 'display', 'video', 'print', 'sms', 'push') 
-          THEN 'base'::text 
+          WHEN EXISTS (
+            SELECT 1 FROM ${baseUtmTemplates} 
+            WHERE ${baseUtmTemplates.utmMedium} = ${utmLinks.utm_medium}
+          ) THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
@@ -117,12 +121,18 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .groupBy(utmLinks.utm_medium)
       .orderBy(desc(count(utmLinks.id)));
 
-    // Get UTM content usage from actual links
+    // Get UTM content usage with proper base/custom classification
     const contentData = await db
       .select({
         name: utmLinks.utm_content,
         count: count(utmLinks.id),
-        type: sql<'base' | 'custom'>`'base'::text`, // All content templates are considered base for now
+        type: sql<'base' | 'custom'>`CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM ${baseUtmTemplates} 
+            WHERE ${baseUtmTemplates.utmContent} = ${utmLinks.utm_content}
+          ) THEN 'base'::text 
+          ELSE 'custom'::text 
+        END`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
         createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
