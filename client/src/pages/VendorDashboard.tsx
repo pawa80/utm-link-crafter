@@ -14,7 +14,8 @@ import {
   LogOut,
   Settings,
   Database,
-  BarChart3
+  BarChart3,
+  DollarSign
 } from 'lucide-react';
 
 interface DashboardData {

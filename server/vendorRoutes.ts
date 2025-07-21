@@ -649,6 +649,12 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
       .groupBy(pricingPlans.id)
       .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
 
+    console.log('Pricing plans query result:', plans.map(p => ({ 
+      id: p.id, 
+      planName: p.planName, 
+      accountCount: p.accountCount 
+    })));
+    
     res.json(plans.map(plan => ({
       ...plan,
       createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
