@@ -331,6 +331,83 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
     },
   });
 
+  const createCampaignMutation = useMutation({
+    mutationFn: async (data: { utmLinks: any[], landingPages: any[] }) => {
+      const results = [];
+      
+      // Create landing pages first
+      for (const landingPage of data.landingPages) {
+        try {
+          const response = await apiRequest("/api/campaign-landing-pages", { method: "POST", body: JSON.stringify(landingPage) });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Landing page creation failed: ${response.status} - ${errorText}`);
+          }
+          
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const errorText = await response.text();
+            throw new Error(`Expected JSON response but got: ${contentType}. Response: ${errorText.substring(0, 200)}...`);
+          }
+          
+          const result = await response.json();
+          results.push(result);
+        } catch (error) {
+          console.error("Failed to create landing page:", error);
+          throw error; // Re-throw to trigger onError
+        }
+      }
+      
+      // Create UTM links
+      for (const utmLink of data.utmLinks) {
+        try {
+          const response = await apiRequest("/api/utm-links", { method: "POST", body: JSON.stringify(utmLink) });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`UTM link creation failed: ${response.status} - ${errorText}`);
+          }
+          
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const errorText = await response.text();
+            throw new Error(`Expected JSON response but got: ${contentType}. Response: ${errorText.substring(0, 200)}...`);
+          }
+          
+          const result = await response.json();
+          results.push(result);
+        } catch (error) {
+          console.error("Failed to create UTM link:", error);
+          throw error; // Re-throw to trigger onError
+        }
+      }
+      
+      return results;
+    },
+    onSuccess: (results) => {
+      console.log("Campaign created successfully:", results);
+      queryClient.invalidateQueries({ queryKey: ["/api/utm-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/campaign-landing-pages"] });
+      
+      toast({
+        title: "Campaign Saved Successfully!",
+        description: `Created ${results.filter(r => r.utm_campaign).length} UTM links for "${campaignName}"`,
+      });
+      
+      // Redirect to Campaign Management page with auto-expand
+      navigate(`/campaigns?expand=${encodeURIComponent(campaignName)}`);
+    },
+    onError: (error: any) => {
+      console.error("Failed to save campaign:", error);
+      toast({
+        title: "Error",
+        description: `Failed to save campaign: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Add Medium function
   const handleAddMedium = async (sourceName: string, templateId?: number) => {
     const newMedium = customMediumInput[sourceName]?.trim();
@@ -456,11 +533,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   };
   
   const getCheckedSourcesWithContent = () => {
-    console.log("getCheckedSourcesWithContent called");
-    console.log("sourceStates:", sourceStates);
-    console.log("selectedContent:", selectedContent);
-    console.log("selectedTerms:", selectedTerms);
-    
     return Object.entries(sourceStates)
       .filter(([, state]) => state.checked)
       .flatMap(([sourceName, state]) =>
@@ -469,11 +541,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           const selectedContentItems = selectedContent[contentKey] || [];
           const selectedTermItems = selectedTerms[contentKey] || [''];
           
-          console.log(`For ${sourceName}-${medium}: content=${selectedContentItems}, terms=${selectedTermItems}`);
-          
           // Only return results if content is actually selected
           if (selectedContentItems.length === 0) {
-            console.log(`No content selected for ${sourceName}-${medium}, skipping`);
             return [];
           }
           
@@ -1603,93 +1672,57 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       )}
 
       {/* Save Campaign Button */}
-      {(getCheckedSourcesWithContent().length > 0 || true) && (
+      {getCheckedSourcesWithContent().length > 0 && (
         <div className="flex justify-end pt-6">
           <Button
-            onClick={async () => {
-              try {
-                console.log("Starting campaign save...");
-                console.log("Campaign name:", campaignName);
-                console.log("Landing pages:", landingPages);
-                console.log("Target URL:", targetUrl);
-                
-                // Check what links we're trying to save
-                const linksToSave = getCheckedSourcesWithContent();
-                console.log("Links to save:", linksToSave);
-                console.log("Number of links to save:", linksToSave.length);
-                
-                if (linksToSave.length === 0) {
-                  toast({
-                    title: "No Links to Save",
-                    description: "Please select at least one source with content to create UTM links.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                
-                // First, save landing pages if any exist
-                if (landingPages.length > 0) {
-                  console.log("Deleting existing landing pages...");
-                  // Delete existing landing pages for this campaign
-                  await apiRequest("DELETE", `/api/campaign-landing-pages/${campaignName}`);
-                  
-                  console.log("Saving new landing pages...");
-                  // Save new landing pages
-                  for (const landingPage of landingPages) {
-                    if (landingPage.url.trim()) {
-                      await apiRequest("POST", "/api/campaign-landing-pages", {
-                        campaignName,
-                        url: landingPage.url,
-                        label: landingPage.url
-                      });
-                    }
-                  }
-                }
-                
-                // Save all UTM links
-                let successCount = 0;
-                
-                for (const link of linksToSave) {
-                  try {
-                    const targetUrl = landingPages.length > 0 ? landingPages[0].url : link.utmLink.split('?')[0];
-                    
-                    await apiRequest("POST", "/api/utm-links", {
-                      targetUrl,
-                      utm_source: link.sourceName,
-                      utm_medium: link.medium,
-                      utm_campaign: campaignName,
-                      utm_content: link.content,
-                      utm_term: link.term || undefined,
-                      linkName: `${campaignName} - ${link.sourceName} - ${link.medium} - ${link.content}${link.term ? ' - ' + link.term : ''}`,
-                      tags: tags
-                    });
-                    successCount++;
-                  } catch (error) {
-                    console.error("Failed to save UTM link:", error);
-                  }
-                }
-                
+            onClick={() => {
+              // Check what links we're trying to save
+              const linksToSave = getCheckedSourcesWithContent();
+              
+              if (linksToSave.length === 0) {
                 toast({
-                  title: "Campaign Saved Successfully!",
-                  description: `Created ${successCount} UTM links for "${campaignName}"`,
+                  title: "No Links to Save",
+                  description: "Please select at least one source with content to create UTM links.",
+                  variant: "destructive"
                 });
-                
-                // Redirect to Campaign Management page with auto-expand
-                navigate(`/campaigns?expand=${encodeURIComponent(campaignName)}`);
-                
-              } catch (error) {
-                console.error("Failed to save campaign:", error);
-                toast({
-                  title: "Error",
-                  description: "Failed to save campaign. Please try again.",
-                  variant: "destructive",
-                });
+                return;
               }
+              
+              // Prepare UTM links data with userId and accountId (like ChatWizard)
+              const utmLinks = linksToSave.map(link => ({
+                userId: user.id,
+                accountId: user.accountId,
+                targetUrl: landingPages.length > 0 ? landingPages[0].url : link.utmLink.split('?')[0],
+                fullUtmLink: link.utmLink,
+                utm_campaign: campaignName,
+                utm_source: link.sourceName,
+                utm_medium: link.medium,
+                utm_content: link.content,
+                utm_term: link.term || '',
+                tags: selectedTags
+              }));
+              
+              // Prepare landing pages data with userId and accountId (like ChatWizard)
+              const landingPagesToCreate = landingPages.length > 0 
+                ? landingPages.map(lp => ({
+                    userId: user.id,
+                    accountId: user.accountId,
+                    campaignName,
+                    url: lp.url,
+                    label: lp.label
+                  }))
+                : []; // No landing pages to create if using targetUrl only
+              
+              // Use the mutation like ChatWizard does
+              createCampaignMutation.mutate({
+                utmLinks,
+                landingPages: landingPagesToCreate
+              });
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-            disabled={createUtmLinkMutation.isPending}
+            disabled={createCampaignMutation.isPending}
           >
-            {createUtmLinkMutation.isPending ? "Saving..." : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
+            {createCampaignMutation.isPending ? "Saving..." : "Save Campaign Links"}
           </Button>
         </div>
       )}
