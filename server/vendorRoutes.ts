@@ -67,6 +67,68 @@ router.get('/auth/verify', authenticateVendor, (req: any, res: Response) => {
 // Protected vendor routes (require authentication)
 
 // Analytics dashboard with UTM element usage
+// Dashboard Overview Totals
+router.get('/dashboard/overview', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    // Get total counts
+    const [accountsResult] = await db.select({ count: count() }).from(accounts);
+    const [usersResult] = await db.select({ count: count() }).from(users);
+    const [campaignsResult] = await db.select({ count: count() }).from(sql`(SELECT DISTINCT campaign_name, account_id FROM utm_links WHERE is_archived = false) as unique_campaigns`);
+    const [utmLinksResult] = await db.select({ count: count() }).from(utmLinks).where(eq(utmLinks.isArchived, false));
+
+    // Get account status breakdown
+    const accountStatusBreakdown = await db
+      .select({
+        status: accounts.accountStatus,
+        count: count()
+      })
+      .from(accounts)
+      .groupBy(accounts.accountStatus);
+
+    // Get plan breakdown (using subscription tier since there's no plan_name column)
+    const planBreakdown = await db
+      .select({
+        planName: accounts.subscriptionTier,
+        count: count()
+      })
+      .from(accounts)
+      .groupBy(accounts.subscriptionTier);
+
+    // Get recent accounts
+    const recentAccounts = await db
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        accountStatus: accounts.accountStatus,
+        createdAt: accounts.createdAt,
+        userCount: count(users.id)
+      })
+      .from(accounts)
+      .leftJoin(users, eq(accounts.id, users.accountId))
+      .groupBy(accounts.id, accounts.name, accounts.accountStatus, accounts.createdAt)
+      .orderBy(desc(accounts.createdAt))
+      .limit(5);
+
+    res.json({
+      totals: {
+        accounts: accountsResult.count,
+        users: usersResult.count,
+        campaigns: campaignsResult.count,
+        utmLinks: utmLinksResult.count
+      },
+      accountStatusBreakdown,
+      planBreakdown,
+      recentAccounts: recentAccounts.map(account => ({
+        ...account,
+        createdAt: account.createdAt?.toISOString() || new Date().toISOString()
+      }))
+    });
+  } catch (error) {
+    console.error('Dashboard overview error:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard overview data' });
+  }
+});
+
 router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res: Response) => {
   try {
     const { from, to } = req.query;
@@ -175,7 +237,7 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
         count: usage?.count || 0,
         type: template.type?.toLowerCase() as 'base' | 'custom' || 'custom',
         lastUsed: usage?.lastUsed || null,
-        createdAt: template.createdAt.toISOString()
+        createdAt: template.createdAt?.toISOString() || new Date().toISOString()
       };
     }).sort((a, b) => b.count - a.count);
 

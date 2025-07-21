@@ -39,9 +39,9 @@ const VendorDashboard: React.FC = () => {
   const { vendorUser, logout, token } = useVendorAuth();
 
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
-    queryKey: ['/vendor-api/analytics/dashboard'],
+    queryKey: ['/vendor-api/dashboard/overview'],
     queryFn: async () => {
-      const response = await fetch('/vendor-api/analytics/dashboard', {
+      const response = await fetch('/vendor-api/dashboard/overview', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
