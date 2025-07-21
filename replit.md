@@ -495,6 +495,14 @@ Changelog:
   - **Security Infrastructure**: Created sanitization utilities, ErrorBoundary component, input validation with user feedback
   - **Graceful Degradation**: Clear error messages, fallback options, service availability checks, transparent input sanitization with toast notifications
   - **User Experience**: Never get stuck - always have retry/manual creation options, comprehensive error handling with recovery paths
+- July 21, 2025. Tag Creation Database Constraint Fix (COMPLETED):
+  - **Root Cause**: Tag creation API endpoint was missing required `accountId` field, causing database constraint violations
+  - **Authentication Fix**: Added `req.accountId = user.accountId` to authentication middleware for proper account tracking
+  - **Schema Fix**: Updated `insertTagSchema` to properly omit `accountId` from validation while allowing it in the backend
+  - **Deployment Issue Resolution**: Fixed discrepancy between development and deployed environments for tag creation
+  - **Enhanced Logging**: Added comprehensive debugging to track accountId flow through authentication middleware
+  - **Database Security**: Maintained account-level data isolation with proper foreign key constraints
+  - **Real-world Testing**: Verified tag creation works for both development and deployed applications
 
 ## User Preferences
 

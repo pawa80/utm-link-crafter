@@ -247,6 +247,7 @@ export const insertSourceTemplateSchema = createInsertSchema(sourceTemplates).om
 export const insertTagSchema = createInsertSchema(tags).omit({
   id: true,
   userId: true,
+  accountId: true,
   createdAt: true,
 });
 

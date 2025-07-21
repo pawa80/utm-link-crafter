@@ -535,6 +535,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Processed request body:", requestBody);
+      console.log("User object:", { id: req.user.id, accountId: req.user.accountId });
+      console.log("Request accountId:", req.accountId);
+      
       const tagData = insertTagSchema.parse(requestBody);
       
       // Check if tag already exists
@@ -543,10 +546,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(existingTag);
       }
       
+      // Ensure we have accountId - fallback to getting it from user
+      const accountId = req.accountId || req.user.accountId;
+      if (!accountId) {
+        console.error("No accountId found for user:", req.user.id);
+        return res.status(400).json({ message: "Account information missing" });
+      }
+      
+      console.log("Creating tag with accountId:", accountId);
       const tag = await storage.createTag({
         ...tagData,
         userId: req.user.id,
-        accountId: req.accountId || req.user.accountId,
+        accountId: accountId,
       });
       
       res.json(tag);
