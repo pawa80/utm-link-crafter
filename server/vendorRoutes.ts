@@ -626,45 +626,31 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    const plans = await db
-      .select({
-        id: pricingPlans.id,
-        planCode: pricingPlans.planCode,
-        planName: pricingPlans.planName,
-        description: pricingPlans.description,
-        monthlyPriceCents: pricingPlans.monthlyPriceCents,
-        annualPriceCents: pricingPlans.annualPriceCents,
-        trialDays: pricingPlans.trialDays,
-        maxCampaigns: pricingPlans.maxCampaigns,
-        maxUsers: pricingPlans.maxUsers,
-        maxUtmLinks: pricingPlans.maxUtmLinks,
-        features: pricingPlans.features,
-        isActive: pricingPlans.isActive,
-        sortOrder: pricingPlans.sortOrder,
-        createdAt: pricingPlans.createdAt,
-        accountCount: sql<number>`COUNT(${accounts.id})`
-      })
+    // First get all pricing plans
+    const allPlans = await db
+      .select()
       .from(pricingPlans)
-      .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
-      .groupBy(
-        pricingPlans.id,
-        pricingPlans.planCode,
-        pricingPlans.planName,
-        pricingPlans.description,
-        pricingPlans.monthlyPriceCents,
-        pricingPlans.annualPriceCents,
-        pricingPlans.trialDays,
-        pricingPlans.maxCampaigns,
-        pricingPlans.maxUsers,
-        pricingPlans.maxUtmLinks,
-        pricingPlans.features,
-        pricingPlans.isActive,
-        pricingPlans.sortOrder,
-        pricingPlans.createdAt
-      )
       .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
 
-    console.log('Pricing plans query result:', plans.map(p => ({ 
+    // Then get account counts per plan
+    const planCounts = await db
+      .select({
+        planId: accounts.pricingPlanId,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(accounts)
+      .groupBy(accounts.pricingPlanId);
+
+    // Combine the data
+    const plans = allPlans.map(plan => {
+      const countData = planCounts.find(pc => pc.planId === plan.id);
+      return {
+        ...plan,
+        accountCount: countData?.count || 0
+      };
+    });
+
+    console.log('Pricing plans with account counts:', plans.map(p => ({ 
       id: p.id, 
       planName: p.planName, 
       accountCount: p.accountCount 
