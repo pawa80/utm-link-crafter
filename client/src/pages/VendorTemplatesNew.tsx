@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, ChevronDown, ChevronRight, Database, Tag } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, ChevronRight, Database, Tag, Edit2, Trash2 } from 'lucide-react';
 
 interface SourceTemplateGroup {
   source: string;
@@ -47,6 +47,8 @@ const VendorTemplatesNew: React.FC = () => {
   const [newTemplate, setNewTemplate] = useState<any>({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [editingItem, setEditingItem] = useState<{type: 'source'|'medium'|'content', id: string, value: string} | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'source'|'medium'|'content', item: string, details: string} | null>(null);
 
   // Fetch UTM templates grouped by source
   const { data: utmTemplateGroups, isLoading: utmLoading, error: utmError } = useQuery<SourceTemplateGroup[]>({
@@ -280,9 +282,29 @@ const VendorTemplatesNew: React.FC = () => {
                               <ChevronRight className="w-4 h-4" />
                             }
                           </Button>
-                          <div>
+                          <div className="flex items-center gap-2">
                             <h3 className="font-bold text-blue-700 text-xl">{sourceGroup.source}</h3>
-                            <p className="text-sm text-gray-600">{sourceGroup.mediums.length} mediums, {sourceGroup.mediums.reduce((acc, m) => acc + m.content.length, 0)} content variations</p>
+                            <button
+                              onClick={() => setEditingItem({type: 'source', id: sourceGroup.source, value: sourceGroup.source})}
+                              className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                              title="Edit source name"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm({
+                                type: 'source', 
+                                item: sourceGroup.source, 
+                                details: `This will delete the entire "${sourceGroup.source}" source with ${sourceGroup.mediums.length} mediums and ${sourceGroup.mediums.reduce((acc, m) => acc + m.content.length, 0)} content variations.`
+                              })}
+                              className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                              title="Delete source"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <div className="ml-2">
+                              <p className="text-sm text-gray-600">{sourceGroup.mediums.length} mediums, {sourceGroup.mediums.reduce((acc, m) => acc + m.content.length, 0)} content variations</p>
+                            </div>
                           </div>
                         </div>
                         <Button variant="outline" size="sm" className="text-xs">
@@ -296,8 +318,26 @@ const VendorTemplatesNew: React.FC = () => {
                           {sourceGroup.mediums.map((medium) => (
                             <div key={medium.medium} className="border-l-4 border-blue-100 pl-6">
                               <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                   <h4 className="font-bold text-purple-700 text-lg">{medium.medium}</h4>
+                                  <button
+                                    onClick={() => setEditingItem({type: 'medium', id: `${sourceGroup.source}-${medium.medium}`, value: medium.medium})}
+                                    className="text-gray-400 hover:text-purple-600 transition-colors p-1"
+                                    title="Edit medium name"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirm({
+                                      type: 'medium', 
+                                      item: medium.medium, 
+                                      details: `This will delete the "${medium.medium}" medium from "${sourceGroup.source}" source with ${medium.content.length} content variations.`
+                                    })}
+                                    className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                    title="Delete medium"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
                                 </div>
                                 <Button variant="outline" size="sm" className="text-xs">
                                   <Plus className="h-3 w-3 mr-1" />
@@ -309,11 +349,23 @@ const VendorTemplatesNew: React.FC = () => {
                                   <div key={idx} className="group flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                                     <span className="text-sm text-gray-700 font-medium flex-1">{content}</span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                                      <button className="text-gray-400 hover:text-green-600 transition-colors p-1">
-                                        <Plus className="h-3 w-3" title="Edit content" />
+                                      <button 
+                                        onClick={() => setEditingItem({type: 'content', id: `${sourceGroup.source}-${medium.medium}-${content}`, value: content})}
+                                        className="text-gray-400 hover:text-green-600 transition-colors p-1"
+                                        title="Edit content"
+                                      >
+                                        <Edit2 className="h-3 w-3" />
                                       </button>
-                                      <button className="text-gray-400 hover:text-red-600 transition-colors p-1">
-                                        <ChevronDown className="h-3 w-3" title="Delete content" />
+                                      <button 
+                                        onClick={() => setDeleteConfirm({
+                                          type: 'content', 
+                                          item: content, 
+                                          details: `This will delete the "${content}" content variation from "${medium.medium}" medium in "${sourceGroup.source}" source.`
+                                        })}
+                                        className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                        title="Delete content"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
                                       </button>
                                     </div>
                                   </div>
@@ -438,6 +490,92 @@ const VendorTemplatesNew: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+          <DialogContent className="bg-white border-gray-200">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900">Edit {editingItem?.type}</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Update the name of this {editingItem?.type}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-gray-700">Name</Label>
+                <Input
+                  value={editingItem?.value || ''}
+                  onChange={(e) => setEditingItem(prev => prev ? {...prev, value: e.target.value} : null)}
+                  placeholder={`Enter ${editingItem?.type} name`}
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    // TODO: Implement edit functionality
+                    toast({ title: 'Edit functionality coming soon' });
+                    setEditingItem(null);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Update {editingItem?.type}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingItem(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+          <DialogContent className="bg-white border-gray-200">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">Confirm Deletion</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Are you sure you want to delete "{deleteConfirm?.item}"?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">
+                  <strong>Warning:</strong> {deleteConfirm?.details}
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    // TODO: Implement delete functionality
+                    toast({ 
+                      title: 'Delete functionality coming soon',
+                      description: `Would delete ${deleteConfirm?.type}: ${deleteConfirm?.item}`
+                    });
+                    setDeleteConfirm(null);
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Delete {deleteConfirm?.type}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
