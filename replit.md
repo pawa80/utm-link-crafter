@@ -464,6 +464,8 @@ Changelog:
   - **Status Management**: Active/inactive plan toggle with protection against deleting plans currently in use
   - **Dashboard Integration**: Added pricing plans navigation card to vendor dashboard with 4-column responsive layout
   - **Real Data Display**: Free Plan correctly shows 1 account, other plans show 0 accounts as expected
+  - **Critical Bug Fix**: Resolved missing accountCount field in API response caused by duplicate route definitions - now displays all 6 pricing plans with accurate account statistics
+  - **Debugging Lesson**: Identified importance of checking for duplicate API routes and testing responses directly before making frontend changes
 
 ## User Preferences
 
