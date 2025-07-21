@@ -119,7 +119,7 @@ const VendorAnalytics: React.FC = () => {
             </TableHeader>
             <TableBody>
               {safeData.map((item, index) => (
-                <TableRow key={index}>
+                <TableRow key={`${item.name}-${index}`}>
                   <TableCell>
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
                       color === 'blue' ? 'bg-blue-100 text-blue-600' :
