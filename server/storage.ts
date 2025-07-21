@@ -95,6 +95,35 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserWithAccountAndPlan(userId: number): Promise<any> {
+    const [result] = await db
+      .select({
+        id: users.id,
+        firebaseUid: users.firebaseUid,
+        displayName: users.displayName,
+        email: users.email,
+        accountId: users.accountId,
+        role: users.role,
+        account: {
+          id: accounts.id,
+          name: accounts.name,
+          pricingPlanId: accounts.pricingPlanId,
+          pricingPlan: {
+            id: pricingPlans.id,
+            planName: pricingPlans.planName,
+            features: pricingPlans.features
+          }
+        }
+      })
+      .from(users)
+      .innerJoin(accounts, eq(users.accountId, accounts.id))
+      .leftJoin(pricingPlans, eq(accounts.pricingPlanId, pricingPlans.id))
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    return result || undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)

@@ -32,7 +32,50 @@ const authMiddleware = async (req: any, res: any, next: any) => {
   }
   
   req.user = user;
+  req.userId = user.id;
   next();
+};
+
+// Load user features middleware
+const loadFeatures = async (req: any, res: any, next: any) => {
+  try {
+    if (!req.userId) {
+      return next();
+    }
+
+    const user = await storage.getUserWithAccountAndPlan(req.userId);
+    if (user?.account?.pricingPlan?.features) {
+      req.userFeatures = user.account.pricingPlan.features;
+      req.userAccount = {
+        id: user.accountId,
+        name: user.account.name,
+        pricingPlanId: user.account.pricingPlanId
+      };
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Feature middleware error:', error);
+    next();
+  }
+};
+
+// Feature check function
+const requireFeature = (featureKey: string) => {
+  return (req: any, res: any, next: any) => {
+    const hasFeature = req.userFeatures?.[featureKey];
+    
+    if (!hasFeature) {
+      return res.status(403).json({
+        error: 'Feature not available',
+        message: `This feature (${featureKey}) is not included in your current plan.`,
+        featureKey,
+        requiresUpgrade: true
+      });
+    }
+
+    next();
+  };
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -105,6 +148,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user
   app.get("/api/user", authMiddleware, async (req: any, res) => {
     res.json(req.user);
+  });
+
+  // Get user features
+  app.get("/api/user-features", authMiddleware, loadFeatures, async (req: any, res) => {
+    try {
+      res.json({
+        features: req.userFeatures || {},
+        account: req.userAccount || null
+      });
+    } catch (error) {
+      console.error("Get user features error:", error);
+      res.status(500).json({ error: "Failed to get user features" });
+    }
   });
 
   // Get current user's account

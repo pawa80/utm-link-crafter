@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useHasFeature } from '../hooks/useFeatures';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
@@ -17,6 +18,7 @@ export default function HomePage() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
+  const hasChatWizard = useHasFeature('chatWizard');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -82,28 +84,30 @@ export default function HomePage() {
         </div>
 
         {/* Main Action Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-8">
-          {/* Chat Wizard Card - First Quadrant */}
-          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
-            <CardHeader className="text-center pb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-secondary via-cyan to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <MessageCircle size={40} className="text-white" />
-              </div>
-              <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
-              <CardDescription className="text-base leading-relaxed">
-                Let our AI assistant guide you through creating a campaign step by step with intelligent suggestions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/chat-wizard">
-                <Button className="w-full h-14 text-lg font-semibold btn-gradient-secondary">
-                  Start Chat Wizard
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        <div className={`grid gap-8 max-w-5xl mx-auto mb-8 ${hasChatWizard ? 'md:grid-cols-2' : 'md:grid-cols-1 justify-center'}`}>
+          {/* Chat Wizard Card - Only show if user has feature */}
+          {hasChatWizard && (
+            <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+              <CardHeader className="text-center pb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-secondary via-cyan to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <MessageCircle size={40} className="text-white" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  Let our AI assistant guide you through creating a campaign step by step with intelligent suggestions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/chat-wizard">
+                  <Button className="w-full h-14 text-lg font-semibold btn-gradient-secondary">
+                    Start Chat Wizard
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
           {/* New Campaign Card */}
-          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+          <Card className={`card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in ${!hasChatWizard ? 'max-w-md mx-auto' : ''}`}>
             <CardHeader className="text-center pb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-primary via-cyan to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Plus size={40} className="text-white" />
