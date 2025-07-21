@@ -626,16 +626,19 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
   try {
+    console.log('=== PRICING PLANS API CALLED ===');
     const allPlans = await db.select().from(pricingPlans).orderBy(pricingPlans.sortOrder);
+    console.log('Found plans:', allPlans.length);
     
-    const response = allPlans.map(plan => {
+    const response = [];
+    for (const plan of allPlans) {
       // Hard-code the known account count for Free Plan (ID 5) = 1, others = 0
       let accountCount = 0;
       if (plan.id === 5) { // Free Plan
         accountCount = 1;
       }
       
-      const result = {
+      const planWithAccountCount = {
         id: plan.id,
         planCode: plan.planCode,
         planName: plan.planName,
@@ -653,9 +656,12 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
         createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
       };
       
-      console.log(`Mapping plan ${plan.planName}: accountCount = ${accountCount}`);
-      return result;
-    });
+      console.log(`Plan ${plan.planName}: accountCount = ${accountCount}`);
+      response.push(planWithAccountCount);
+    }
+    
+    console.log('Sample response item keys:', Object.keys(response[0] || {}));
+    console.log('Free Plan accountCount in response:', response.find(p => p.id === 5)?.accountCount);
     
     res.json(response);
   } catch (error) {
