@@ -10,6 +10,8 @@ import Logo from "@/components/Logo";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createOrGetUser } from "@/lib/auth";
+import { useHasFeature } from "@/hooks/useFeatures";
+import FeatureGate from "@/components/FeatureGate";
 import type { User as AuthUser } from "firebase/auth";
 import type { User } from "@shared/schema";
 
@@ -97,64 +99,121 @@ export default function Settings() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             
             {/* Template Management Card */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Archive size={32} className="text-primary" />
-                </div>
-                <CardTitle className="text-xl">Template Management</CardTitle>
-                <CardDescription>
-                  Manage your UTM templates for sources, mediums, and content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/template-management">
-                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
-                    Manage Templates
+            <FeatureGate feature="customTemplates" fallback={
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Archive size={32} className="text-gray-400" />
+                  </div>
+                  <CardTitle className="text-xl text-gray-500">Template Management</CardTitle>
+                  <CardDescription>
+                    Available in premium plans
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4" disabled>
+                    Upgrade Required
                   </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            }>
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Archive size={32} className="text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Template Management</CardTitle>
+                  <CardDescription>
+                    Manage your UTM templates for sources, mediums, and content
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href="/template-management">
+                    <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
+                      Manage Templates
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </FeatureGate>
 
             {/* Tag Management Card */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Tag size={32} className="text-primary" />
-                </div>
-                <CardTitle className="text-xl">Tag Management</CardTitle>
-                <CardDescription>
-                  Organize and manage your campaign tags with usage statistics
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/tags">
-                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
-                    Manage Tags
+            <FeatureGate feature="campaignManagement" fallback={
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Tag size={32} className="text-gray-400" />
+                  </div>
+                  <CardTitle className="text-xl text-gray-500">Tag Management</CardTitle>
+                  <CardDescription>
+                    Available in premium plans
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4" disabled>
+                    Upgrade Required
                   </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            }>
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Tag size={32} className="text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Tag Management</CardTitle>
+                  <CardDescription>
+                    Organize and manage your campaign tags with usage statistics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href="/tags">
+                    <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
+                      Manage Tags
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </FeatureGate>
 
             {/* Account Management Card */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users size={32} className="text-primary" />
-                </div>
-                <CardTitle className="text-xl">Account Management</CardTitle>
-                <CardDescription>
-                  Manage users, roles, and multi-account access settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/account-management">
-                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
-                    Manage Accounts
+            <FeatureGate feature="multiUser" fallback={
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users size={32} className="text-gray-400" />
+                  </div>
+                  <CardTitle className="text-xl text-gray-500">Account Management</CardTitle>
+                  <CardDescription>
+                    Available in premium plans
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full h-14 text-base leading-tight px-4" disabled>
+                    Upgrade Required
                   </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            }>
+              <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-primary/20">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users size={32} className="text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Account Management</CardTitle>
+                  <CardDescription>
+                    Manage users, roles, and multi-account access settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href="/account-management">
+                    <Button variant="outline" className="w-full h-14 text-base leading-tight px-4">
+                      Manage Accounts
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </FeatureGate>
 
             {/* Placeholder for future settings */}
             <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
