@@ -102,7 +102,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     select: (data: any[]) => {
       // Filter out archived campaigns and get unique campaign names
       const activeLinks = data.filter(link => !link.isArchived);
-      const campaignNames = [...new Set(activeLinks.map(link => link.utm_campaign))];
+      const campaignNames = Array.from(new Set(activeLinks.map(link => link.utm_campaign)));
       return campaignNames.slice(0, 10); // Get 10 latest campaigns
     }
   });
@@ -224,7 +224,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     setErrorCount(0);
     setLastError(null);
     setCurrentInput('');
-    showWelcome();
+    // Initialize welcome message - handled in useEffect
   };
 
   // Function to fetch term template suggestions with error recovery
@@ -776,7 +776,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   };
 
   const showSourceSelection = () => {
-    const availableSources = [...new Set(sourceTemplates.map(template => template.sourceName))];
+    const availableSources = Array.from(new Set(sourceTemplates.map(template => template.sourceName)));
     const unselectedSources = availableSources.filter(source => !campaignData.selectedSources.includes(source));
     
     const sourceOptions = unselectedSources.map(source => ({

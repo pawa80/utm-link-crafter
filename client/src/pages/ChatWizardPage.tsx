@@ -5,7 +5,7 @@ import { auth } from "@/lib/firebase";
 import { apiRequest } from "@/lib/queryClient";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
-import ChatWizard from "@/components/ChatWizard";
+import ChatWizardSecure from "@/components/ChatWizardSecure";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -152,7 +152,7 @@ export default function ChatWizardPage() {
                   </div>
                 }
               >
-                <ChatWizard 
+                <ChatWizardSecure 
                   user={user} 
                   onComplete={handleComplete}
                 />
