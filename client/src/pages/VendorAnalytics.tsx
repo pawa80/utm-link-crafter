@@ -63,33 +63,21 @@ const VendorAnalytics: React.FC = () => {
   };
 
   const generateTimelineData = (elements: ElementData[]) => {
-    const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-    const dates = [];
-    
-    // Generate dates for the selected range
-    for (let i = 0; i <= daysDiff; i++) {
-      const date = new Date(dateRange.from);
-      date.setDate(date.getDate() + i);
-      dates.push(format(date, 'MMM dd'));
+    // Use real timeline data from API instead of generating mock data
+    if (!analyticsData?.usage_timeline || analyticsData.usage_timeline.length === 0) {
+      return [];
     }
-
-    const top5Elements = elements.slice(0, 5);
     
-    return dates.map(date => {
-      const dataPoint: TimelineData = { date };
-      top5Elements.forEach(element => {
-        dataPoint[element.name] = Math.floor(Math.random() * element.count * 0.1) + 1;
-      });
-      return dataPoint;
-    });
+    // Transform API timeline data to match chart format
+    return analyticsData.usage_timeline.map(item => ({
+      date: format(new Date(item.date), 'MMM dd'),
+      count: item.count
+    }));
   };
 
   const renderElementTable = (data: ElementData[], title: string, color: string) => {
     const safeData = data || [];
     const timelineData = generateTimelineData(safeData);
-    const top5Elements = safeData.slice(0, 5);
-
-    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -124,7 +112,7 @@ const VendorAnalytics: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>{formatNumber(item.count)}</TableCell>
-                  <TableCell className="text-gray-600">{new Date(item.lastUsed).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-gray-600">{item.lastUsed ? new Date(item.lastUsed).toLocaleDateString() : 'Never'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -132,35 +120,24 @@ const VendorAnalytics: React.FC = () => {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-900 mb-4">Top 5 Usage Timeline</h4>
+            <h4 className="font-semibold text-gray-900 mb-4">Platform Usage Timeline</h4>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={timelineData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={10} />
                 <YAxis fontSize={12} />
                 <Tooltip />
-                {top5Elements.map((element, index) => (
-                  <Line 
-                    key={element.name}
-                    type="monotone" 
-                    dataKey={element.name} 
-                    stroke={colors[index]} 
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                ))}
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
-              {top5Elements.map((element, index) => (
-                <div key={element.name} className="flex items-center gap-2 text-xs">
-                  <div 
-                    className="w-3 h-3 rounded" 
-                    style={{ backgroundColor: colors[index] }}
-                  />
-                  <span className="truncate">{element.name}</span>
-                </div>
-              ))}
+            <div className="mt-2 text-xs text-gray-600">
+              Shows actual UTM link creation activity over selected period
             </div>
           </div>
         </div>

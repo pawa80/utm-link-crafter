@@ -137,29 +137,41 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .orderBy(desc(count(utmLinks.id)));
 
     // Get ALL term templates from user_term_templates (including zero usage)
-    const termsData = await db
+    const allTermTemplates = await db
       .select({
-        name: userTermTemplates.termValue,
-        count: sql<number>`COALESCE(
-          (SELECT COUNT(*) FROM ${utmLinks} 
-           WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue} 
-           AND ${utmLinks.createdAt} >= ${fromDate} 
-           AND ${utmLinks.createdAt} <= ${toDate}), 0)`,
-        type: sql<'base' | 'custom'>`CASE 
-          WHEN ${userTermTemplates.isCustom} = false THEN 'base'::text 
-          ELSE 'custom'::text 
-        END`,
-        lastUsed: sql<string>`(SELECT MAX(${utmLinks.createdAt}) FROM ${utmLinks} 
-                              WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue})`,
-        createdAt: sql<string>`${userTermTemplates.createdAt}`
+        termValue: userTermTemplates.termValue,
+        isCustom: userTermTemplates.isCustom,
+        createdAt: userTermTemplates.createdAt
       })
       .from(userTermTemplates)
-      .where(eq(userTermTemplates.accountId, 1))
-      .orderBy(desc(sql<number>`COALESCE(
-        (SELECT COUNT(*) FROM ${utmLinks} 
-         WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue} 
-         AND ${utmLinks.createdAt} >= ${fromDate} 
-         AND ${utmLinks.createdAt} <= ${toDate}), 0)`));
+      .where(eq(userTermTemplates.accountId, 1));
+
+    // Get usage counts for each term
+    const termUsageCounts = await db
+      .select({
+        term: utmLinks.utm_term,
+        count: count(utmLinks.id),
+        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`
+      })
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_term} IS NOT NULL`
+      ))
+      .groupBy(utmLinks.utm_term);
+
+    // Combine term templates with usage data
+    const termsData = allTermTemplates.map(template => {
+      const usage = termUsageCounts.find(u => u.term === template.termValue);
+      return {
+        name: template.termValue,
+        count: usage?.count || 0,
+        type: template.isCustom ? 'custom' as const : 'base' as const,
+        lastUsed: usage?.lastUsed || null,
+        createdAt: template.createdAt.toISOString()
+      };
+    }).sort((a, b) => b.count - a.count);
 
     // Get usage timeline
     const timelineData = await db
