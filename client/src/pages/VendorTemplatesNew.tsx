@@ -455,38 +455,59 @@ const VendorTemplatesNew: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {termTemplates?.map((template) => (
-                  <div key={template.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge 
-                        variant={template.vendorManaged ? 'default' : 'secondary'}
-                        className={template.vendorManaged ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}
-                      >
-                        {template.vendorManaged ? 'Vendor Managed' : 'System Default'}
-                      </Badge>
-                      <Badge 
-                        variant={template.isActive ? 'default' : 'secondary'}
-                        className={template.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                      >
-                        {template.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+              <div className="space-y-6">
+                {/* Group terms by category */}
+                {Object.entries(
+                  termTemplates?.reduce((acc, template) => {
+                    const category = template.category || 'general';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(template);
+                    return acc;
+                  }, {} as Record<string, typeof termTemplates>) || {}
+                ).map(([category, templates]) => (
+                  <div key={category} className="border-l-4 border-purple-100 pl-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-purple-700 text-lg capitalize">{category}</h4>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add {category} Term
+                      </Button>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600">Term: <span className="font-medium text-gray-900">{template.term}</span></div>
-                      <div className="text-sm text-gray-600">Category: <span className="font-medium text-gray-900">{template.category}</span></div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      Created: {new Date(template.createdAt).toLocaleDateString()}
+                    <div className="flex flex-wrap gap-2">
+                      {templates.map((template) => (
+                        <div key={template.id} className="group inline-flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                          <span className="text-sm text-gray-700 font-medium">{template.term}</span>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => setEditingItem({type: 'content', id: `term-${template.id}`, value: template.term})}
+                              className="text-gray-400 hover:text-blue-600 transition-colors p-0.5"
+                              title="Edit term"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </button>
+                            <button 
+                              onClick={() => setDeleteConfirm({
+                                type: 'content', 
+                                item: template.term, 
+                                details: `This will delete the "${template.term}" term template from the "${category}" category.`
+                              })}
+                              className="text-gray-400 hover:text-red-600 transition-colors p-0.5"
+                              title="Delete term"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
-                {termTemplates?.length === 0 && (
-                  <div className="col-span-full text-center py-8 text-gray-500">
-                    No term templates found. Create your first template to get started.
-                  </div>
-                )}
               </div>
+              {termTemplates?.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No term templates found. Create your first template to get started.
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
