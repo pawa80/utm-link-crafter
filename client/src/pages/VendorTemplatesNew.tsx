@@ -344,14 +344,14 @@ const VendorTemplatesNew: React.FC = () => {
                                   Add Content
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              <div className="flex flex-wrap gap-2">
                                 {medium.content.map((content, idx) => (
-                                  <div key={idx} className="group flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
-                                    <span className="text-sm text-gray-700 font-medium flex-1">{content}</span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                  <div key={idx} className="group inline-flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                                    <span className="text-sm text-gray-700 font-medium">{content}</span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                       <button 
                                         onClick={() => setEditingItem({type: 'content', id: `${sourceGroup.source}-${medium.medium}-${content}`, value: content})}
-                                        className="text-gray-400 hover:text-green-600 transition-colors p-1"
+                                        className="text-gray-400 hover:text-green-600 transition-colors p-0.5"
                                         title="Edit content"
                                       >
                                         <Edit2 className="h-3 w-3" />
@@ -362,7 +362,7 @@ const VendorTemplatesNew: React.FC = () => {
                                           item: content, 
                                           details: `This will delete the "${content}" content variation from "${medium.medium}" medium in "${sourceGroup.source}" source.`
                                         })}
-                                        className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                        className="text-gray-400 hover:text-red-600 transition-colors p-0.5"
                                         title="Delete content"
                                       >
                                         <Trash2 className="h-3 w-3" />
