@@ -1,60 +1,90 @@
-import { auth } from "./firebase";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut,
-  onAuthStateChanged,
-  type User
-} from "firebase/auth";
-import { apiRequest } from "./queryClient";
-
-export interface AuthUser {
-  uid: string;
-  email: string | null;
-}
-
-export const signUpWithEmail = async (email: string, password: string) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  return userCredential.user;
-};
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { apiRequest } from "@/lib/queryClient";
 
 export const signInWithEmail = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  return userCredential.user;
+  
+  // Create/get user in our database
+  const idToken = await userCredential.user.getIdToken();
+  
+  await apiRequest('/api/users', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+      'x-firebase-uid': userCredential.user.uid,
+    },
+    body: JSON.stringify({
+      firebaseUid: userCredential.user.uid,
+      email: userCredential.user.email,
+    }),
+  });
+
+  return userCredential;
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  return userCredential;
+};
+
+export const createUserAccount = async (accountData: {
+  email: string;
+  accountName: string;
+  pricingPlanId: number;
+  industry?: string;
+  teamSize?: string;
+  useCase?: string;
+}) => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("No authenticated user found");
+  }
+
+  const idToken = await currentUser.getIdToken();
+  
+  const response = await apiRequest('/api/users', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+      'x-firebase-uid': currentUser.uid,
+    },
+    body: JSON.stringify({
+      firebaseUid: currentUser.uid,
+      email: accountData.email,
+      accountName: accountData.accountName,
+      pricingPlanId: accountData.pricingPlanId,
+      industry: accountData.industry,
+      teamSize: accountData.teamSize,
+      useCase: accountData.useCase,
+    }),
+  });
+
+  return response;
 };
 
 export const logout = async () => {
   await signOut(auth);
 };
 
-export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  return onAuthStateChanged(auth, callback);
-};
-
-export const createOrGetUser = async (firebaseUser: User) => {
-  const token = await firebaseUser.getIdToken();
+export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
+  const idToken = await firebaseUser.getIdToken();
   
-  const response = await fetch("/api/users", {
-    method: "POST",
+  const response = await apiRequest('/api/users', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "x-firebase-uid": firebaseUser.uid,
-      "Authorization": `Bearer ${token}`,
+      'Authorization': `Bearer ${idToken}`,
+      'x-firebase-uid': firebaseUser.uid,
     },
     body: JSON.stringify({
       firebaseUid: firebaseUser.uid,
       email: firebaseUser.email,
-      categories: [],
-      defaultSources: [],
-      defaultMediums: [],
-      defaultCampaignNames: [],
-      isSetupComplete: false,
     }),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to create or get user");
-  }
+  return response;
+};
 
-  return response.json();
+export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
+  return onAuthStateChanged(auth, callback);
 };

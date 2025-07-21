@@ -71,7 +71,7 @@ export interface IStorage {
   createAccount(account: InsertAccount): Promise<Account>;
   getAccount(id: number): Promise<Account | undefined>;
   updateAccount(id: number, updates: Partial<InsertAccount>): Promise<Account | undefined>;
-  createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string): Promise<{ user: User; account: Account }>;
+  createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string, pricingPlanId?: number): Promise<{ user: User; account: Account }>;
   
   // User management operations within account
   getAccountUsers(accountId: number): Promise<User[]>;
@@ -135,12 +135,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string): Promise<{ user: User; account: Account }> {
+  async createUserWithAccount(insertUser: Omit<InsertUser, 'accountId'>, accountName: string, pricingPlanId?: number): Promise<{ user: User; account: Account }> {
+    // Get default free plan if no plan specified
+    let finalPlanId = pricingPlanId;
+    if (!finalPlanId) {
+      const [freePlan] = await db.select().from(pricingPlans).where(eq(pricingPlans.planCode, 'free')).limit(1);
+      finalPlanId = freePlan?.id;
+    }
+
     // Create account first
     const account = await this.createAccount({
       name: accountName,
-      subscriptionTier: "trial",
-      trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+      subscriptionTier: "active", // Set as active instead of trial
+      pricingPlanId: finalPlanId,
+      trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial for all plans
     });
 
     // Create user with the account
@@ -530,31 +538,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User account setup - creates user template copies from base templates
-  async createUserTemplatesFromBase(userId: number, accountId?: number): Promise<boolean> {
+  async createUserTemplatesFromBase(userId: number, accountId: number): Promise<boolean> {
     try {
-      // Get default account if not provided
-      if (!accountId) {
-        const defaultAccount = await this.getDefaultAccountForUser(userId);
-        if (!defaultAccount) {
-          console.error('No default account found for user');
-          return false;
-        }
-        accountId = defaultAccount.id;
-      }
+      // accountId is now required
       
       // Get all active base templates
       const baseTemplates = await this.getBaseUtmTemplates();
       
-      // Create user template copies
+      // Create user template copies marked as "Base" type
       const userTemplateInserts = baseTemplates.map(base => ({
         userId,
-        accountId: accountId!, // ensure it's not undefined
+        accountId,
         utmSource: base.utmSource,
         utmMedium: base.utmMedium,
         utmContent: base.utmContent,
         description: base.description,
         isArchived: false,
-        isCustom: false // false because it's from base template
+        isCustom: false, // false because it's from base template
+        type: "Base" as const // Mark as Base type for proper classification
       }));
 
       if (userTemplateInserts.length > 0) {
@@ -574,7 +575,7 @@ export class DatabaseStorage implements IStorage {
       // Get all base term templates
       const baseTermTemplates = await this.getBaseTermTemplates();
       
-      // Create user term template copies
+      // Create user term template copies marked as "Base" type
       const userTermTemplateInserts = baseTermTemplates.map(base => ({
         userId,
         accountId,
@@ -582,7 +583,8 @@ export class DatabaseStorage implements IStorage {
         description: base.description,
         category: base.category,
         isArchived: false,
-        isCustom: false // false because it's from base template
+        isCustom: false, // false because it's from base template
+        type: "Base" as const // Mark as Base type for proper classification
       }));
 
       if (userTermTemplateInserts.length > 0) {

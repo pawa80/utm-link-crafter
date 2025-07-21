@@ -225,7 +225,32 @@ export const insertUserSchema = createInsertSchema(users).omit({
 }).partial({
   accountId: true, // Make accountId optional for initial user creation
   role: true,
-  invitedBy: true
+  invitedBy: true,
+  categories: true,
+  defaultSources: true,
+  defaultMediums: true,
+  defaultCampaignNames: true,
+  isSetupComplete: true,
+  showCampaignTerm: true,
+  showInternalCampaignId: true,
+  showCategory: true,
+  showCustomFields: true,
+  customField1Name: true,
+  customField1InUrl: true,
+  customField1Options: true,
+  customField2Name: true,
+  customField2InUrl: true,
+  customField2Options: true,
+  customField3Name: true,
+  customField3InUrl: true,
+  customField3Options: true,
+}).extend({
+  // Additional sign-up fields
+  accountName: z.string().optional(),
+  pricingPlanId: z.number().optional(),
+  industry: z.string().optional(),
+  teamSize: z.string().optional(),
+  useCase: z.string().optional(),
 });
 
 export const insertUtmLinkSchema = createInsertSchema(utmLinks).omit({

@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { signInWithEmail, signUpWithEmail } from "@/lib/auth";
+import { signInWithEmail, signUpWithEmail, createUserAccount } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "lucide-react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import SignUpWizard from "./SignUpWizard";
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
@@ -19,6 +20,8 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
+  const [showSignUpWizard, setShowSignUpWizard] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,7 +32,10 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       if (activeTab === "signin") {
         await signInWithEmail(email, password);
       } else {
-        await signUpWithEmail(email, password);
+        // For signup, show the wizard instead of immediate signup
+        setUserEmail(email);
+        setShowSignUpWizard(true);
+        return;
       }
       onAuthSuccess();
     } catch (error: any) {
@@ -48,7 +54,18 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      
+      // Check if this is a new user
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+      
+      if (isNewUser && result.user.email) {
+        // Show signup wizard for new Google users
+        setUserEmail(result.user.email);
+        setShowSignUpWizard(true);
+        return;
+      }
+      
       onAuthSuccess();
     } catch (error: any) {
       toast({
@@ -60,6 +77,65 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       setIsLoading(false);
     }
   };
+
+  const handleSignUpComplete = async (accountData: {
+    accountName: string;
+    pricingPlanId: number;
+    industry?: string;
+    teamSize?: string;
+    useCase?: string;
+  }) => {
+    setIsLoading(true);
+    
+    try {
+      // Create Firebase user first if using email/password
+      if (activeTab === "signup" && password) {
+        await signUpWithEmail(userEmail, password);
+      }
+      
+      // Create account with selected plan and details
+      await createUserAccount({
+        email: userEmail,
+        accountName: accountData.accountName,
+        pricingPlanId: accountData.pricingPlanId,
+        industry: accountData.industry,
+        teamSize: accountData.teamSize,
+        useCase: accountData.useCase
+      });
+      
+      toast({
+        title: "Account Created Successfully",
+        description: `Welcome to UTM Builder! Your account "${accountData.accountName}" has been set up.`,
+      });
+      
+      onAuthSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Account Setup Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToAuth = () => {
+    setShowSignUpWizard(false);
+    setUserEmail("");
+  };
+
+  if (showSignUpWizard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-muted via-background to-accent/5">
+        <SignUpWizard
+          userEmail={userEmail}
+          onComplete={handleSignUpComplete}
+          onBack={handleBackToAuth}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-muted via-background to-accent/5">

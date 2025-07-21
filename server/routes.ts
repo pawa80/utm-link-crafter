@@ -99,7 +99,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create user with their own company account (Super Admin role automatically assigned)
-      const companyName = `${userData.email.split('@')[0]}'s Company`;
       const { user, account } = await storage.createUserWithAccount({
         firebaseUid: userData.firebaseUid,
         email: userData.email,
@@ -122,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customField3Name: userData.customField3Name,
         customField3InUrl: userData.customField3InUrl || false,
         customField3Options: userData.customField3Options
-      }, companyName);
+      }, userData.accountName || `${userData.email.split('@')[0]}'s Company`, userData.pricingPlanId);
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
@@ -1370,6 +1369,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Mount vendor routes under /vendor-api (not easily guessable)
   app.use('/vendor-api', vendorRoutes);
+
+  // Get pricing plans for public signup
+  app.get("/api/pricing-plans", async (req, res) => {
+    try {
+      const plans = await db
+        .select({
+          id: pricingPlans.id,
+          planCode: pricingPlans.planCode,
+          planName: pricingPlans.planName,
+          description: pricingPlans.description,
+          monthlyPriceCents: pricingPlans.monthlyPriceCents,
+          annualPriceCents: pricingPlans.annualPriceCents,
+          maxCampaigns: pricingPlans.maxCampaigns,
+          maxUsers: pricingPlans.maxUsers,
+          maxUtmLinks: pricingPlans.maxUtmLinks,
+          features: pricingPlans.features
+        })
+        .from(pricingPlans)
+        .where(eq(pricingPlans.isActive, true))
+        .orderBy(pricingPlans.sortOrder);
+      
+      res.json(plans);
+    } catch (error: any) {
+      console.error('Error fetching pricing plans:', error);
+      res.status(500).json({ message: "Failed to fetch pricing plans" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
