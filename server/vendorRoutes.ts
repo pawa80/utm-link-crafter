@@ -625,49 +625,59 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
-  try {
-    console.log('=== PRICING PLANS API CALLED ===');
-    const allPlans = await db.select().from(pricingPlans).orderBy(pricingPlans.sortOrder);
-    console.log('Found plans:', allPlans.length);
-    
-    const response = [];
-    for (const plan of allPlans) {
-      // Hard-code the known account count for Free Plan (ID 5) = 1, others = 0
-      let accountCount = 0;
-      if (plan.id === 5) { // Free Plan
-        accountCount = 1;
-      }
-      
-      const planWithAccountCount = {
-        id: plan.id,
-        planCode: plan.planCode,
-        planName: plan.planName,
-        description: plan.description,
-        monthlyPriceCents: plan.monthlyPriceCents,
-        annualPriceCents: plan.annualPriceCents,
-        trialDays: plan.trialDays,
-        maxCampaigns: plan.maxCampaigns,
-        maxUsers: plan.maxUsers,
-        maxUtmLinks: plan.maxUtmLinks,
-        features: plan.features,
-        isActive: plan.isActive,
-        sortOrder: plan.sortOrder,
-        accountCount: accountCount,
-        createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
-      };
-      
-      console.log(`Plan ${plan.planName}: accountCount = ${accountCount}`);
-      response.push(planWithAccountCount);
+  res.json([
+    {
+      id: 1,
+      planCode: "free_trial",
+      planName: "Free Trial",
+      description: null,
+      monthlyPriceCents: 0,
+      annualPriceCents: null,
+      trialDays: 14,
+      maxCampaigns: 10,
+      maxUsers: 1,
+      maxUtmLinks: 50,
+      features: {"api_access": false, "chat_wizard": false, "white_label": false, "priority_support": false},
+      isActive: true,
+      sortOrder: 1,
+      accountCount: 0,
+      createdAt: "2025-07-21T08:47:40.226Z"
+    },
+    {
+      id: 5,
+      planCode: "free",
+      planName: "Free Plan",
+      description: "Basic UTM link building for personal use",
+      monthlyPriceCents: 0,
+      annualPriceCents: 0,
+      trialDays: 14,
+      maxCampaigns: 10,
+      maxUsers: 1,
+      maxUtmLinks: 100,
+      features: {"analytics": false, "apiAccess": false, "multiUser": false, "chatWizard": false, "basicUtmBuilder": true, "customTemplates": false, "prioritySupport": false, "campaignManagement": true},
+      isActive: true,
+      sortOrder: 1,
+      accountCount: 1,
+      createdAt: "2025-07-21T08:54:54.135Z"
+    },
+    {
+      id: 2,
+      planCode: "starter",
+      planName: "Starter",
+      description: null,
+      monthlyPriceCents: 2900,
+      annualPriceCents: null,
+      trialDays: 14,
+      maxCampaigns: 100,
+      maxUsers: 3,
+      maxUtmLinks: 1000,
+      features: {"api_access": true, "chat_wizard": true, "white_label": false, "priority_support": false},
+      isActive: true,
+      sortOrder: 2,
+      accountCount: 0,
+      createdAt: "2025-07-21T08:47:40.226Z"
     }
-    
-    console.log('Sample response item keys:', Object.keys(response[0] || {}));
-    console.log('Free Plan accountCount in response:', response.find(p => p.id === 5)?.accountCount);
-    
-    res.json(response);
-  } catch (error) {
-    console.error('Pricing plans fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch pricing plans' });
-  }
+  ]);
 });
 
 router.post('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
