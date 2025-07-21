@@ -97,6 +97,7 @@ const VendorFeatureManagement: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/vendor-api/pricing-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user-features'] }); // Clear user feature cache
       setHasChanges(false);
       toast({
         title: "Success",

@@ -12,7 +12,9 @@ interface UserFeatures {
 export function useFeatures() {
   return useQuery<UserFeatures>({
     queryKey: ['/api/user-features'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds for faster feature updates
+    retry: 3,
+    retryDelay: 1000,
   });
 }
 
