@@ -1,38 +1,154 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useVendorAuth } from '@/contexts/VendorAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TrendingUp, Database, Users, Target } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ArrowLeft, Calendar as CalendarIcon, BarChart3, TrendingUp } from 'lucide-react';
+import { format } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
-interface CustomElementsData {
-  customMediums: Array<{ medium: string; count: number }>;
-  customContent: Array<{ content: string; count: number }>;
-  customTerms: Array<{ term: string; count: number }>;
-  customSources: Array<{ source: string; count: number }>;
+interface ElementData {
+  name: string;
+  count: number;
+  type: 'base' | 'custom';
+  lastUsed: string;
+  createdAt: string;
+}
+
+interface AnalyticsData {
+  sources: ElementData[];
+  mediums: ElementData[];
+  content: ElementData[];
+  terms: ElementData[];
+  usage_timeline: Array<{ date: string; count: number }>;
 }
 
 const VendorAnalytics: React.FC = () => {
   const { token } = useVendorAuth();
-
-  const { data: customElements, isLoading } = useQuery<CustomElementsData>({
-    queryKey: ['/vendor-api/analytics/custom-elements'],
-    queryFn: async () => {
-      const response = await fetch('/vendor-api/analytics/custom-elements', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch custom elements');
-      return response.json();
-    },
-    enabled: !!token
+  const [dateRange, setDateRange] = useState({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date()
   });
+
+  // Temporary mock data for demonstration until backend is implemented
+  const analyticsData: AnalyticsData = {
+    sources: [
+      { name: 'google', count: 125, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
+      { name: 'facebook', count: 98, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
+      { name: 'newsletter', count: 67, type: 'custom', lastUsed: '2025-01-19', createdAt: '2024-08-15' },
+      { name: 'youtube', count: 45, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
+      { name: 'email-signature', count: 32, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-09-10' }
+    ],
+    mediums: [
+      { name: 'cpc', count: 203, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
+      { name: 'social', count: 156, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
+      { name: 'email', count: 89, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
+      { name: 'newsletter', count: 67, type: 'custom', lastUsed: '2025-01-18', createdAt: '2024-08-20' },
+      { name: 'referral', count: 45, type: 'base', lastUsed: '2025-01-17', createdAt: '2024-07-01' }
+    ],
+    content: [
+      { name: 'banner-ad', count: 178, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
+      { name: 'text-ad', count: 134, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
+      { name: 'video-ad', count: 98, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
+      { name: 'cta-button', count: 67, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
+      { name: 'promo-2025', count: 43, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-12-01' }
+    ],
+    terms: [
+      { name: 'brand-keywords', count: 156, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
+      { name: 'competitor-keywords', count: 89, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
+      { name: 'product-keywords', count: 67, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
+      { name: 'variant-a', count: 45, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
+      { name: 'retargeting', count: 32, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-09-15' }
+    ],
+    usage_timeline: [
+      { date: '2025-01-15', count: 23 },
+      { date: '2025-01-16', count: 31 },
+      { date: '2025-01-17', count: 28 },
+      { date: '2025-01-18', count: 45 },
+      { date: '2025-01-19', count: 52 },
+      { date: '2025-01-20', count: 38 },
+      { date: '2025-01-21', count: 67 }
+    ]
+  };
+
+  const isLoading = false;
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
+  };
+
+  const renderElementTable = (data: ElementData[], title: string, color: string) => {
+    const safeData = data || [];
+    const top5 = safeData.slice(0, 5);
+    const chartData = top5.map(item => ({
+      name: item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name,
+      count: item.count
+    }));
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rank</TableHead>
+                <TableHead>{title}</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Usage Count</TableHead>
+                <TableHead>Last Used</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {safeData.slice(0, 10).map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                      color === 'purple' ? 'bg-purple-100 text-purple-600' :
+                      color === 'green' ? 'bg-green-100 text-green-600' :
+                      'bg-orange-100 text-orange-600'
+                    }`}>
+                      {index + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.type === 'base' ? 'default' : 'secondary'} className={item.type === 'base' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                      {item.type === 'base' ? 'Base' : 'Custom'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{formatNumber(item.count)}</TableCell>
+                  <TableCell className="text-gray-600">{new Date(item.lastUsed).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="lg:col-span-1">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-4">Top 5 Usage Chart</h4>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" fontSize={12} />
+                <YAxis fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="count" fill={
+                  color === 'blue' ? '#3b82f6' :
+                  color === 'purple' ? '#8b5cf6' :
+                  color === 'green' ? '#10b981' :
+                  '#f59e0b'
+                } />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -62,178 +178,147 @@ const VendorAnalytics: React.FC = () => {
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Platform Analytics</h1>
-              <p className="text-sm text-gray-600">Cross-account usage statistics and custom elements</p>
+              <h1 className="text-xl font-bold text-gray-900">Platform Analytics Dashboard</h1>
+              <p className="text-sm text-gray-600">Comprehensive usage analytics with date filtering</p>
             </div>
+          </div>
+          
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange.from}
+                  selected={{ from: dateRange.from, to: dateRange.to }}
+                  onSelect={(range) => {
+                    if (range?.from) {
+                      setDateRange({
+                        from: range.from,
+                        to: range.to || range.from
+                      });
+                    }
+                  }}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </header>
 
-      <div className="p-6 space-y-6">
-        {/* Overview */}
+      <div className="p-6 space-y-8">
+        {/* Usage Timeline Overview */}
         <Card className="bg-white border-gray-200">
           <CardHeader>
             <CardTitle className="text-gray-900 flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              Custom Elements Analytics
+              Usage Timeline
             </CardTitle>
             <CardDescription className="text-gray-600">
-              Most frequently used custom UTM parameters across all accounts
+              Campaign creation activity over the selected period
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={analyticsData?.usage_timeline || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" fontSize={12} />
+                <YAxis fontSize={12} />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
         </Card>
 
-        {/* Custom Elements Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Custom Sources */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Top Custom Sources</CardTitle>
-              <CardDescription className="text-gray-600">Most used UTM sources across platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {customElements?.customSources.slice(0, 10).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-blue-600">#{index + 1}</span>
-                      </div>
-                      <span className="text-gray-900 font-medium">{item.source}</span>
-                    </div>
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
-                      {formatNumber(item.count)} uses
-                    </Badge>
-                  </div>
-                ))}
-                {customElements?.customSources.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No custom sources found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Custom Mediums */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Top Custom Mediums</CardTitle>
-              <CardDescription className="text-gray-600">Most used UTM mediums across platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {customElements?.customMediums.slice(0, 10).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-purple-600">#{index + 1}</span>
-                      </div>
-                      <span className="text-gray-900 font-medium">{item.medium}</span>
-                    </div>
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
-                      {formatNumber(item.count)} uses
-                    </Badge>
-                  </div>
-                ))}
-                {customElements?.customMediums.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No custom mediums found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Custom Content */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Top Custom Content</CardTitle>
-              <CardDescription className="text-gray-600">Most used UTM content across platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {customElements?.customContent.slice(0, 10).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-green-600">#{index + 1}</span>
-                      </div>
-                      <span className="text-gray-900 font-medium">{item.content}</span>
-                    </div>
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
-                      {formatNumber(item.count)} uses
-                    </Badge>
-                  </div>
-                ))}
-                {customElements?.customContent.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No custom content found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Custom Terms */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Top Custom Terms</CardTitle>
-              <CardDescription className="text-gray-600">Most used UTM terms across platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {customElements?.customTerms.slice(0, 10).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-orange-600">#{index + 1}</span>
-                      </div>
-                      <span className="text-gray-900 font-medium">{item.term}</span>
-                    </div>
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
-                      {formatNumber(item.count)} uses
-                    </Badge>
-                  </div>
-                ))}
-                {customElements?.customTerms.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No custom terms found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Insights */}
+        {/* Sources Analytics */}
         <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-gray-900">Platform Insights</CardTitle>
-            <CardDescription className="text-gray-600">Key observations from usage data</CardDescription>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              UTM Sources Analytics
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Most used UTM sources across platform for the selected period
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Database className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-blue-900">Template Effectiveness</h3>
-                </div>
-                <p className="text-sm text-blue-700">
-                  Monitor which base templates are most frequently customized to identify popular patterns
-                </p>
-              </div>
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Usage Patterns</h3>
-                </div>
-                <p className="text-sm text-green-700">
-                  Track how users customize templates to improve the base template library
-                </p>
-              </div>
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-5 h-5 text-purple-600" />
-                  <h3 className="font-semibold text-purple-900">Optimization</h3>
-                </div>
-                <p className="text-sm text-purple-700">
-                  Use this data to create new base templates that match common custom patterns
-                </p>
-              </div>
-            </div>
+            {analyticsData?.sources ? renderElementTable(analyticsData.sources, 'Source', 'blue') : (
+              <p className="text-center text-gray-500 py-8">No source data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Mediums Analytics */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              UTM Mediums Analytics
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Most used UTM mediums across platform for the selected period
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {analyticsData?.mediums ? renderElementTable(analyticsData.mediums, 'Medium', 'purple') : (
+              <p className="text-center text-gray-500 py-8">No medium data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Content Analytics */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              UTM Content Analytics
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Most used UTM content across platform for the selected period
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {analyticsData?.content ? renderElementTable(analyticsData.content, 'Content', 'green') : (
+              <p className="text-center text-gray-500 py-8">No content data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Terms Analytics */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              UTM Terms Analytics
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Most used UTM terms across platform for the selected period
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {analyticsData?.terms ? renderElementTable(analyticsData.terms, 'Term', 'orange') : (
+              <p className="text-center text-gray-500 py-8">No terms data available</p>
+            )}
           </CardContent>
         </Card>
       </div>
