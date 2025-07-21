@@ -55,8 +55,8 @@ const VendorAccounts: React.FC = () => {
   const { token } = useVendorAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState('');
-  const [planFilter, setPlanFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [planFilter, setPlanFilter] = useState('all');
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [actionType, setActionType] = useState<'status' | 'plan' | null>(null);
   const [newStatus, setNewStatus] = useState('');
@@ -67,8 +67,8 @@ const VendorAccounts: React.FC = () => {
     queryKey: ['/vendor-api/accounts', statusFilter, planFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
-      if (planFilter) params.append('planId', planFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      if (planFilter && planFilter !== 'all') params.append('planId', planFilter);
       
       const response = await fetch(`/vendor-api/accounts?${params}`, {
         headers: {
@@ -237,7 +237,7 @@ const VendorAccounts: React.FC = () => {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="trial">Trial</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
@@ -252,7 +252,7 @@ const VendorAccounts: React.FC = () => {
                   <SelectValue placeholder="All plans" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All plans</SelectItem>
+                  <SelectItem value="all">All plans</SelectItem>
                   {pricingPlans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id.toString()}>
                       {plan.planName}
@@ -263,8 +263,8 @@ const VendorAccounts: React.FC = () => {
             </div>
             <Button
               onClick={() => {
-                setStatusFilter('');
-                setPlanFilter('');
+                setStatusFilter('all');
+                setPlanFilter('all');
               }}
               variant="outline"
               className="border-gray-300 text-gray-700 hover:bg-gray-50 self-end"

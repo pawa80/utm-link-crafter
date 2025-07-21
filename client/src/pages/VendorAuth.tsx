@@ -37,15 +37,15 @@ const VendorAuth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-slate-700 bg-slate-900/50 backdrop-blur">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-gray-200 bg-white">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
             <Shield className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-white">Platform Control</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-2xl font-bold text-gray-900">Platform Control</CardTitle>
+            <CardDescription className="text-gray-600">
               Authorized access only
             </CardDescription>
           </div>
@@ -53,34 +53,34 @@ const VendorAuth: React.FC = () => {
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
+              <Label htmlFor="email" className="text-gray-700">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="vendor@company.com"
-                className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                 disabled={isLoading}
                 autoComplete="email"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Password</Label>
+              <Label htmlFor="password" className="text-gray-700">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-slate-800 border-slate-600 text-white pr-10"
+                  className="bg-white border-gray-300 text-gray-900 pr-10"
                   disabled={isLoading}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -89,14 +89,14 @@ const VendorAuth: React.FC = () => {
             </div>
 
             {error && (
-              <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
+              <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -110,7 +110,7 @@ const VendorAuth: React.FC = () => {
             </Button>
           </form>
 
-          <div className="text-center text-sm text-slate-500 pt-4">
+          <div className="text-center text-sm text-gray-500 pt-4">
             <p>Secure vendor access to UTM Builder platform</p>
           </div>
         </CardContent>
