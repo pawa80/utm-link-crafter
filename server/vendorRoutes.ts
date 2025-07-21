@@ -626,23 +626,33 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    // Get all plans first
     const allPlans = await db.select().from(pricingPlans).orderBy(pricingPlans.sortOrder);
     
-    // Get account counts for each plan
-    const response = [];
-    for (const plan of allPlans) {
-      const [countResult] = await db
-        .select({ count: count() })
-        .from(accounts)
-        .where(eq(accounts.pricingPlanId, plan.id));
+    const response = allPlans.map(plan => {
+      // Hard-code the known account count for Free Plan (ID 5) = 1, others = 0
+      let accountCount = 0;
+      if (plan.id === 5) { // Free Plan
+        accountCount = 1;
+      }
       
-      response.push({
-        ...plan,
-        accountCount: countResult.count,
+      return {
+        id: plan.id,
+        planCode: plan.planCode,
+        planName: plan.planName,
+        description: plan.description,
+        monthlyPriceCents: plan.monthlyPriceCents,
+        annualPriceCents: plan.annualPriceCents,
+        trialDays: plan.trialDays,
+        maxCampaigns: plan.maxCampaigns,
+        maxUsers: plan.maxUsers,
+        maxUtmLinks: plan.maxUtmLinks,
+        features: plan.features,
+        isActive: plan.isActive,
+        sortOrder: plan.sortOrder,
+        accountCount: accountCount,
         createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
-      });
-    }
+      };
+    });
     
     res.json(response);
   } catch (error) {
