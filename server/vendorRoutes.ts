@@ -73,96 +73,93 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
     const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
-    // Get all source templates with usage counts (scoped to one account to avoid duplication)
+    // Get UTM sources usage from actual links
     const sourcesData = await db
       .select({
-        name: sourceTemplates.sourceName,
-        count: sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`,
+        name: utmLinks.utm_source,
+        count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN ${sourceTemplates.vendorManaged} = true THEN 'base'::text 
+          WHEN ${utmLinks.utm_source} IN ('google', 'facebook', 'instagram', 'youtube', 'linkedin', 'twitter', 'pinterest', 'tiktok', 'snapchat', 'email', 'affiliate', 'display') 
+          THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
-        createdAt: sql<string>`MIN(COALESCE(${utmLinks.createdAt}, ${sourceTemplates.createdAt}))`
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(sourceTemplates)
-      .leftJoin(utmLinks, and(
-        eq(sourceTemplates.sourceName, utmLinks.utm_source),
+      .from(utmLinks)
+      .where(and(
         sql`${utmLinks.createdAt} >= ${fromDate}`,
-        sql`${utmLinks.createdAt} <= ${toDate}`
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_source} IS NOT NULL`
       ))
-      .where(eq(sourceTemplates.accountId, 1)) // Use first account as representative
-      .groupBy(sourceTemplates.sourceName, sourceTemplates.vendorManaged, sourceTemplates.createdAt)
-      .orderBy(desc(sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`));
+      .groupBy(utmLinks.utm_source)
+      .orderBy(desc(count(utmLinks.id)));
 
-    // Get all mediums from source templates with usage counts (scoped to one account)
+    // Get UTM mediums usage from actual links  
     const mediumsData = await db
       .select({
-        name: sql<string>`unnest(${sourceTemplates.mediums})`,
-        count: sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`,
+        name: utmLinks.utm_medium,
+        count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN ${sourceTemplates.vendorManaged} = true THEN 'base'::text 
+          WHEN ${utmLinks.utm_medium} IN ('cpc', 'social', 'email', 'organic', 'referral', 'affiliate', 'display', 'video', 'print', 'sms', 'push') 
+          THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
-        createdAt: sql<string>`MIN(COALESCE(${utmLinks.createdAt}, ${sourceTemplates.createdAt}))`
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(sourceTemplates)
-      .leftJoin(utmLinks, and(
-        sql`unnest(${sourceTemplates.mediums}) = ${utmLinks.utm_medium}`,
-        sql`${utmLinks.createdAt} >= ${fromDate}`,
-        sql`${utmLinks.createdAt} <= ${toDate}`
-      ))
+      .from(utmLinks)
       .where(and(
-        sql`array_length(${sourceTemplates.mediums}, 1) > 0`,
-        eq(sourceTemplates.accountId, 1)
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_medium} IS NOT NULL`
       ))
-      .groupBy(sql`unnest(${sourceTemplates.mediums})`, sourceTemplates.vendorManaged, sourceTemplates.createdAt)
-      .orderBy(desc(sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`));
+      .groupBy(utmLinks.utm_medium)
+      .orderBy(desc(count(utmLinks.id)));
 
-    // Get all content templates with usage counts (scoped to one account)
+    // Get UTM content usage from actual links
     const contentData = await db
       .select({
-        name: userUtmTemplates.utmContent,
-        count: sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`,
-        type: sql<'base' | 'custom'>`CASE 
-          WHEN ${userUtmTemplates.isCustom} = false THEN 'base'::text 
-          ELSE 'custom'::text 
-        END`,
+        name: utmLinks.utm_content,
+        count: count(utmLinks.id),
+        type: sql<'base' | 'custom'>`'base'::text`, // All content templates are considered base for now
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
-        createdAt: sql<string>`MIN(COALESCE(${utmLinks.createdAt}, ${userUtmTemplates.createdAt}))`
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(userUtmTemplates)
-      .leftJoin(utmLinks, and(
-        eq(userUtmTemplates.utmContent, utmLinks.utm_content),
+      .from(utmLinks)
+      .where(and(
         sql`${utmLinks.createdAt} >= ${fromDate}`,
-        sql`${utmLinks.createdAt} <= ${toDate}`
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_content} IS NOT NULL`,
+        sql`${utmLinks.utm_content} != ''`
       ))
-      .where(eq(userUtmTemplates.accountId, 1))
-      .groupBy(userUtmTemplates.utmContent, userUtmTemplates.isCustom, userUtmTemplates.createdAt)
-      .orderBy(desc(sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`));
+      .groupBy(utmLinks.utm_content)
+      .orderBy(desc(count(utmLinks.id)));
 
-    // Get all term templates with usage counts (scoped to one account)
+    // Get ALL term templates from user_term_templates (including zero usage)
     const termsData = await db
       .select({
         name: userTermTemplates.termValue,
-        count: sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`,
+        count: sql<number>`COALESCE(
+          (SELECT COUNT(*) FROM ${utmLinks} 
+           WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue} 
+           AND ${utmLinks.createdAt} >= ${fromDate} 
+           AND ${utmLinks.createdAt} <= ${toDate}), 0)`,
         type: sql<'base' | 'custom'>`CASE 
           WHEN ${userTermTemplates.isCustom} = false THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
-        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
-        createdAt: sql<string>`MIN(COALESCE(${utmLinks.createdAt}, ${userTermTemplates.createdAt}))`
+        lastUsed: sql<string>`(SELECT MAX(${utmLinks.createdAt}) FROM ${utmLinks} 
+                              WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue})`,
+        createdAt: sql<string>`${userTermTemplates.createdAt}`
       })
       .from(userTermTemplates)
-      .leftJoin(utmLinks, and(
-        eq(userTermTemplates.termValue, utmLinks.utm_term),
-        sql`${utmLinks.createdAt} >= ${fromDate}`,
-        sql`${utmLinks.createdAt} <= ${toDate}`
-      ))
       .where(eq(userTermTemplates.accountId, 1))
-      .groupBy(userTermTemplates.termValue, userTermTemplates.isCustom, userTermTemplates.createdAt)
-      .orderBy(desc(sql<number>`COALESCE(COUNT(${utmLinks.id}), 0)`));
+      .orderBy(desc(sql<number>`COALESCE(
+        (SELECT COUNT(*) FROM ${utmLinks} 
+         WHERE ${utmLinks.utm_term} = ${userTermTemplates.termValue} 
+         AND ${utmLinks.createdAt} >= ${fromDate} 
+         AND ${utmLinks.createdAt} <= ${toDate}), 0)`));
 
     // Get usage timeline
     const timelineData = await db
