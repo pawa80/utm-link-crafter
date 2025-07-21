@@ -456,6 +456,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   };
   
   const getCheckedSourcesWithContent = () => {
+    console.log("getCheckedSourcesWithContent called");
+    console.log("sourceStates:", sourceStates);
+    console.log("selectedContent:", selectedContent);
+    console.log("selectedTerms:", selectedTerms);
+    
     return Object.entries(sourceStates)
       .filter(([, state]) => state.checked)
       .flatMap(([sourceName, state]) =>
@@ -464,8 +469,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
           const selectedContentItems = selectedContent[contentKey] || [];
           const selectedTermItems = selectedTerms[contentKey] || [''];
           
+          console.log(`For ${sourceName}-${medium}: content=${selectedContentItems}, terms=${selectedTermItems}`);
+          
           // Only return results if content is actually selected
           if (selectedContentItems.length === 0) {
+            console.log(`No content selected for ${sourceName}-${medium}, skipping`);
             return [];
           }
           
@@ -1595,7 +1603,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       )}
 
       {/* Save Campaign Button */}
-      {getCheckedSourcesWithContent().length > 0 && (
+      {(getCheckedSourcesWithContent().length > 0 || true) && (
         <div className="flex justify-end pt-6">
           <Button
             onClick={async () => {
