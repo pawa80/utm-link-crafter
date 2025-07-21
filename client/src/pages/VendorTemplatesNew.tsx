@@ -281,32 +281,41 @@ const VendorTemplatesNew: React.FC = () => {
                             }
                           </Button>
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{sourceGroup.source}</h3>
+                            <h3 className="font-bold text-blue-700 text-xl">{sourceGroup.source}</h3>
                             <p className="text-sm text-gray-600">{sourceGroup.mediums.length} mediums, {sourceGroup.mediums.reduce((acc, m) => acc + m.content.length, 0)} content variations</p>
                           </div>
                         </div>
-                        <Badge className="bg-blue-100 text-blue-800">
-                          Source
-                        </Badge>
+                        <Button variant="outline" size="sm" className="text-xs">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Medium
+                        </Button>
                       </div>
                       
                       {expandedSources.has(sourceGroup.source) && (
-                        <div className="mt-4 ml-6 space-y-3">
+                        <div className="mt-6 ml-6 space-y-6">
                           {sourceGroup.mediums.map((medium) => (
-                            <div key={medium.medium} className="pl-4 border-l-2 border-gray-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium text-gray-800">{medium.medium}</h4>
-                                <Badge variant="outline" className="border-purple-300 text-purple-700">
-                                  Medium
-                                </Badge>
+                            <div key={medium.medium} className="border-l-4 border-blue-100 pl-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <h4 className="font-bold text-purple-700 text-lg">{medium.medium}</h4>
+                                </div>
+                                <Button variant="outline" size="sm" className="text-xs">
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add Content
+                                </Button>
                               </div>
-                              <div className="space-y-1">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {medium.content.map((content, idx) => (
-                                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                    <span className="text-sm text-gray-700">{content}</span>
-                                    <Badge variant="outline" className="border-green-300 text-green-700 text-xs">
-                                      Content
-                                    </Badge>
+                                  <div key={idx} className="group flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                                    <span className="text-sm text-gray-700 font-medium flex-1">{content}</span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                      <button className="text-gray-400 hover:text-green-600 transition-colors p-1">
+                                        <Plus className="h-3 w-3" title="Edit content" />
+                                      </button>
+                                      <button className="text-gray-400 hover:text-red-600 transition-colors p-1">
+                                        <ChevronDown className="h-3 w-3" title="Delete content" />
+                                      </button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
