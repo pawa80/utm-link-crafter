@@ -76,10 +76,10 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
     // Get UTM sources usage
     const sourcesData = await db
       .select({
-        name: sourceTemplates.source,
+        name: utmLinks.utm_source,
         count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (SELECT 1 FROM ${sourceTemplates} WHERE ${sourceTemplates.source} = ${utmLinks.utm_source} AND ${sourceTemplates.vendorManaged} = true) 
+          WHEN EXISTS (SELECT 1 FROM source_templates WHERE source_templates.source_name = ${utmLinks.utm_source} AND source_templates.vendor_managed = true) 
           THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
@@ -89,7 +89,8 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .from(utmLinks)
       .where(and(
         sql`${utmLinks.createdAt} >= ${fromDate}`,
-        sql`${utmLinks.createdAt} <= ${toDate}`
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_source} IS NOT NULL`
       ))
       .groupBy(utmLinks.utm_source)
       .orderBy(desc(count(utmLinks.id)));
@@ -122,7 +123,7 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
         name: utmLinks.utm_content,
         count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (SELECT 1 FROM ${userUtmTemplates} WHERE ${userUtmTemplates.content} = ${utmLinks.utm_content}) 
+          WHEN EXISTS (SELECT 1 FROM user_utm_templates WHERE user_utm_templates.utm_content = ${utmLinks.utm_content}) 
           THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
@@ -133,7 +134,8 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .where(and(
         sql`${utmLinks.createdAt} >= ${fromDate}`,
         sql`${utmLinks.createdAt} <= ${toDate}`,
-        sql`${utmLinks.utm_content} IS NOT NULL`
+        sql`${utmLinks.utm_content} IS NOT NULL`,
+        sql`${utmLinks.utm_content} != ''`
       ))
       .groupBy(utmLinks.utm_content)
       .orderBy(desc(count(utmLinks.id)));
@@ -144,7 +146,7 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
         name: utmLinks.utm_term,
         count: count(utmLinks.id),
         type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (SELECT 1 FROM ${userTermTemplates} WHERE ${userTermTemplates.term} = ${utmLinks.utm_term}) 
+          WHEN EXISTS (SELECT 1 FROM user_term_templates WHERE user_term_templates.term_value = ${utmLinks.utm_term}) 
           THEN 'base'::text 
           ELSE 'custom'::text 
         END`,
@@ -155,7 +157,8 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .where(and(
         sql`${utmLinks.createdAt} >= ${fromDate}`,
         sql`${utmLinks.createdAt} <= ${toDate}`,
-        sql`${utmLinks.utm_term} IS NOT NULL`
+        sql`${utmLinks.utm_term} IS NOT NULL`,
+        sql`${utmLinks.utm_term} != ''`
       ))
       .groupBy(utmLinks.utm_term)
       .orderBy(desc(count(utmLinks.id)));
