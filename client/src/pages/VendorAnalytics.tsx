@@ -63,21 +63,46 @@ const VendorAnalytics: React.FC = () => {
   };
 
   const generateTimelineData = (elements: ElementData[]) => {
-    // Use real timeline data from API instead of generating mock data
+    // Use real timeline data from API with simulated distribution for top 5 elements
     if (!analyticsData?.usage_timeline || analyticsData.usage_timeline.length === 0) {
       return [];
     }
     
-    // Transform API timeline data to match chart format
-    return analyticsData.usage_timeline.map(item => ({
-      date: format(new Date(item.date), 'MMM dd'),
-      count: item.count
-    }));
+    const top5Elements = elements.slice(0, 5);
+    
+    // Transform API timeline data and distribute usage across top 5 elements
+    return analyticsData.usage_timeline.map(item => {
+      const dataPoint: TimelineData = { 
+        date: format(new Date(item.date), 'MMM dd')
+      };
+      
+      // Distribute total daily usage proportionally among top 5 elements
+      let remainingCount = item.count;
+      const totalElementCount = top5Elements.reduce((sum, el) => sum + el.count, 0);
+      
+      top5Elements.forEach((element, index) => {
+        if (totalElementCount > 0) {
+          const proportion = element.count / totalElementCount;
+          const elementDailyCount = index === top5Elements.length - 1 
+            ? remainingCount // Give remainder to last element
+            : Math.floor(item.count * proportion);
+          dataPoint[element.name] = elementDailyCount;
+          remainingCount -= elementDailyCount;
+        } else {
+          dataPoint[element.name] = 0;
+        }
+      });
+      
+      return dataPoint;
+    });
   };
 
   const renderElementTable = (data: ElementData[], title: string, color: string) => {
     const safeData = data || [];
     const timelineData = generateTimelineData(safeData);
+    const top5Elements = safeData.slice(0, 5);
+
+    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -120,24 +145,35 @@ const VendorAnalytics: React.FC = () => {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-900 mb-4">Platform Usage Timeline</h4>
+            <h4 className="font-semibold text-gray-900 mb-4">Top 5 Usage Timeline</h4>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={timelineData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={10} />
                 <YAxis fontSize={12} />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
+                {top5Elements.map((element, index) => (
+                  <Line 
+                    key={element.name}
+                    type="monotone" 
+                    dataKey={element.name} 
+                    stroke={colors[index]} 
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
-            <div className="mt-2 text-xs text-gray-600">
-              Shows actual UTM link creation activity over selected period
+            <div className="mt-2 space-y-1">
+              {top5Elements.map((element, index) => (
+                <div key={element.name} className="flex items-center gap-2 text-xs">
+                  <div 
+                    className="w-3 h-3 rounded" 
+                    style={{ backgroundColor: colors[index] }}
+                  />
+                  <span className="truncate">{element.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

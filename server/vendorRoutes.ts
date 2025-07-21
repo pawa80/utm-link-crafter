@@ -143,15 +143,14 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .groupBy(utmLinks.utm_content)
       .orderBy(desc(count(utmLinks.id)));
 
-    // Get ALL term templates from user_term_templates (including zero usage)
+    // Get ALL term templates from user_term_templates (including zero usage) across all accounts
     const allTermTemplates = await db
       .select({
         termValue: userTermTemplates.termValue,
         type: userTermTemplates.type,
         createdAt: userTermTemplates.createdAt
       })
-      .from(userTermTemplates)
-      .where(eq(userTermTemplates.accountId, 1));
+      .from(userTermTemplates);
 
     // Get usage counts for each term
     const termUsageCounts = await db
