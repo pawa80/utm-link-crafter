@@ -85,46 +85,7 @@ export default function HomePage() {
 
         {/* Main Action Cards */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-8">
-          {/* Chat Wizard Card - Only show if user has feature */}
-          {hasChatWizard ? (
-            <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
-              <CardHeader className="text-center pb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-secondary via-cyan to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <MessageCircle size={40} className="text-white" />
-                </div>
-                <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  Let our AI assistant guide you through creating a campaign step by step with intelligent suggestions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/chat-wizard">
-                  <Button className="w-full h-14 text-lg font-semibold btn-gradient-secondary">
-                    Start Chat Wizard
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            // Placeholder card when Chat Wizard is disabled
-            <Card className="card-modern border-dashed border-2 border-muted-foreground/30 bg-muted/10">
-              <CardHeader className="text-center pb-6">
-                <div className="w-20 h-20 bg-muted-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <MessageCircle size={40} className="text-muted-foreground/50" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-muted-foreground">Chat Wizard</CardTitle>
-                <CardDescription className="text-base leading-relaxed text-muted-foreground">
-                  AI-guided campaign creation - Available in premium plans
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button disabled className="w-full h-14 text-lg font-semibold" variant="outline">
-                  Upgrade to Access
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          {/* New Campaign Card */}
+          {/* New Campaign Card - Always first */}
           <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
             <CardHeader className="text-center pb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-primary via-cyan to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
@@ -166,6 +127,49 @@ export default function HomePage() {
 
 
         </div>
+
+        {/* Chat Wizard Section - Show at bottom if enabled or as disabled */}
+        {hasChatWizard ? (
+          <div className="mb-12 max-w-3xl mx-auto animate-fade-in">
+            <Card className="card-modern group hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-secondary/5 to-cyan/5">
+              <CardHeader className="text-center pb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-secondary via-cyan to-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <MessageCircle size={40} className="text-white" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Chat Wizard</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  Let our AI assistant guide you through creating a campaign step by step with intelligent suggestions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link href="/chat-wizard">
+                  <Button className="h-14 text-lg font-semibold btn-gradient-secondary px-12">
+                    Start Chat Wizard
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="mb-12 max-w-3xl mx-auto animate-fade-in">
+            <Card className="card-modern border-dashed border-2 border-muted-foreground/30 bg-muted/10">
+              <CardHeader className="text-center pb-6">
+                <div className="w-20 h-20 bg-muted-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <MessageCircle size={40} className="text-muted-foreground/50" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-muted-foreground">Chat Wizard</CardTitle>
+                <CardDescription className="text-base leading-relaxed text-muted-foreground">
+                  AI-guided campaign creation - Available in premium plans
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button disabled className="h-14 text-lg font-semibold px-12" variant="outline">
+                  Upgrade to Access
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Features Section */}
         <div className="mt-20 text-center animate-fade-in">

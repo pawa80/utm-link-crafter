@@ -97,31 +97,34 @@ export class DatabaseStorage implements IStorage {
 
   async getUserWithAccountAndPlan(userId: number): Promise<any> {
     const [result] = await db
-      .select({
-        id: users.id,
-        firebaseUid: users.firebaseUid,
-        displayName: users.displayName,
-        email: users.email,
-        accountId: users.accountId,
-        role: users.role,
-        account: {
-          id: accounts.id,
-          name: accounts.name,
-          pricingPlanId: accounts.pricingPlanId,
-          pricingPlan: {
-            id: pricingPlans.id,
-            planName: pricingPlans.planName,
-            features: pricingPlans.features
-          }
-        }
-      })
+      .select()
       .from(users)
       .innerJoin(accounts, eq(users.accountId, accounts.id))
       .leftJoin(pricingPlans, eq(accounts.pricingPlanId, pricingPlans.id))
       .where(eq(users.id, userId))
       .limit(1);
     
-    return result || undefined;
+    if (!result) return undefined;
+    
+    // Restructure the result to match expected format
+    return {
+      id: result.users.id,
+      firebaseUid: result.users.firebaseUid,
+      displayName: result.users.displayName,
+      email: result.users.email,
+      accountId: result.users.accountId,
+      role: result.users.role,
+      account: {
+        id: result.accounts.id,
+        name: result.accounts.name,
+        pricingPlanId: result.accounts.pricing_plan_id,
+        pricingPlan: result.pricing_plans ? {
+          id: result.pricing_plans.id,
+          planName: result.pricing_plans.plan_name,
+          features: result.pricing_plans.features
+        } : null
+      }
+    };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
