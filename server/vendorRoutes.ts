@@ -642,11 +642,26 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
         isActive: pricingPlans.isActive,
         sortOrder: pricingPlans.sortOrder,
         createdAt: pricingPlans.createdAt,
-        accountCount: count(accounts.id)
+        accountCount: sql<number>`COUNT(${accounts.id})`
       })
       .from(pricingPlans)
       .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
-      .groupBy(pricingPlans.id)
+      .groupBy(
+        pricingPlans.id,
+        pricingPlans.planCode,
+        pricingPlans.planName,
+        pricingPlans.description,
+        pricingPlans.monthlyPriceCents,
+        pricingPlans.annualPriceCents,
+        pricingPlans.trialDays,
+        pricingPlans.maxCampaigns,
+        pricingPlans.maxUsers,
+        pricingPlans.maxUtmLinks,
+        pricingPlans.features,
+        pricingPlans.isActive,
+        pricingPlans.sortOrder,
+        pricingPlans.createdAt
+      )
       .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
 
     console.log('Pricing plans query result:', plans.map(p => ({ 

@@ -456,6 +456,14 @@ Changelog:
   - **Individual Timeline Charts**: Restored top 5 element timeline charts with separate colored lines and proper proportional distribution
   - **Real Platform Data**: Dashboard now displays authentic statistics: 1 account (PlayMOps), 1 user, 18 campaigns, 74 UTM links
   - **Complete Analytics Suite**: Both vendor dashboard overview and analytics pages fully functional with real data and proper Base/Custom classification
+- July 21, 2025. Pricing Plans Administration System (COMPLETED):
+  - **Comprehensive Pricing Management**: Built full CRUD interface for subscription plans with monthly/annual pricing, trial periods, and feature limits
+  - **Account Integration**: Fixed GROUP BY clause in pricing plans query to properly display account counts per plan
+  - **Plan Configuration**: Support for campaigns, users, and UTM links limits with unlimited options (null values)
+  - **Feature Management**: JSON-based feature flags system for plan-specific functionality control
+  - **Status Management**: Active/inactive plan toggle with protection against deleting plans currently in use
+  - **Dashboard Integration**: Added pricing plans navigation card to vendor dashboard with 4-column responsive layout
+  - **Real Data Display**: Free Plan correctly shows 1 account, other plans show 0 accounts as expected
 
 ## User Preferences
 
