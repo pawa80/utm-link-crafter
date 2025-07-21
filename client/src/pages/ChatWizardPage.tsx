@@ -6,9 +6,10 @@ import { apiRequest } from "@/lib/queryClient";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
 import ChatWizard from "@/components/ChatWizard";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ExternalLink, RotateCcw } from "lucide-react";
 import { Link } from "wouter";
 import type { User } from "@shared/schema";
 
@@ -116,13 +117,46 @@ export default function ChatWizardPage() {
             </p>
           </div>
 
-          {/* Chat Wizard Component */}
+          {/* Chat Wizard Component with Error Boundary */}
           <div className="max-w-3xl mx-auto">
             <div className="card-modern shadow-2xl animate-fade-in">
-              <ChatWizard 
-                user={user} 
-                onComplete={handleComplete}
-              />
+              <ErrorBoundary
+                onError={(error, errorInfo) => {
+                  console.error('Chat Wizard Error:', error, errorInfo);
+                }}
+                fallback={
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <AlertTriangle size={32} className="text-destructive" />
+                    </div>
+                    <h3 className="text-xl font-bold text-destructive mb-2">Chat Wizard Unavailable</h3>
+                    <p className="text-muted-foreground mb-6">
+                      The Chat Wizard encountered an error. You can still create campaigns manually.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button 
+                        onClick={() => window.location.href = '/new-campaign'} 
+                        className="btn-gradient-primary"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Manual Campaign Creation
+                      </Button>
+                      <Button 
+                        onClick={() => window.location.reload()} 
+                        variant="outline"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Retry Chat Wizard
+                      </Button>
+                    </div>
+                  </div>
+                }
+              >
+                <ChatWizard 
+                  user={user} 
+                  onComplete={handleComplete}
+                />
+              </ErrorBoundary>
             </div>
           </div>
         </div>

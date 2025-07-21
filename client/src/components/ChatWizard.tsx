@@ -9,7 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { generateUTMLink } from "@shared/validation";
 import { validateUrl } from "@/lib/utm";
-import { MessageCircle, Send, Bot, User as UserIcon, Plus, Check } from "lucide-react";
+import { sanitizeCampaignName, validateAndSanitizeUrl, sanitizeTextInput, sanitizeUtmParameter } from "@/lib/sanitization";
+import { auth } from "@/lib/firebase";
+import { MessageCircle, Send, Bot, User as UserIcon, Plus, Check, AlertTriangle, RotateCcw, ExternalLink } from "lucide-react";
 import type { User, SourceTemplate, Tag } from "@shared/schema";
 
 interface ChatWizardProps {
@@ -35,6 +37,8 @@ interface ChatMessage {
   onInput?: (value: string) => void;
   autoFocus?: boolean;
   step?: string;
+  isError?: boolean;
+  retryAction?: () => void;
 }
 
 interface CampaignData {
@@ -68,6 +72,9 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const [isTyping, setIsTyping] = useState(false);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const [currentSourceMedium, setCurrentSourceMedium] = useState<{source: string; medium: string} | null>(null);
+  const [errorCount, setErrorCount] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [isServiceHealthy, setIsServiceHealthy] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -100,25 +107,127 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   });
 
-  // Function to fetch content suggestions for a source-medium combination
+  // Service health check
+  const checkServiceHealth = async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/user-features', {
+        headers: {
+          'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`,
+          'x-firebase-uid': user.firebaseUid,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Service health check failed:', error);
+      return false;
+    }
+  };
+
+  // Add bot message helper with enhanced error display
+  const addBotMessage = (content: string, options?: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean; disabled?: boolean }>, isError: boolean = false, retryAction?: () => void) => {
+    const message: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'bot',
+      content,
+      timestamp: new Date(),
+      options,
+      isError,
+      retryAction
+    };
+    setMessages(prev => [...prev, message]);
+  };
+
+  // Enhanced error handling with recovery
+  const handleApiError = (error: any, operation: string, retryFn?: () => void) => {
+    console.error(`${operation} failed:`, error);
+    setErrorCount(prev => prev + 1);
+    setLastError(operation);
+
+    if (errorCount >= 2) {
+      // After 3 errors, show fallback options
+      addBotMessage(
+        "I'm having trouble connecting to our services. You can:",
+        [
+          { 
+            label: "Try Manual Campaign Creation", 
+            value: "manual", 
+            action: () => window.location.href = '/new-campaign',
+            isPrimary: true
+          },
+          { 
+            label: "Start Over", 
+            value: "restart", 
+            action: () => restartWizard()
+          },
+          ...(retryFn ? [{ 
+            label: "Retry This Step", 
+            value: "retry", 
+            action: retryFn 
+          }] : [])
+        ],
+        true
+      );
+    } else if (retryFn) {
+      // Show retry option for first 2 errors
+      addBotMessage(
+        `Connection issue with ${operation.toLowerCase()}. Let's try again.`,
+        [
+          { 
+            label: "Retry", 
+            value: "retry", 
+            action: retryFn,
+            isPrimary: true
+          },
+          { 
+            label: "Skip to Manual Creation", 
+            value: "manual", 
+            action: () => window.location.href = '/new-campaign'
+          }
+        ]
+      );
+    }
+  };
+
+  // Function to fetch content suggestions with error recovery
   const fetchContentSuggestions = async (source: string, medium: string): Promise<string[]> => {
     try {
       const response = await apiRequest(`/api/utm-content/${encodeURIComponent(source)}/${encodeURIComponent(medium)}`, { method: "GET" });
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API error fetching content for ${source}-${medium}:`, response.status, errorText);
+        handleApiError(new Error(errorText), `Content suggestions for ${source}-${medium}`);
         return [];
       }
       const data = await response.json();
-      console.log(`Content suggestions for ${source}-${medium}:`, data);
       return data;
     } catch (error) {
-      console.error(`Error fetching content for ${source}-${medium}:`, error);
+      handleApiError(error, `Content suggestions for ${source}-${medium}`);
       return [];
     }
   };
 
-  // Function to fetch term template suggestions
+  // Restart wizard function
+  const restartWizard = () => {
+    setMessages([]);
+    setCampaignData({
+      name: '',
+      isExistingCampaign: false,
+      landingPages: [],
+      selectedSources: [],
+      selectedMediums: {},
+      contentInputs: {},
+      selectedContent: {},
+      selectedTerm: {},
+      selectedTags: []
+    });
+    setCurrentStep('welcome');
+    setErrorCount(0);
+    setLastError(null);
+    setCurrentInput('');
+    showWelcome();
+  };
+
+  // Function to fetch term template suggestions with error recovery
   const fetchTermSuggestions = async (category?: string): Promise<Array<{id: number; termValue: string; description?: string; category: string}>> => {
     try {
       const params = category ? `?category=${category}` : '';
@@ -234,20 +343,49 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, [messages]);
 
+  // Service health check on component mount
   useEffect(() => {
-    // Start with welcome message
-    if (messages.length === 0) {
-      setTimeout(() => {
+    const initializeChatWizard = async () => {
+      // Check service health
+      const isHealthy = await checkServiceHealth();
+      setIsServiceHealthy(isHealthy);
+      
+      if (!isHealthy) {
         addBotMessage(
-          "👋 Hi! I'm your UTM Campaign Assistant. Would you like to add links to an existing campaign or create a brand new one?",
+          "⚠️ Chat Wizard is temporarily unavailable. You can still create campaigns manually.",
           [
-            { label: "Existing Campaign", value: "existing", action: () => showExistingCampaigns() },
-            { label: "New Campaign", value: "new", action: () => startNewCampaign() }
+            { 
+              label: "Try Manual Campaign Creation", 
+              value: "manual", 
+              action: () => window.location.href = '/new-campaign',
+              isPrimary: true
+            },
+            { 
+              label: "Retry Chat Wizard", 
+              value: "retry", 
+              action: () => window.location.reload()
+            }
           ],
-          'campaign-type'
+          true
         );
-      }, 500);
-    }
+        return;
+      }
+      
+      // Start with welcome message if service is healthy
+      if (messages.length === 0) {
+        setTimeout(() => {
+          addBotMessage(
+            "👋 Hi! I'm your UTM Campaign Assistant. Would you like to add links to an existing campaign or create a brand new one?",
+            [
+              { label: "Existing Campaign", value: "existing", action: () => showExistingCampaigns() },
+              { label: "New Campaign", value: "new", action: () => startNewCampaign() }
+            ]
+          );
+        }, 500);
+      }
+    };
+    
+    initializeChatWizard();
   }, []);
 
   // Handle existing campaigns query completion
@@ -277,29 +415,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
     }
   }, [existingCampaignsQuery.data, existingCampaignsQuery.isLoading, currentStep, messages]);
 
-  const addBotMessage = (content: string, options: Array<{ label: string; value: string; action?: () => void; isPrimary?: boolean; isSelected?: boolean }> = [], nextStep?: string, showInput = false, inputPlaceholder = "", autoFocus = false, step?: string) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      const newMessage: ChatMessage = {
-        id: `msg-${Date.now()}`,
-        type: 'bot',
-        content,
-        timestamp: new Date(),
-        options,
-        showInput,
-        inputPlaceholder,
-        onInput: showInput ? handleUserInput : undefined,
-        autoFocus,
-        step,
-        isBot: true
-      };
-      setMessages(prev => [...prev, newMessage]);
-      setIsTyping(false);
-      if (nextStep) {
-        setCurrentStep(nextStep as any);
-      }
-    }, 1000);
-  };
+  // Removed duplicate function - using enhanced version above
 
   const addUserMessage = (content: string) => {
     const newMessage: ChatMessage = {
@@ -314,54 +430,79 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
   const handleUserInput = (value: string) => {
     if (!value.trim()) return;
 
-    addUserMessage(value);
+    // Sanitize input based on current step
+    let sanitizedValue = value;
+    let validationResult: { isValid: boolean; sanitized: string; error?: string } = { isValid: true, sanitized: value };
+
+    switch (currentStep) {
+      case 'campaign-name':
+        sanitizedValue = sanitizeCampaignName(value);
+        if (sanitizedValue !== value) {
+          toast({
+            title: "Campaign name sanitized",
+            description: "Special characters were removed for security.",
+          });
+        }
+        break;
+      case 'landing-pages':
+        validationResult = validateAndSanitizeUrl(value);
+        if (!validationResult.isValid) {
+          addUserMessage(value);
+          setCurrentInput('');
+          setTimeout(() => {
+            addBotMessage(
+              `❌ ${validationResult.error}. Please enter a valid URL starting with https://`,
+              [],
+              undefined,
+              true,
+              "Enter a valid URL (e.g., 'https://example.com')"
+            );
+          }, 500);
+          return;
+        }
+        sanitizedValue = validationResult.sanitized;
+        break;
+      default:
+        sanitizedValue = sanitizeTextInput(value, 200);
+        break;
+    }
+
+    addUserMessage(sanitizedValue);
     setCurrentInput('');
 
     switch (currentStep) {
       case 'campaign-name':
-        setCampaignData(prev => ({ ...prev, name: value }));
+        setCampaignData(prev => ({ ...prev, name: sanitizedValue }));
         setTimeout(() => {
           showLandingPageSelection();
         }, 500);
         break;
 
       case 'landing-pages':
-        if (validateUrl(value)) {
-          const newLandingPage = {
-            id: `lp-${Date.now()}`,
-            url: value,
-            label: value
-          };
-          setCampaignData(prev => ({
-            ...prev,
-            landingPages: [...prev.landingPages, newLandingPage]
-          }));
-          setTimeout(() => {
-            addBotMessage(
-              `✅ Added "${value}" to your landing pages! Would you like to add another landing page or continue to sources?`,
-              [
-                { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
-                { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
-              ]
-            );
-          }, 500);
-        } else {
-          setTimeout(() => {
-            addBotMessage(
-              "That doesn't look like a valid URL. Please enter a complete URL starting with https:// (like https://example.com)",
-              [],
-              'landing-pages',
-              true,
-              "Enter a complete URL starting with https:// (e.g., 'https://example.com')"
-            );
-          }, 500);
-        }
+        const newLandingPage = {
+          id: `lp-${Date.now()}`,
+          url: sanitizedValue,
+          label: sanitizedValue
+        };
+        setCampaignData(prev => ({
+          ...prev,
+          landingPages: [...prev.landingPages, newLandingPage]
+        }));
+        setTimeout(() => {
+          addBotMessage(
+            `✅ Added "${sanitizedValue}" to your landing pages! Would you like to add another landing page or continue to sources?`,
+            [
+              { label: "Add Another Landing Page", value: "add-another", action: () => showLandingPageSelection() },
+              { label: "Continue to Sources", value: "continue-sources", action: () => showSourceSelection() }
+            ]
+          );
+        }, 500);
         break;
 
       case 'content':
         // Handle custom content input for specific source-medium combination
         if (currentSourceMedium) {
-          const sanitizedContent = value.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, '');
+          const sanitizedContent = sanitizeUtmParameter(sanitizedValue);
           if (sanitizedContent) {
             const { source, medium } = currentSourceMedium;
             
@@ -383,7 +524,7 @@ export default function ChatWizard({ user, onComplete }: ChatWizardProps) {
               addBotMessage(
                 "Please enter a valid content variation using only letters, numbers, hyphens, and underscores:",
                 [],
-                'content',
+                undefined,
                 true,
                 "Enter content variation (letters, numbers, hyphens, underscores)"
               );
@@ -1780,26 +1921,21 @@ This will create ${(() => {
     });
   };
 
-  const restartWizard = () => {
-    setMessages([]);
-    setCurrentStep('welcome');
-    setIsCreatingCampaign(false);
-    setCampaignData({
-      name: '',
-      isExistingCampaign: false,
-      landingPages: [],
-      selectedSources: [],
-      selectedMediums: {},
-      contentInputs: {},
-      selectedContent: {},
-      selectedTerm: {},
-      selectedTags: []
-    });
-  };
+  // Removed duplicate function
 
   const handleSendMessage = () => {
     if (currentInput.trim()) {
-      handleUserInput(currentInput.trim());
+      // Sanitize user input before processing
+      const sanitizedInput = sanitizeTextInput(currentInput.trim(), 500);
+      if (sanitizedInput !== currentInput.trim()) {
+        toast({
+          title: "Input Sanitized",
+          description: "Some characters were removed for security reasons.",
+          variant: "default"
+        });
+      }
+      handleUserInput(sanitizedInput);
+      setCurrentInput(''); // Clear input after sending
     }
   };
 
