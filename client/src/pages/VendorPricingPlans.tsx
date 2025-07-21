@@ -102,7 +102,10 @@ const VendorPricingPlans: React.FC = () => {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch pricing plans');
-      return response.json();
+      const data = await response.json();
+      console.log('Pricing plans API response:', data);
+      console.log('First plan accountCount:', data[0]?.accountCount);
+      return data;
     },
     enabled: !!token
   });
