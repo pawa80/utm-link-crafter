@@ -449,6 +449,13 @@ Changelog:
   - **Accurate Classification**: Sources like Google, Facebook now correctly show as "Base" (copied from vendor), custom sources show as "Custom"
   - **Real Template-Based Analytics**: Analytics now check account-level templates instead of vendor base templates for proper data isolation
   - **Complete Implementation**: All UTM parameters (sources, mediums, content, terms) now use unified type classification system
+- July 21, 2025. Vendor Dashboard Data Display Fix (COMPLETED):
+  - **Fixed Dashboard Crash**: Created separate `/vendor-api/dashboard/overview` endpoint with proper data structure for dashboard totals
+  - **Database Query Corrections**: Fixed utm_campaign column references and schema column name mismatches (accountStatus, subscriptionTier, name, createdAt)
+  - **Eliminated Duplicate Terms**: Removed 15 duplicate term template records causing UI display issues
+  - **Individual Timeline Charts**: Restored top 5 element timeline charts with separate colored lines and proper proportional distribution
+  - **Real Platform Data**: Dashboard now displays authentic statistics: 1 account (PlayMOps), 1 user, 18 campaigns, 74 UTM links
+  - **Complete Analytics Suite**: Both vendor dashboard overview and analytics pages fully functional with real data and proper Base/Custom classification
 
 ## User Preferences
 
