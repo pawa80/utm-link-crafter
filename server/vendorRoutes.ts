@@ -73,7 +73,13 @@ router.get('/dashboard/overview', authenticateVendor, async (req: Request, res: 
     // Get total counts
     const [accountsResult] = await db.select({ count: count() }).from(accounts);
     const [usersResult] = await db.select({ count: count() }).from(users);
-    const [campaignsResult] = await db.select({ count: count() }).from(sql`(SELECT DISTINCT campaign_name, account_id FROM utm_links WHERE is_archived = false) as unique_campaigns`);
+    
+    // Count distinct campaigns by querying utm_campaign column directly
+    const [campaignsResult] = await db
+      .select({ count: sql<number>`COUNT(DISTINCT ${utmLinks.utm_campaign})` })
+      .from(utmLinks)
+      .where(eq(utmLinks.isArchived, false));
+      
     const [utmLinksResult] = await db.select({ count: count() }).from(utmLinks).where(eq(utmLinks.isArchived, false));
 
     // Get account status breakdown
