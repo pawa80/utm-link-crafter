@@ -430,6 +430,16 @@ Changelog:
   - Modified duplicate campaign validation to skip duplicate checks when adding to existing campaigns
   - Chat Wizard now properly passes isExistingCampaign flag when creating landing pages for existing campaigns
   - Users can now successfully add UTM links with different tags to their existing campaigns through Chat Wizard
+- July 21, 2025. Enhanced Sign-Up Process Implementation (COMPLETED):
+  - **Comprehensive SignUpWizard**: Created 3-step registration flow (Account & Plan, About You, Your Goals)
+  - **Pricing Plan Integration**: Added real-time pricing plan selection with 6 active plans (Free, Starter $29/mo, Professional $79/mo, Enterprise $99/mo, Agency $199/mo)
+  - **Smart Recommendations**: Plan recommendations based on user profile (Agency users → Enterprise, Large teams → Professional)
+  - **Profile Collection**: Industry selection (12 options), team size estimation (5 ranges), and use case identification (8 categories)
+  - **Backend Enhancement**: Updated user creation API to handle account name, pricing plan ID, and profile data
+  - **Template System**: Automatic base template copying with "Base" type marking for proper categorization
+  - **Account Hierarchy**: Proper Super Admin role assignment and account-level data isolation
+  - **Error Handling**: Fixed pricing plans API array handling and form validation for complete setup
+  - **Authentication Flow**: Enhanced for both email/password and Google sign-in with new user detection
 - July 20, 2025. Chat Wizard tag merging for existing campaigns:
   - Fixed issue where new tags were replacing existing campaign tags instead of being added to them
   - Implemented tag merging functionality that fetches existing campaign tags and combines them with new ones

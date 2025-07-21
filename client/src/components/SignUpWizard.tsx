@@ -64,7 +64,7 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
   const { toast } = useToast();
 
   // Get available pricing plans
-  const { data: pricingPlans, isLoading: isLoadingPlans } = useQuery({
+  const { data: pricingPlans = [], isLoading: isLoadingPlans } = useQuery({
     queryKey: ['/api/pricing-plans'],
     enabled: true
   });
@@ -86,13 +86,15 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete signup
+      // Complete signup - validate custom use case if "Other" is selected
+      const finalUseCase = useCase === "Other" ? customUseCase.trim() : useCase;
+      
       onComplete({
         accountName: accountName.trim(),
         pricingPlanId: selectedPlanId!,
         industry: industry || undefined,
         teamSize: teamSize || undefined,
-        useCase: useCase === "Other" ? customUseCase : useCase || undefined
+        useCase: finalUseCase || undefined
       });
     }
   };
@@ -185,7 +187,7 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
                   ) : (
                     <RadioGroup value={selectedPlanId?.toString()} onValueChange={(value) => setSelectedPlanId(parseInt(value))}>
                       <div className="grid gap-4">
-                        {pricingPlans?.map((plan: PricingPlan) => (
+                        {Array.isArray(pricingPlans) && pricingPlans.map((plan: PricingPlan) => (
                           <div key={plan.id} className="relative">
                             <RadioGroupItem value={plan.id.toString()} id={plan.id.toString()} className="sr-only" />
                             <Label
