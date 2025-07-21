@@ -66,65 +66,124 @@ router.get('/auth/verify', authenticateVendor, (req: any, res: Response) => {
 
 // Protected vendor routes (require authentication)
 
-// Dashboard analytics
+// Analytics dashboard with UTM element usage
 router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    // Get total counts across all accounts
-    const [totalAccounts] = await db.select({ count: count() }).from(accounts);
-    const [totalUsers] = await db.select({ count: count() }).from(users);
-    const [totalCampaigns] = await db.select({ 
-      count: count(sql`DISTINCT utm_campaign`) 
-    }).from(utmLinks);
-    const [totalUtmLinks] = await db.select({ count: count() }).from(utmLinks);
+    const { from, to } = req.query;
+    const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate = to ? new Date(to as string) : new Date();
 
-    // Get account status breakdown
-    const accountStatusBreakdown = await db
+    // Get UTM sources usage
+    const sourcesData = await db
       .select({
-        status: accounts.accountStatus,
-        count: count()
+        name: sourceTemplates.source,
+        count: count(utmLinks.id),
+        type: sql<'base' | 'custom'>`CASE 
+          WHEN EXISTS (SELECT 1 FROM ${sourceTemplates} WHERE ${sourceTemplates.source} = ${utmLinks.utm_source} AND ${sourceTemplates.vendorManaged} = true) 
+          THEN 'base'::text 
+          ELSE 'custom'::text 
+        END`,
+        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(accounts)
-      .groupBy(accounts.accountStatus);
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`
+      ))
+      .groupBy(utmLinks.utm_source)
+      .orderBy(desc(count(utmLinks.id)));
 
-    // Get pricing plan breakdown
-    const planBreakdown = await db
+    // Get UTM mediums usage
+    const mediumsData = await db
       .select({
-        planName: pricingPlans.planName,
-        count: count()
+        name: utmLinks.utm_medium,
+        count: count(utmLinks.id),
+        type: sql<'base' | 'custom'>`CASE 
+          WHEN ${utmLinks.utm_medium} IN ('cpc', 'social', 'email', 'organic', 'referral', 'affiliate', 'display', 'video', 'print', 'sms', 'push') 
+          THEN 'base'::text 
+          ELSE 'custom'::text 
+        END`,
+        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(accounts)
-      .leftJoin(pricingPlans, eq(accounts.pricingPlanId, pricingPlans.id))
-      .groupBy(pricingPlans.planName);
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_medium} IS NOT NULL`
+      ))
+      .groupBy(utmLinks.utm_medium)
+      .orderBy(desc(count(utmLinks.id)));
 
-    // Get recent account activity
-    const recentAccounts = await db
+    // Get UTM content usage
+    const contentData = await db
       .select({
-        id: accounts.id,
-        name: accounts.name,
-        accountStatus: accounts.accountStatus,
-        createdAt: accounts.createdAt,
-        userCount: count(users.id)
+        name: utmLinks.utm_content,
+        count: count(utmLinks.id),
+        type: sql<'base' | 'custom'>`CASE 
+          WHEN EXISTS (SELECT 1 FROM ${userUtmTemplates} WHERE ${userUtmTemplates.content} = ${utmLinks.utm_content}) 
+          THEN 'base'::text 
+          ELSE 'custom'::text 
+        END`,
+        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
-      .from(accounts)
-      .leftJoin(users, eq(accounts.id, users.accountId))
-      .groupBy(accounts.id, accounts.name, accounts.accountStatus, accounts.createdAt)
-      .orderBy(desc(accounts.createdAt))
-      .limit(10);
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_content} IS NOT NULL`
+      ))
+      .groupBy(utmLinks.utm_content)
+      .orderBy(desc(count(utmLinks.id)));
+
+    // Get UTM terms usage
+    const termsData = await db
+      .select({
+        name: utmLinks.utm_term,
+        count: count(utmLinks.id),
+        type: sql<'base' | 'custom'>`CASE 
+          WHEN EXISTS (SELECT 1 FROM ${userTermTemplates} WHERE ${userTermTemplates.term} = ${utmLinks.utm_term}) 
+          THEN 'base'::text 
+          ELSE 'custom'::text 
+        END`,
+        lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
+        createdAt: sql<string>`MIN(${utmLinks.createdAt})`
+      })
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`,
+        sql`${utmLinks.utm_term} IS NOT NULL`
+      ))
+      .groupBy(utmLinks.utm_term)
+      .orderBy(desc(count(utmLinks.id)));
+
+    // Get usage timeline
+    const timelineData = await db
+      .select({
+        date: sql<string>`DATE(${utmLinks.createdAt})`,
+        count: count(utmLinks.id)
+      })
+      .from(utmLinks)
+      .where(and(
+        sql`${utmLinks.createdAt} >= ${fromDate}`,
+        sql`${utmLinks.createdAt} <= ${toDate}`
+      ))
+      .groupBy(sql`DATE(${utmLinks.createdAt})`)
+      .orderBy(sql`DATE(${utmLinks.createdAt})`);
 
     res.json({
-      totals: {
-        accounts: totalAccounts.count,
-        users: totalUsers.count,
-        campaigns: totalCampaigns.count,
-        utmLinks: totalUtmLinks.count
-      },
-      accountStatusBreakdown,
-      planBreakdown,
-      recentAccounts
+      sources: sourcesData,
+      mediums: mediumsData,
+      content: contentData,
+      terms: termsData,
+      usage_timeline: timelineData
     });
   } catch (error) {
-    console.error('Dashboard analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    console.error('Analytics dashboard error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics data' });
   }
 });
 
@@ -148,11 +207,16 @@ router.get('/accounts', authenticateVendor, async (req: Request, res: Response) 
       .groupBy(accounts.id, pricingPlans.id);
 
     // Apply filters
+    let conditions = [];
     if (status) {
-      query = query.where(eq(accounts.accountStatus, status as string));
+      conditions.push(eq(accounts.accountStatus, status as string));
     }
     if (planId) {
-      query = query.where(eq(accounts.pricingPlanId, Number(planId)));
+      conditions.push(eq(accounts.pricingPlanId, Number(planId)));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     const accountsData = await query

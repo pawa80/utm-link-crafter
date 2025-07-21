@@ -39,62 +39,24 @@ const VendorAnalytics: React.FC = () => {
     to: new Date()
   });
 
-  // Generate dynamic mock data based on date range
-  const generateMockData = () => {
-    const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-    const dates = [];
-    
-    // Generate dates for the selected range
-    for (let i = 0; i <= daysDiff; i++) {
-      const date = new Date(dateRange.from);
-      date.setDate(date.getDate() + i);
-      dates.push(format(date, 'yyyy-MM-dd'));
-    }
-
-    // Generate last used dates within the range
-    const getRandomDateInRange = () => {
-      const randomTime = dateRange.from.getTime() + Math.random() * (dateRange.to.getTime() - dateRange.from.getTime());
-      return format(new Date(randomTime), 'yyyy-MM-dd');
-    };
-
-    return {
-      sources: [
-        { name: 'google', count: 125, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'facebook', count: 98, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'newsletter', count: 67, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-08-15' },
-        { name: 'youtube', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'email-signature', count: 32, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-09-10' }
-      ],
-      mediums: [
-        { name: 'cpc', count: 203, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'social', count: 156, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'email', count: 89, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'newsletter', count: 67, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-08-20' },
-        { name: 'referral', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' }
-      ],
-      content: [
-        { name: 'banner-ad', count: 178, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'text-ad', count: 134, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'video-ad', count: 98, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'cta-button', count: 67, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'promo-2025', count: 43, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-12-01' }
-      ],
-      terms: [
-        { name: 'brand-keywords', count: 156, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'competitor-keywords', count: 89, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'product-keywords', count: 67, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'variant-a', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
-        { name: 'retargeting', count: 32, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-09-15' }
-      ],
-      usage_timeline: dates.map(date => ({
-        date,
-        count: Math.floor(Math.random() * 50) + 10
-      }))
-    };
-  };
-
-  const analyticsData = generateMockData();
-  const isLoading = false;
+  const { data: analyticsData, isLoading } = useQuery<AnalyticsData>({
+    queryKey: ['/vendor-api/analytics/dashboard', dateRange.from, dateRange.to],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        from: dateRange.from.toISOString(),
+        to: dateRange.to.toISOString()
+      });
+      const response = await fetch(`/vendor-api/analytics/dashboard?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch analytics data');
+      return response.json();
+    },
+    enabled: !!token
+  });
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
@@ -143,7 +105,7 @@ const VendorAnalytics: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {safeData.slice(0, 10).map((item, index) => (
+              {safeData.map((item, index) => (
                 <TableRow key={index}>
                   <TableCell>
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
