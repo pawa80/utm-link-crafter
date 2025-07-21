@@ -623,4 +623,159 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 
 
 
+// Pricing Plans Management
+router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const plans = await db
+      .select({
+        id: pricingPlans.id,
+        planCode: pricingPlans.planCode,
+        planName: pricingPlans.planName,
+        description: pricingPlans.description,
+        monthlyPriceCents: pricingPlans.monthlyPriceCents,
+        annualPriceCents: pricingPlans.annualPriceCents,
+        trialDays: pricingPlans.trialDays,
+        maxCampaigns: pricingPlans.maxCampaigns,
+        maxUsers: pricingPlans.maxUsers,
+        maxUtmLinks: pricingPlans.maxUtmLinks,
+        features: pricingPlans.features,
+        isActive: pricingPlans.isActive,
+        sortOrder: pricingPlans.sortOrder,
+        createdAt: pricingPlans.createdAt,
+        accountCount: count(accounts.id)
+      })
+      .from(pricingPlans)
+      .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
+      .groupBy(pricingPlans.id)
+      .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
+
+    res.json(plans.map(plan => ({
+      ...plan,
+      createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
+    })));
+  } catch (error) {
+    console.error('Pricing plans fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch pricing plans' });
+  }
+});
+
+router.post('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const {
+      planCode,
+      planName,
+      description,
+      monthlyPriceCents,
+      annualPriceCents,
+      trialDays,
+      maxCampaigns,
+      maxUsers,
+      maxUtmLinks,
+      features,
+      isActive,
+      sortOrder
+    } = req.body;
+
+    const [newPlan] = await db.insert(pricingPlans).values({
+      planCode,
+      planName,
+      description,
+      monthlyPriceCents,
+      annualPriceCents,
+      trialDays,
+      maxCampaigns,
+      maxUsers,
+      maxUtmLinks,
+      features: features || {},
+      isActive,
+      sortOrder
+    }).returning();
+
+    res.json(newPlan);
+  } catch (error) {
+    console.error('Pricing plan creation error:', error);
+    res.status(500).json({ error: 'Failed to create pricing plan' });
+  }
+});
+
+router.put('/pricing-plans/:id', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const planId = Number(req.params.id);
+    const {
+      planCode,
+      planName,
+      description,
+      monthlyPriceCents,
+      annualPriceCents,
+      trialDays,
+      maxCampaigns,
+      maxUsers,
+      maxUtmLinks,
+      features,
+      isActive,
+      sortOrder
+    } = req.body;
+
+    const [updatedPlan] = await db
+      .update(pricingPlans)
+      .set({
+        planCode,
+        planName,
+        description,
+        monthlyPriceCents,
+        annualPriceCents,
+        trialDays,
+        maxCampaigns,
+        maxUsers,
+        maxUtmLinks,
+        features: features || {},
+        isActive,
+        sortOrder
+      })
+      .where(eq(pricingPlans.id, planId))
+      .returning();
+
+    if (!updatedPlan) {
+      return res.status(404).json({ error: 'Pricing plan not found' });
+    }
+
+    res.json(updatedPlan);
+  } catch (error) {
+    console.error('Pricing plan update error:', error);
+    res.status(500).json({ error: 'Failed to update pricing plan' });
+  }
+});
+
+router.delete('/pricing-plans/:id', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const planId = Number(req.params.id);
+
+    // Check if any accounts are using this plan
+    const [accountsCount] = await db
+      .select({ count: count() })
+      .from(accounts)
+      .where(eq(accounts.pricingPlanId, planId));
+
+    if (accountsCount.count > 0) {
+      return res.status(400).json({ 
+        error: `Cannot delete pricing plan. ${accountsCount.count} accounts are currently using this plan.` 
+      });
+    }
+
+    const [deletedPlan] = await db
+      .delete(pricingPlans)
+      .where(eq(pricingPlans.id, planId))
+      .returning();
+
+    if (!deletedPlan) {
+      return res.status(404).json({ error: 'Pricing plan not found' });
+    }
+
+    res.json({ success: true, deletedPlan });
+  } catch (error) {
+    console.error('Pricing plan deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete pricing plan' });
+  }
+});
+
 export default router;

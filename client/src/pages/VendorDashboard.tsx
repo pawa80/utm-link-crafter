@@ -195,7 +195,7 @@ const VendorDashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
             onClick={() => window.location.replace('/platform-control/accounts')}
             className="h-16 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
@@ -205,6 +205,19 @@ const VendorDashboard: React.FC = () => {
               <div className="text-left">
                 <div className="font-semibold">Manage Accounts</div>
                 <div className="text-xs opacity-90">Status, Plans & Users</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => window.location.replace('/platform-control/pricing')}
+            className="h-16 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+          >
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Pricing Plans</div>
+                <div className="text-xs opacity-90">Plans & Pricing</div>
               </div>
             </div>
           </Button>
@@ -224,7 +237,7 @@ const VendorDashboard: React.FC = () => {
 
           <Button
             onClick={() => window.location.replace('/platform-control/analytics')}
-            className="h-16 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+            className="h-16 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
           >
             <div className="flex items-center gap-3">
               <BarChart3 className="w-5 h-5" />

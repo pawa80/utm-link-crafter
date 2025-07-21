@@ -9,6 +9,7 @@ import VendorDashboard from "@/pages/VendorDashboard";
 import VendorAccounts from "@/pages/VendorAccounts";
 import VendorTemplatesNew from "@/pages/VendorTemplatesNew";
 import VendorAnalytics from "@/pages/VendorAnalytics";
+import VendorPricingPlans from "@/pages/VendorPricingPlans";
 
 function VendorRouter() {
   const { vendorUser, isInitializing } = useVendorAuth();
@@ -38,6 +39,7 @@ function VendorRouter() {
       <Route path="/platform-control/accounts" component={VendorAccounts} />
       <Route path="/platform-control/templates" component={VendorTemplatesNew} />
       <Route path="/platform-control/analytics" component={VendorAnalytics} />
+      <Route path="/platform-control/pricing" component={VendorPricingPlans} />
       <Route component={VendorDashboard} />
     </Switch>
   );
