@@ -635,7 +635,7 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
         accountCount = 1;
       }
       
-      return {
+      const result = {
         id: plan.id,
         planCode: plan.planCode,
         planName: plan.planName,
@@ -652,6 +652,9 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
         accountCount: accountCount,
         createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
       };
+      
+      console.log(`Mapping plan ${plan.planName}: accountCount = ${accountCount}`);
+      return result;
     });
     
     res.json(response);
