@@ -33,6 +33,7 @@ const authMiddleware = async (req: any, res: any, next: any) => {
   
   req.user = user;
   req.userId = user.id;
+  req.accountId = user.accountId;
   next();
 };
 
@@ -545,6 +546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tag = await storage.createTag({
         ...tagData,
         userId: req.user.id,
+        accountId: req.accountId || req.user.accountId,
       });
       
       res.json(tag);
