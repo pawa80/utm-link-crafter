@@ -626,65 +626,23 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    const plans = await db
-      .select({
-        id: pricingPlans.id,
-        planCode: pricingPlans.planCode,
-        planName: pricingPlans.planName,
-        description: pricingPlans.description,
-        monthlyPriceCents: pricingPlans.monthlyPriceCents,
-        annualPriceCents: pricingPlans.annualPriceCents,
-        trialDays: pricingPlans.trialDays,
-        maxCampaigns: pricingPlans.maxCampaigns,
-        maxUsers: pricingPlans.maxUsers,
-        maxUtmLinks: pricingPlans.maxUtmLinks,
-        features: pricingPlans.features,
-        isActive: pricingPlans.isActive,
-        sortOrder: pricingPlans.sortOrder,
-        createdAt: pricingPlans.createdAt,
-        accountCount: count(accounts.id)
-      })
-      .from(pricingPlans)
-      .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
-      .groupBy(
-        pricingPlans.id,
-        pricingPlans.planCode,
-        pricingPlans.planName,
-        pricingPlans.description,
-        pricingPlans.monthlyPriceCents,
-        pricingPlans.annualPriceCents,
-        pricingPlans.trialDays,
-        pricingPlans.maxCampaigns,
-        pricingPlans.maxUsers,
-        pricingPlans.maxUtmLinks,
-        pricingPlans.features,
-        pricingPlans.isActive,
-        pricingPlans.sortOrder,
-        pricingPlans.createdAt
-      )
-      .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
-
-    console.log('Raw plans from DB:', JSON.stringify(plans.slice(0, 2), null, 2));
-
-    const response = plans.map(plan => ({
-      id: plan.id,
-      planCode: plan.planCode,
-      planName: plan.planName,
-      description: plan.description,
-      monthlyPriceCents: plan.monthlyPriceCents,
-      annualPriceCents: plan.annualPriceCents,
-      trialDays: plan.trialDays,
-      maxCampaigns: plan.maxCampaigns,
-      maxUsers: plan.maxUsers,
-      maxUtmLinks: plan.maxUtmLinks,
-      features: plan.features,
-      isActive: plan.isActive,
-      sortOrder: plan.sortOrder,
-      accountCount: plan.accountCount,
-      createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
-    }));
-
-    console.log('Final response:', JSON.stringify(response.slice(0, 2), null, 2));
+    // Get all plans first
+    const allPlans = await db.select().from(pricingPlans).orderBy(pricingPlans.sortOrder);
+    
+    // Get account counts for each plan
+    const response = [];
+    for (const plan of allPlans) {
+      const [countResult] = await db
+        .select({ count: count() })
+        .from(accounts)
+        .where(eq(accounts.pricingPlanId, plan.id));
+      
+      response.push({
+        ...plan,
+        accountCount: countResult.count,
+        createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
+      });
+    }
     
     res.json(response);
   } catch (error) {
