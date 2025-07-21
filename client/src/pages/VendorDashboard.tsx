@@ -237,6 +237,19 @@ const VendorDashboard: React.FC = () => {
           </Button>
 
           <Button
+            onClick={() => window.location.replace('/platform-control/features')}
+            className="h-16 bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white"
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Feature Management</div>
+                <div className="text-xs opacity-90">Configure Plan Features</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
             onClick={() => window.location.replace('/platform-control/analytics')}
             className="h-16 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
           >

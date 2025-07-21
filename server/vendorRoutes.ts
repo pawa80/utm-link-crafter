@@ -687,6 +687,24 @@ router.post('/pricing-plans', authenticateVendor, async (req: Request, res: Resp
   }
 });
 
+// Update plan features
+router.patch('/pricing-plans/:id/features', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const planId = Number(req.params.id);
+    const { features } = req.body;
+
+    await db
+      .update(pricingPlans)
+      .set({ features })
+      .where(eq(pricingPlans.id, planId));
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Feature update error:', error);
+    res.status(500).json({ error: 'Failed to update features' });
+  }
+});
+
 router.put('/pricing-plans/:id', authenticateVendor, async (req: Request, res: Response) => {
   try {
     const planId = Number(req.params.id);
