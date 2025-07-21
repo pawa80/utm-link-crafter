@@ -646,13 +646,47 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
       })
       .from(pricingPlans)
       .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
-      .groupBy(pricingPlans.id)
+      .groupBy(
+        pricingPlans.id,
+        pricingPlans.planCode,
+        pricingPlans.planName,
+        pricingPlans.description,
+        pricingPlans.monthlyPriceCents,
+        pricingPlans.annualPriceCents,
+        pricingPlans.trialDays,
+        pricingPlans.maxCampaigns,
+        pricingPlans.maxUsers,
+        pricingPlans.maxUtmLinks,
+        pricingPlans.features,
+        pricingPlans.isActive,
+        pricingPlans.sortOrder,
+        pricingPlans.createdAt
+      )
       .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
 
-    res.json(plans.map(plan => ({
-      ...plan,
+    console.log('Raw plans from DB:', JSON.stringify(plans.slice(0, 2), null, 2));
+
+    const response = plans.map(plan => ({
+      id: plan.id,
+      planCode: plan.planCode,
+      planName: plan.planName,
+      description: plan.description,
+      monthlyPriceCents: plan.monthlyPriceCents,
+      annualPriceCents: plan.annualPriceCents,
+      trialDays: plan.trialDays,
+      maxCampaigns: plan.maxCampaigns,
+      maxUsers: plan.maxUsers,
+      maxUtmLinks: plan.maxUtmLinks,
+      features: plan.features,
+      isActive: plan.isActive,
+      sortOrder: plan.sortOrder,
+      accountCount: plan.accountCount,
       createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
-    })));
+    }));
+
+    console.log('Final response:', JSON.stringify(response.slice(0, 2), null, 2));
+    
+    res.json(response);
   } catch (error) {
     console.error('Pricing plans fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch pricing plans' });
