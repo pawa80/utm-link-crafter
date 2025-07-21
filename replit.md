@@ -476,6 +476,12 @@ Changelog:
   - **API Feature Endpoint**: Added /api/user-features endpoint to provide user's current feature permissions
   - **Account-Level Feature Loading**: Features loaded from user's account pricing plan and cached for performance
   - **REAL ENFORCEMENT**: Feature toggles in vendor dashboard now actually control access to features in the application
+- July 21, 2025. Chat Wizard Feature Layout and Positioning System (COMPLETED):
+  - **Dynamic Layout Control**: Chat Wizard appears in main 2x2 grid when enabled, moves to bottom section when disabled
+  - **Consistent Card Sizing**: All main action cards maintain identical dimensions regardless of Chat Wizard state
+  - **Smart Positioning Logic**: Enabled Chat Wizard takes first position in grid, disabled version shows as upgrade prompt at bottom
+  - **Visual Hierarchy**: Active features prominently displayed in main grid, disabled features less prominent at bottom
+  - **Cache Management**: Real-time feature updates with 30-second cache refresh and vendor dashboard invalidation
 
 ## User Preferences
 
