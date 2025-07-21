@@ -626,41 +626,31 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
 // Pricing Plans Management
 router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    // First get all pricing plans
-    const allPlans = await db
-      .select()
+    const plans = await db
+      .select({
+        id: pricingPlans.id,
+        planCode: pricingPlans.planCode,
+        planName: pricingPlans.planName,
+        description: pricingPlans.description,
+        monthlyPriceCents: pricingPlans.monthlyPriceCents,
+        annualPriceCents: pricingPlans.annualPriceCents,
+        trialDays: pricingPlans.trialDays,
+        maxCampaigns: pricingPlans.maxCampaigns,
+        maxUsers: pricingPlans.maxUsers,
+        maxUtmLinks: pricingPlans.maxUtmLinks,
+        features: pricingPlans.features,
+        isActive: pricingPlans.isActive,
+        sortOrder: pricingPlans.sortOrder,
+        createdAt: pricingPlans.createdAt,
+        accountCount: count(accounts.id)
+      })
       .from(pricingPlans)
+      .leftJoin(accounts, eq(pricingPlans.id, accounts.pricingPlanId))
+      .groupBy(pricingPlans.id)
       .orderBy(pricingPlans.sortOrder, pricingPlans.createdAt);
 
-    // Then get account counts per plan
-    const planCounts = await db
-      .select({
-        planId: accounts.pricingPlanId,
-        count: sql<number>`COUNT(*)`
-      })
-      .from(accounts)
-      .where(sql`${accounts.pricingPlanId} IS NOT NULL`)
-      .groupBy(accounts.pricingPlanId);
-
-    // Combine the data
-    const plans = allPlans.map(plan => {
-      const countData = planCounts.find(pc => pc.planId === plan.id);
-      return {
-        ...plan,
-        accountCount: countData?.count || 0
-      };
-    });
-
-    console.log('Plan counts from DB:', planCounts);
-    console.log('Final plans with account counts:', plans.map(p => ({ 
-      id: p.id, 
-      planName: p.planName, 
-      accountCount: p.accountCount 
-    })));
-    
     res.json(plans.map(plan => ({
       ...plan,
-      accountCount: plan.accountCount, // Explicitly include accountCount
       createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
     })));
   } catch (error) {
