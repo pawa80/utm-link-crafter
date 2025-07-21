@@ -639,6 +639,7 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
         count: sql<number>`COUNT(*)`
       })
       .from(accounts)
+      .where(sql`${accounts.pricingPlanId} IS NOT NULL`)
       .groupBy(accounts.pricingPlanId);
 
     // Combine the data
@@ -650,7 +651,8 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
       };
     });
 
-    console.log('Pricing plans with account counts:', plans.map(p => ({ 
+    console.log('Plan counts from DB:', planCounts);
+    console.log('Final plans with account counts:', plans.map(p => ({ 
       id: p.id, 
       planName: p.planName, 
       accountCount: p.accountCount 
@@ -658,6 +660,7 @@ router.get('/pricing-plans', authenticateVendor, async (req: Request, res: Respo
     
     res.json(plans.map(plan => ({
       ...plan,
+      accountCount: plan.accountCount, // Explicitly include accountCount
       createdAt: plan.createdAt?.toISOString() || new Date().toISOString()
     })));
   } catch (error) {
