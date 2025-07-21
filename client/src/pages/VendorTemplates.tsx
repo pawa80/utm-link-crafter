@@ -23,32 +23,69 @@ interface BaseTemplate {
   createdAt: string;
 }
 
+interface SourceTemplateGroup {
+  source: string;
+  mediums: {
+    medium: string;
+    content: string[];
+    templates: BaseTemplate[];
+  }[];
+}
+
+interface TermTemplate {
+  id: number;
+  term: string;
+  category: string;
+  isActive: boolean;
+  vendorManaged: boolean;
+  createdAt: string;
+}
+
 const VendorTemplates: React.FC = () => {
   const { token } = useVendorAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [templateType, setTemplateType] = useState<'utm' | 'term'>('utm');
+  const [activeTab, setActiveTab] = useState<'utm' | 'term'>('utm');
   const [newTemplate, setNewTemplate] = useState<any>({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
 
-  const { data: templates, isLoading } = useQuery<BaseTemplate[]>({
-    queryKey: ['/vendor-api/base-templates', templateType],
+  // Fetch UTM templates grouped by source
+  const { data: utmTemplateGroups, isLoading: utmLoading } = useQuery<SourceTemplateGroup[]>({
+    queryKey: ['/vendor-api/base-templates/utm-grouped'],
     queryFn: async () => {
-      const response = await fetch(`/vendor-api/base-templates/${templateType}`, {
+      const response = await fetch('/vendor-api/base-templates/utm-grouped', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch base templates');
+      if (!response.ok) throw new Error('Failed to fetch UTM templates');
       return response.json();
     },
-    enabled: !!token
+    enabled: !!token && activeTab === 'utm'
+  });
+
+  // Fetch term templates
+  const { data: termTemplates, isLoading: termLoading } = useQuery<TermTemplate[]>({
+    queryKey: ['/vendor-api/base-templates/term'],
+    queryFn: async () => {
+      const response = await fetch('/vendor-api/base-templates/term', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch term templates');
+      return response.json();
+    },
+    enabled: !!token && activeTab === 'term'
   });
 
   const createTemplateMutation = useMutation({
     mutationFn: async (templateData: any) => {
-      const response = await fetch(`/vendor-api/base-templates/${templateType}`, {
+      const endpoint = activeTab === 'utm' ? '/vendor-api/base-templates/utm' : '/vendor-api/base-templates/term';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,12 +108,12 @@ const VendorTemplates: React.FC = () => {
   });
 
   const handleCreateTemplate = () => {
-    if (templateType === 'utm') {
+    if (activeTab === 'utm') {
       if (!newTemplate.source || !newTemplate.medium || !newTemplate.content) {
         toast({ title: 'Please fill all required fields', variant: 'destructive' });
         return;
       }
-    } else if (templateType === 'term') {
+    } else if (activeTab === 'term') {
       if (!newTemplate.term || !newTemplate.category) {
         toast({ title: 'Please fill all required fields', variant: 'destructive' });
         return;
@@ -85,6 +122,18 @@ const VendorTemplates: React.FC = () => {
     
     createTemplateMutation.mutate(newTemplate);
   };
+
+  const toggleSourceExpanded = (source: string) => {
+    const newExpanded = new Set(expandedSources);
+    if (newExpanded.has(source)) {
+      newExpanded.delete(source);
+    } else {
+      newExpanded.add(source);
+    }
+    setExpandedSources(newExpanded);
+  };
+
+  const isLoading = activeTab === 'utm' ? utmLoading : termLoading;
 
   if (isLoading) {
     return (
@@ -129,17 +178,17 @@ const VendorTemplates: React.FC = () => {
           </CardHeader>
           <CardContent className="flex gap-4">
             <Button
-              onClick={() => setTemplateType('utm')}
-              variant={templateType === 'utm' ? 'default' : 'outline'}
-              className={templateType === 'utm' ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}
+              onClick={() => setActiveTab('utm')}
+              variant={activeTab === 'utm' ? 'default' : 'outline'}
+              className={activeTab === 'utm' ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}
             >
               <Database className="w-4 h-4 mr-2" />
               UTM Templates
             </Button>
             <Button
-              onClick={() => setTemplateType('term')}
-              variant={templateType === 'term' ? 'default' : 'outline'}
-              className={templateType === 'term' ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}
+              onClick={() => setActiveTab('term')}
+              variant={activeTab === 'term' ? 'default' : 'outline'}
+              className={activeTab === 'term' ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}
             >
               <Tag className="w-4 h-4 mr-2" />
               Term Templates
@@ -153,10 +202,10 @@ const VendorTemplates: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-gray-900">
-                  {templateType === 'utm' ? 'UTM Templates' : 'Term Templates'}
+                  {activeTab === 'utm' ? 'UTM Templates' : 'Term Templates'}
                 </CardTitle>
                 <CardDescription className="text-gray-600">
-                  {templateType === 'utm' 
+                  {activeTab === 'utm' 
                     ? 'Base UTM source, medium, and content combinations' 
                     : 'Base term templates for keyword tracking'
                   }
@@ -172,14 +221,14 @@ const VendorTemplates: React.FC = () => {
                 <DialogContent className="bg-white border-gray-200">
                   <DialogHeader>
                     <DialogTitle className="text-gray-900">
-                      Create New {templateType === 'utm' ? 'UTM' : 'Term'} Template
+                      Create New {activeTab === 'utm' ? 'UTM' : 'Term'} Template
                     </DialogTitle>
                     <DialogDescription className="text-gray-600">
                       Add a new base template that will be available to all accounts
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    {templateType === 'utm' ? (
+                    {activeTab === 'utm' ? (
                       <>
                         <div>
                           <Label className="text-gray-700">Source</Label>
@@ -250,7 +299,7 @@ const VendorTemplates: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates?.map((template) => (
+              {(activeTab === 'utm' ? utmTemplateGroups?.flatMap(group => group.mediums.flatMap(medium => medium.templates)) : termTemplates)?.map((template) => (
                 <div key={template.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                   <div className="flex items-center justify-between mb-2">
                     <Badge 
@@ -266,7 +315,7 @@ const VendorTemplates: React.FC = () => {
                       {template.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
-                  {templateType === 'utm' ? (
+                  {activeTab === 'utm' ? (
                     <div className="space-y-1">
                       <div className="text-sm text-gray-600">Source: <span className="font-medium text-gray-900">{template.source}</span></div>
                       <div className="text-sm text-gray-600">Medium: <span className="font-medium text-gray-900">{template.medium}</span></div>

@@ -377,4 +377,42 @@ router.post('/base-templates/term', authenticateVendor, async (req: Request, res
   }
 });
 
+// Get UTM templates grouped by source
+router.get('/base-templates/utm-grouped', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    const templates = await db.select().from(baseUtmTemplates).orderBy(baseUtmTemplates.source, baseUtmTemplates.medium);
+    
+    // Group templates by source
+    const sourceGroups: Record<string, { mediums: Record<string, { content: string[], templates: any[] }> }> = {};
+    
+    templates.forEach(template => {
+      if (!sourceGroups[template.source]) {
+        sourceGroups[template.source] = { mediums: {} };
+      }
+      
+      if (!sourceGroups[template.source].mediums[template.medium]) {
+        sourceGroups[template.source].mediums[template.medium] = { content: [], templates: [] };
+      }
+      
+      sourceGroups[template.source].mediums[template.medium].content.push(template.content);
+      sourceGroups[template.source].mediums[template.medium].templates.push(template);
+    });
+    
+    // Convert to array format
+    const result = Object.entries(sourceGroups).map(([source, sourceData]) => ({
+      source,
+      mediums: Object.entries(sourceData.mediums).map(([medium, mediumData]) => ({
+        medium,
+        content: mediumData.content,
+        templates: mediumData.templates
+      }))
+    }));
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Grouped UTM templates fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch grouped UTM templates' });
+  }
+});
+
 export default router;
