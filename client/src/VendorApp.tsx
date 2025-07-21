@@ -7,6 +7,8 @@ import { VendorAuthProvider, useVendorAuth } from "@/contexts/VendorAuthContext"
 import VendorAuth from "@/pages/VendorAuth";
 import VendorDashboard from "@/pages/VendorDashboard";
 import VendorAccounts from "@/pages/VendorAccounts";
+import VendorTemplates from "@/pages/VendorTemplates";
+import VendorAnalytics from "@/pages/VendorAnalytics";
 
 function VendorRouter() {
   const { vendorUser } = useVendorAuth();
@@ -22,8 +24,8 @@ function VendorRouter() {
       <Route path="/vendor-admin-38291" component={VendorDashboard} />
       <Route path="/platform-control" component={VendorDashboard} />
       <Route path="/platform-control/accounts" component={VendorAccounts} />
-      <Route path="/platform-control/templates" component={() => <div>Templates coming soon</div>} />
-      <Route path="/platform-control/analytics" component={() => <div>Analytics coming soon</div>} />
+      <Route path="/platform-control/templates" component={VendorTemplates} />
+      <Route path="/platform-control/analytics" component={VendorAnalytics} />
       <Route component={VendorDashboard} />
     </Switch>
   );

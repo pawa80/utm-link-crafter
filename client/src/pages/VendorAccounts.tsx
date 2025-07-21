@@ -191,9 +191,9 @@ const VendorAccounts: React.FC = () => {
 
   if (accountsLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-white">
-          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-700">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
           Loading accounts...
         </div>
       </div>
@@ -201,23 +201,23 @@ const VendorAccounts: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               onClick={() => window.location.href = '/platform-control'}
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:text-white hover:bg-slate-700"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-white">Account Management</h1>
-              <p className="text-sm text-slate-400">Manage customer accounts and settings</p>
+              <h1 className="text-xl font-bold text-gray-900">Account Management</h1>
+              <p className="text-sm text-gray-600">Manage customer accounts and settings</p>
             </div>
           </div>
         </div>
@@ -225,15 +225,15 @@ const VendorAccounts: React.FC = () => {
 
       <div className="p-6 space-y-6">
         {/* Filters */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white">Filters</CardTitle>
+            <CardTitle className="text-gray-900">Filters</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-4">
             <div className="flex-1">
-              <Label className="text-slate-300">Status</Label>
+              <Label className="text-gray-700">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,9 +246,9 @@ const VendorAccounts: React.FC = () => {
               </Select>
             </div>
             <div className="flex-1">
-              <Label className="text-slate-300">Pricing Plan</Label>
+              <Label className="text-gray-700">Pricing Plan</Label>
               <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="All plans" />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,7 +267,7 @@ const VendorAccounts: React.FC = () => {
                 setPlanFilter('');
               }}
               variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 self-end"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 self-end"
             >
               Clear Filters
             </Button>
@@ -277,10 +277,10 @@ const VendorAccounts: React.FC = () => {
         {/* Accounts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {accounts?.map((account) => (
-            <Card key={account.account.id} className="bg-slate-800 border-slate-700">
+            <Card key={account.account.id} className="bg-white border-gray-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-gray-900 flex items-center gap-2">
                     <Building2 className="w-5 h-5" />
                     {account.account.name}
                   </CardTitle>
@@ -288,18 +288,18 @@ const VendorAccounts: React.FC = () => {
                     {getStatusIcon(account.account.accountStatus)}
                     <Badge 
                       variant="outline" 
-                      className={`border-slate-600 capitalize ${
-                        account.account.accountStatus === 'active' ? 'text-green-400' :
-                        account.account.accountStatus === 'trial' ? 'text-blue-400' :
-                        account.account.accountStatus === 'suspended' ? 'text-red-400' : 
-                        'text-slate-400'
+                      className={`border-gray-300 capitalize ${
+                        account.account.accountStatus === 'active' ? 'text-green-600' :
+                        account.account.accountStatus === 'trial' ? 'text-blue-600' :
+                        account.account.accountStatus === 'suspended' ? 'text-red-600' : 
+                        'text-gray-600'
                       }`}
                     >
                       {account.account.accountStatus}
                     </Badge>
                   </div>
                 </div>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-gray-600">
                   Plan: {account.plan?.planName || 'No Plan'} • 
                   Created: {new Date(account.account.createdAt).toLocaleDateString()}
                 </CardDescription>
@@ -307,25 +307,25 @@ const VendorAccounts: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="flex items-center justify-center gap-1 text-slate-400 mb-1">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
                       <Users className="w-4 h-4" />
                     </div>
-                    <div className="font-semibold text-white">{account.userCount}</div>
-                    <div className="text-xs text-slate-400">Users</div>
+                    <div className="font-semibold text-gray-900">{account.userCount}</div>
+                    <div className="text-xs text-gray-500">Users</div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-center gap-1 text-slate-400 mb-1">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
                       <Target className="w-4 h-4" />
                     </div>
-                    <div className="font-semibold text-white">{account.campaignCount}</div>
-                    <div className="text-xs text-slate-400">Campaigns</div>
+                    <div className="font-semibold text-gray-900">{account.campaignCount}</div>
+                    <div className="text-xs text-gray-500">Campaigns</div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-center gap-1 text-slate-400 mb-1">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
                       <Link className="w-4 h-4" />
                     </div>
-                    <div className="font-semibold text-white">{account.utmLinkCount}</div>
-                    <div className="text-xs text-slate-400">UTM Links</div>
+                    <div className="font-semibold text-gray-900">{account.utmLinkCount}</div>
+                    <div className="text-xs text-gray-500">UTM Links</div>
                   </div>
                 </div>
 
@@ -340,15 +340,15 @@ const VendorAccounts: React.FC = () => {
                         }}
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
                       >
                         Change Status
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogContent className="bg-white border-gray-200 text-gray-900">
                       <DialogHeader>
                         <DialogTitle>Change Account Status</DialogTitle>
-                        <DialogDescription className="text-slate-400">
+                        <DialogDescription className="text-gray-600">
                           Update the status for {selectedAccount?.account.name}
                         </DialogDescription>
                       </DialogHeader>
@@ -356,7 +356,7 @@ const VendorAccounts: React.FC = () => {
                         <div>
                           <Label>New Status</Label>
                           <Select value={newStatus} onValueChange={setNewStatus}>
-                            <SelectTrigger className="bg-slate-700 border-slate-600">
+                            <SelectTrigger className="bg-white border-gray-300">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -373,13 +373,13 @@ const VendorAccounts: React.FC = () => {
                             value={statusReason}
                             onChange={(e) => setStatusReason(e.target.value)}
                             placeholder="Reason for status change..."
-                            className="bg-slate-700 border-slate-600"
+                            className="bg-white border-gray-300"
                           />
                         </div>
                         <Button
                           onClick={handleStatusUpdate}
                           disabled={updateStatusMutation.isPending}
-                          className="w-full"
+                          className="w-full bg-blue-600 hover:bg-blue-700"
                         >
                           {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
                         </Button>
@@ -397,15 +397,15 @@ const VendorAccounts: React.FC = () => {
                         }}
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
                       >
                         Change Plan
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogContent className="bg-white border-gray-200 text-gray-900">
                       <DialogHeader>
                         <DialogTitle>Change Pricing Plan</DialogTitle>
-                        <DialogDescription className="text-slate-400">
+                        <DialogDescription className="text-gray-600">
                           Update the pricing plan for {selectedAccount?.account.name}
                         </DialogDescription>
                       </DialogHeader>
@@ -413,7 +413,7 @@ const VendorAccounts: React.FC = () => {
                         <div>
                           <Label>New Plan</Label>
                           <Select value={newPlanId} onValueChange={setNewPlanId}>
-                            <SelectTrigger className="bg-slate-700 border-slate-600">
+                            <SelectTrigger className="bg-white border-gray-300">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -428,7 +428,7 @@ const VendorAccounts: React.FC = () => {
                         <Button
                           onClick={handlePlanUpdate}
                           disabled={updatePlanMutation.isPending}
-                          className="w-full"
+                          className="w-full bg-blue-600 hover:bg-blue-700"
                         >
                           {updatePlanMutation.isPending ? 'Updating...' : 'Update Plan'}
                         </Button>
@@ -442,12 +442,12 @@ const VendorAccounts: React.FC = () => {
         </div>
 
         {accounts?.length === 0 && (
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
-                <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No accounts found</h3>
-                <p className="text-slate-400">Try adjusting your filters to see more results</p>
+                <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No accounts found</h3>
+                <p className="text-gray-600">Try adjusting your filters to see more results</p>
               </div>
             </CardContent>
           </Card>

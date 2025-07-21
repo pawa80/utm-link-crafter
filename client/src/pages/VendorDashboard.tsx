@@ -69,9 +69,9 @@ const VendorDashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-white">
-          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-700">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
           Loading platform data...
         </div>
       </div>
@@ -79,29 +79,29 @@ const VendorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Platform Control</h1>
-              <p className="text-sm text-slate-400">UTM Builder Administration</p>
+              <h1 className="text-xl font-bold text-gray-900">Platform Control</h1>
+              <p className="text-sm text-gray-600">UTM Builder Administration</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-white">{vendorUser?.fullName}</p>
-              <p className="text-xs text-slate-400 capitalize">{vendorUser?.role.replace('_', ' ')}</p>
+              <p className="text-sm font-medium text-gray-900">{vendorUser?.fullName}</p>
+              <p className="text-xs text-gray-600 capitalize">{vendorUser?.role.replace('_', ' ')}</p>
             </div>
             <Button
               onClick={logout}
               variant="outline"
               size="sm"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -113,62 +113,62 @@ const VendorDashboard: React.FC = () => {
       <div className="p-6 space-y-6">
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-300">Total Accounts</CardTitle>
-              <Building2 className="h-4 w-4 text-slate-400" />
+              <CardTitle className="text-sm font-medium text-gray-600">Total Accounts</CardTitle>
+              <Building2 className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{formatNumber(dashboardData?.totals.accounts || 0)}</div>
+              <div className="text-2xl font-bold text-gray-900">{formatNumber(dashboardData?.totals.accounts || 0)}</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-300">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-slate-400" />
+              <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{formatNumber(dashboardData?.totals.users || 0)}</div>
+              <div className="text-2xl font-bold text-gray-900">{formatNumber(dashboardData?.totals.users || 0)}</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-300">Total Campaigns</CardTitle>
-              <Target className="h-4 w-4 text-slate-400" />
+              <CardTitle className="text-sm font-medium text-gray-600">Total Campaigns</CardTitle>
+              <Target className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{formatNumber(dashboardData?.totals.campaigns || 0)}</div>
+              <div className="text-2xl font-bold text-gray-900">{formatNumber(dashboardData?.totals.campaigns || 0)}</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-300">Total UTM Links</CardTitle>
-              <Link className="h-4 w-4 text-slate-400" />
+              <CardTitle className="text-sm font-medium text-gray-600">Total UTM Links</CardTitle>
+              <Link className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{formatNumber(dashboardData?.totals.utmLinks || 0)}</div>
+              <div className="text-2xl font-bold text-gray-900">{formatNumber(dashboardData?.totals.utmLinks || 0)}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Account Status and Plan Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-white">Account Status Breakdown</CardTitle>
-              <CardDescription className="text-slate-400">Distribution of account statuses</CardDescription>
+              <CardTitle className="text-gray-900">Account Status Breakdown</CardTitle>
+              <CardDescription className="text-gray-600">Distribution of account statuses</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {dashboardData?.accountStatusBreakdown.map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(item.status)}`} />
-                    <span className="text-slate-300 capitalize">{item.status}</span>
+                    <span className="text-gray-700 capitalize">{item.status}</span>
                   </div>
-                  <Badge variant="outline" className="border-slate-600 text-slate-300">
+                  <Badge variant="outline" className="border-gray-300 text-gray-700">
                     {formatNumber(item.count)}
                   </Badge>
                 </div>
@@ -176,16 +176,16 @@ const VendorDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-white">Pricing Plan Distribution</CardTitle>
-              <CardDescription className="text-slate-400">Accounts by pricing plan</CardDescription>
+              <CardTitle className="text-gray-900">Pricing Plan Distribution</CardTitle>
+              <CardDescription className="text-gray-600">Accounts by pricing plan</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {dashboardData?.planBreakdown.map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-slate-300">{item.planName || 'No Plan'}</span>
-                  <Badge variant="outline" className="border-slate-600 text-slate-300">
+                  <span className="text-gray-700">{item.planName || 'No Plan'}</span>
+                  <Badge variant="outline" className="border-gray-300 text-gray-700">
                     {formatNumber(item.count)}
                   </Badge>
                 </div>
@@ -237,20 +237,20 @@ const VendorDashboard: React.FC = () => {
         </div>
 
         {/* Recent Accounts */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white">Recent Accounts</CardTitle>
-            <CardDescription className="text-slate-400">Latest account registrations</CardDescription>
+            <CardTitle className="text-gray-900">Recent Accounts</CardTitle>
+            <CardDescription className="text-gray-600">Latest account registrations</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {dashboardData?.recentAccounts.map((account) => (
-                <div key={account.id} className="flex items-center justify-between p-3 border border-slate-700 rounded-lg">
+                <div key={account.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(account.accountStatus)}`} />
                     <div>
-                      <p className="font-medium text-white">{account.name}</p>
-                      <p className="text-sm text-slate-400">
+                      <p className="font-medium text-gray-900">{account.name}</p>
+                      <p className="text-sm text-gray-600">
                         {account.userCount} user{account.userCount !== 1 ? 's' : ''} • 
                         {new Date(account.createdAt).toLocaleDateString()}
                       </p>
@@ -258,11 +258,11 @@ const VendorDashboard: React.FC = () => {
                   </div>
                   <Badge 
                     variant="outline" 
-                    className={`border-slate-600 capitalize ${
-                      account.accountStatus === 'active' ? 'text-green-400' :
-                      account.accountStatus === 'trial' ? 'text-blue-400' :
-                      account.accountStatus === 'suspended' ? 'text-red-400' : 
-                      'text-slate-400'
+                    className={`border-gray-300 capitalize ${
+                      account.accountStatus === 'active' ? 'text-green-600' :
+                      account.accountStatus === 'trial' ? 'text-blue-600' :
+                      account.accountStatus === 'suspended' ? 'text-red-600' : 
+                      'text-gray-600'
                     }`}
                   >
                     {account.accountStatus}
