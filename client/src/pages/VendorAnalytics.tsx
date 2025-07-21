@@ -27,6 +27,11 @@ interface AnalyticsData {
   usage_timeline: Array<{ date: string; count: number }>;
 }
 
+interface TimelineData {
+  date: string;
+  [key: string]: string | number;
+}
+
 const VendorAnalytics: React.FC = () => {
   const { token } = useVendorAuth();
   const [dateRange, setDateRange] = useState({
@@ -34,60 +39,95 @@ const VendorAnalytics: React.FC = () => {
     to: new Date()
   });
 
-  // Temporary mock data for demonstration until backend is implemented
-  const analyticsData: AnalyticsData = {
-    sources: [
-      { name: 'google', count: 125, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
-      { name: 'facebook', count: 98, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
-      { name: 'newsletter', count: 67, type: 'custom', lastUsed: '2025-01-19', createdAt: '2024-08-15' },
-      { name: 'youtube', count: 45, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
-      { name: 'email-signature', count: 32, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-09-10' }
-    ],
-    mediums: [
-      { name: 'cpc', count: 203, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
-      { name: 'social', count: 156, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
-      { name: 'email', count: 89, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
-      { name: 'newsletter', count: 67, type: 'custom', lastUsed: '2025-01-18', createdAt: '2024-08-20' },
-      { name: 'referral', count: 45, type: 'base', lastUsed: '2025-01-17', createdAt: '2024-07-01' }
-    ],
-    content: [
-      { name: 'banner-ad', count: 178, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
-      { name: 'text-ad', count: 134, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
-      { name: 'video-ad', count: 98, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
-      { name: 'cta-button', count: 67, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
-      { name: 'promo-2025', count: 43, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-12-01' }
-    ],
-    terms: [
-      { name: 'brand-keywords', count: 156, type: 'base', lastUsed: '2025-01-21', createdAt: '2024-07-01' },
-      { name: 'competitor-keywords', count: 89, type: 'base', lastUsed: '2025-01-20', createdAt: '2024-07-01' },
-      { name: 'product-keywords', count: 67, type: 'base', lastUsed: '2025-01-19', createdAt: '2024-07-01' },
-      { name: 'variant-a', count: 45, type: 'base', lastUsed: '2025-01-18', createdAt: '2024-07-01' },
-      { name: 'retargeting', count: 32, type: 'custom', lastUsed: '2025-01-17', createdAt: '2024-09-15' }
-    ],
-    usage_timeline: [
-      { date: '2025-01-15', count: 23 },
-      { date: '2025-01-16', count: 31 },
-      { date: '2025-01-17', count: 28 },
-      { date: '2025-01-18', count: 45 },
-      { date: '2025-01-19', count: 52 },
-      { date: '2025-01-20', count: 38 },
-      { date: '2025-01-21', count: 67 }
-    ]
+  // Generate dynamic mock data based on date range
+  const generateMockData = () => {
+    const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+    const dates = [];
+    
+    // Generate dates for the selected range
+    for (let i = 0; i <= daysDiff; i++) {
+      const date = new Date(dateRange.from);
+      date.setDate(date.getDate() + i);
+      dates.push(format(date, 'yyyy-MM-dd'));
+    }
+
+    // Generate last used dates within the range
+    const getRandomDateInRange = () => {
+      const randomTime = dateRange.from.getTime() + Math.random() * (dateRange.to.getTime() - dateRange.from.getTime());
+      return format(new Date(randomTime), 'yyyy-MM-dd');
+    };
+
+    return {
+      sources: [
+        { name: 'google', count: 125, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'facebook', count: 98, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'newsletter', count: 67, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-08-15' },
+        { name: 'youtube', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'email-signature', count: 32, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-09-10' }
+      ],
+      mediums: [
+        { name: 'cpc', count: 203, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'social', count: 156, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'email', count: 89, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'newsletter', count: 67, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-08-20' },
+        { name: 'referral', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' }
+      ],
+      content: [
+        { name: 'banner-ad', count: 178, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'text-ad', count: 134, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'video-ad', count: 98, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'cta-button', count: 67, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'promo-2025', count: 43, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-12-01' }
+      ],
+      terms: [
+        { name: 'brand-keywords', count: 156, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'competitor-keywords', count: 89, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'product-keywords', count: 67, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'variant-a', count: 45, type: 'base' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-07-01' },
+        { name: 'retargeting', count: 32, type: 'custom' as const, lastUsed: getRandomDateInRange(), createdAt: '2024-09-15' }
+      ],
+      usage_timeline: dates.map(date => ({
+        date,
+        count: Math.floor(Math.random() * 50) + 10
+      }))
+    };
   };
 
+  const analyticsData = generateMockData();
   const isLoading = false;
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
   };
 
+  const generateTimelineData = (elements: ElementData[]) => {
+    const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+    const dates = [];
+    
+    // Generate dates for the selected range
+    for (let i = 0; i <= daysDiff; i++) {
+      const date = new Date(dateRange.from);
+      date.setDate(date.getDate() + i);
+      dates.push(format(date, 'MMM dd'));
+    }
+
+    const top5Elements = elements.slice(0, 5);
+    
+    return dates.map(date => {
+      const dataPoint: TimelineData = { date };
+      top5Elements.forEach(element => {
+        dataPoint[element.name] = Math.floor(Math.random() * element.count * 0.1) + 1;
+      });
+      return dataPoint;
+    });
+  };
+
   const renderElementTable = (data: ElementData[], title: string, color: string) => {
     const safeData = data || [];
-    const top5 = safeData.slice(0, 5);
-    const chartData = top5.map(item => ({
-      name: item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name,
-      count: item.count
-    }));
+    const timelineData = generateTimelineData(safeData);
+    const top5Elements = safeData.slice(0, 5);
+
+    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,21 +170,36 @@ const VendorAnalytics: React.FC = () => {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-900 mb-4">Top 5 Usage Chart</h4>
+            <h4 className="font-semibold text-gray-900 mb-4">Top 5 Usage Timeline</h4>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData}>
+              <LineChart data={timelineData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" fontSize={12} />
+                <XAxis dataKey="date" fontSize={10} />
                 <YAxis fontSize={12} />
                 <Tooltip />
-                <Bar dataKey="count" fill={
-                  color === 'blue' ? '#3b82f6' :
-                  color === 'purple' ? '#8b5cf6' :
-                  color === 'green' ? '#10b981' :
-                  '#f59e0b'
-                } />
-              </BarChart>
+                {top5Elements.map((element, index) => (
+                  <Line 
+                    key={element.name}
+                    type="monotone" 
+                    dataKey={element.name} 
+                    stroke={colors[index]} 
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                ))}
+              </LineChart>
             </ResponsiveContainer>
+            <div className="mt-2 space-y-1">
+              {top5Elements.map((element, index) => (
+                <div key={element.name} className="flex items-center gap-2 text-xs">
+                  <div 
+                    className="w-3 h-3 rounded" 
+                    style={{ backgroundColor: colors[index] }}
+                  />
+                  <span className="truncate">{element.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
