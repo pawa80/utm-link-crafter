@@ -11,7 +11,19 @@ import VendorTemplates from "@/pages/VendorTemplates";
 import VendorAnalytics from "@/pages/VendorAnalytics";
 
 function VendorRouter() {
-  const { vendorUser } = useVendorAuth();
+  const { vendorUser, isInitializing } = useVendorAuth();
+
+  // Show loading spinner while checking authentication
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-700">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+          Loading platform...
+        </div>
+      </div>
+    );
+  }
 
   // Show login page if not authenticated
   if (!vendorUser) {

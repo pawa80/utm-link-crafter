@@ -104,7 +104,7 @@ const VendorTemplates: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
-              onClick={() => window.location.href = '/platform-control'}
+              onClick={() => window.location.replace('/platform-control')}
               variant="ghost"
               size="sm"
               className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"

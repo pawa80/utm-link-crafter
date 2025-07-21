@@ -197,7 +197,7 @@ const VendorDashboard: React.FC = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button
-            onClick={() => window.location.href = '/platform-control/accounts'}
+            onClick={() => window.location.replace('/platform-control/accounts')}
             className="h-16 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
           >
             <div className="flex items-center gap-3">
@@ -210,7 +210,7 @@ const VendorDashboard: React.FC = () => {
           </Button>
 
           <Button
-            onClick={() => window.location.href = '/platform-control/templates'}
+            onClick={() => window.location.replace('/platform-control/templates')}
             className="h-16 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
           >
             <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ const VendorDashboard: React.FC = () => {
           </Button>
 
           <Button
-            onClick={() => window.location.href = '/platform-control/analytics'}
+            onClick={() => window.location.replace('/platform-control/analytics')}
             className="h-16 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
           >
             <div className="flex items-center gap-3">

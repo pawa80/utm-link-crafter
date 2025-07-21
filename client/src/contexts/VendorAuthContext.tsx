@@ -13,6 +13,7 @@ interface VendorAuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoading: boolean;
+  isInitializing: boolean;
 }
 
 const VendorAuthContext = createContext<VendorAuthContextType | undefined>(undefined);
@@ -29,11 +30,14 @@ export const VendorAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [vendorUser, setVendorUser] = useState<VendorUser | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('vendor_token'));
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     // Verify token on load
     if (token) {
       verifyToken();
+    } else {
+      setIsInitializing(false);
     }
   }, [token]);
 
@@ -60,6 +64,8 @@ export const VendorAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.removeItem('vendor_token');
       setToken(null);
       setVendorUser(null);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -112,7 +118,7 @@ export const VendorAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   return (
-    <VendorAuthContext.Provider value={{ vendorUser, token, login, logout, isLoading }}>
+    <VendorAuthContext.Provider value={{ vendorUser, token, login, logout, isLoading, isInitializing }}>
       {children}
     </VendorAuthContext.Provider>
   );
