@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,8 +14,16 @@ import AccountManagement from "@/pages/AccountManagement";
 import AcceptInvitation from "@/pages/AcceptInvitation";
 import ChatWizardPage from "@/pages/ChatWizardPage";
 import NotFound from "@/pages/NotFound";
+import VendorApp from "./VendorApp";
 
 function Router() {
+  const [location] = useLocation();
+  
+  // Route vendor paths to VendorApp (obfuscated admin path)
+  if (location.startsWith('/platform-control') || location === '/vendor-admin-38291') {
+    return <VendorApp />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={HomePage} />

@@ -2,15 +2,72 @@ import { pgTable, text, serial, timestamp, boolean, integer, json } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Vendor User System - Platform Administration
+export const vendorUsers = pgTable("vendor_users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("vendor_admin"), // vendor_admin, vendor_super_admin
+  isActive: boolean("is_active").default(true),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const vendorSessions = pgTable("vendor_sessions", {
+  id: serial("id").primaryKey(),
+  vendorUserId: integer("vendor_user_id").references(() => vendorUsers.id).notNull(),
+  sessionToken: text("session_token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Pricing Plans for Dynamic Plan Management
+export const pricingPlans = pgTable("pricing_plans", {
+  id: serial("id").primaryKey(),
+  planCode: text("plan_code").notNull().unique(),
+  planName: text("plan_name").notNull(),
+  description: text("description"),
+  monthlyPriceCents: integer("monthly_price_cents").notNull(),
+  annualPriceCents: integer("annual_price_cents"),
+  trialDays: integer("trial_days").default(14),
+  maxCampaigns: integer("max_campaigns"), // null = unlimited
+  maxUsers: integer("max_users"),
+  maxUtmLinks: integer("max_utm_links"), // null = unlimited
+  features: json("features").notNull().default({}), // Feature flags
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Account management tables for multi-user support
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   subscriptionTier: text("subscription_tier").notNull().default("trial"), // trial, basic, pro, enterprise
+  pricingPlanId: integer("pricing_plan_id").references(() => pricingPlans.id),
+  accountStatus: text("account_status").notNull().default("active"), // active, suspended, cancelled, trial
+  statusReason: text("status_reason"),
+  statusChangedAt: timestamp("status_changed_at"),
+  statusChangedBy: integer("status_changed_by").references(() => vendorUsers.id),
   trialEndDate: timestamp("trial_end_date"),
   featureFlags: json("feature_flags").default({}), // JSON object for feature toggles
   usageLimits: json("usage_limits").default({}), // JSON object for usage limits
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Account Status History for Audit Trail
+export const accountStatusHistory = pgTable("account_status_history", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => accounts.id).notNull(),
+  oldStatus: text("old_status"),
+  newStatus: text("new_status").notNull(),
+  reason: text("reason"),
+  changedBy: integer("changed_by").references(() => vendorUsers.id).notNull(),
+  changedAt: timestamp("changed_at").defaultNow(),
 });
 
 // REMOVED: userAccounts table - users now belong to ONE account only
@@ -66,6 +123,7 @@ export const sourceTemplates = pgTable("source_templates", {
   abTestingPreference: integer("ab_testing_preference").default(1), // 1: No, 2: A-B, 3: A-B-C
   isArchived: boolean("is_archived").default(false),
   archivedMediums: text("archived_mediums").array().default([]), // List of archived mediums for this source
+  vendorManaged: boolean("vendor_managed").default(false), // true for base templates copied to users
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -88,7 +146,7 @@ export const campaignLandingPages = pgTable("campaign_landing_pages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Base templates managed by developers/admins
+// Base templates managed by vendor users
 export const baseUtmTemplates = pgTable("base_utm_templates", {
   id: serial("id").primaryKey(),
   utmSource: text("utm_source").notNull(),
@@ -96,6 +154,7 @@ export const baseUtmTemplates = pgTable("base_utm_templates", {
   utmContent: text("utm_content").notNull(),
   description: text("description"),
   isActive: boolean("is_active").default(true),
+  vendorManaged: boolean("vendor_managed").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -119,6 +178,7 @@ export const baseTermTemplates = pgTable("base_term_templates", {
   termValue: text("term_value").notNull(),
   description: text("description"), // Optional description for the term
   category: text("category").default("general"), // general, keywords, testing, audience
+  vendorManaged: boolean("vendor_managed").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -249,6 +309,51 @@ export type InsertBaseTermTemplate = z.infer<typeof insertBaseTermTemplateSchema
 export type BaseTermTemplate = typeof baseTermTemplates.$inferSelect;
 export type InsertUserTermTemplate = z.infer<typeof insertUserTermTemplateSchema>;
 export type UserTermTemplate = typeof userTermTemplates.$inferSelect;
+
+// Vendor System Schema Definitions
+export const insertVendorUserSchema = createInsertSchema(vendorUsers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertVendorSessionSchema = createInsertSchema(vendorSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAccountStatusHistorySchema = createInsertSchema(accountStatusHistory).omit({
+  id: true,
+  changedAt: true,
+});
+
+// Updated account schema with new fields
+export const updateAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+}).partial();
+
+// Vendor and Account Status enums for validation
+export const vendorRoleSchema = z.enum(["vendor_admin", "vendor_super_admin"]);
+export const accountStatusSchema = z.enum(["active", "suspended", "cancelled", "trial"]);
+
+// Vendor System Types
+export type InsertVendorUser = z.infer<typeof insertVendorUserSchema>;
+export type VendorUser = typeof vendorUsers.$inferSelect;
+export type InsertVendorSession = z.infer<typeof insertVendorSessionSchema>;
+export type VendorSession = typeof vendorSessions.$inferSelect;
+export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertAccountStatusHistory = z.infer<typeof insertAccountStatusHistorySchema>;
+export type AccountStatusHistory = typeof accountStatusHistory.$inferSelect;
+export type VendorRole = z.infer<typeof vendorRoleSchema>;
+export type AccountStatus = z.infer<typeof accountStatusSchema>;
+export type UpdateAccount = z.infer<typeof updateAccountSchema>;
 
 // New account management types
 export type InsertAccount = z.infer<typeof insertAccountSchema>;

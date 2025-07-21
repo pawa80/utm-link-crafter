@@ -1,0 +1,268 @@
+Vendor User Role & App Administration Panel Implementation
+Implementation Overview
+Based on UTM Builder's current architecture, you need to create a Vendor User role that sits above all customer accounts with global administrative privileges. This is essentially a "super-admin of super-admins" role for you and Pål Erik to manage the entire platform.
+Detailed Replit Implementation Prompt
+
+text
+# UTM Builder - Vendor User Role & App Administration Panel
+## CONTEXT
+Create a Vendor User role with platform-wide administrative access, sitting above the existing account structure. This role will manage base templates, pricing plans, account statuses, and global app settings. Vendor Users operate at the platform level, not within individual customer accounts.
+## DATABASE SCHEMA UPDATES
+### 1. Vendor User System
+-- Create vendor_users table (separate from regular users)  CREATE TABLE vendor_users (  id SERIAL PRIMARY KEY,  email VARCHAR(255) UNIQUE NOT NULL,  password_hash VARCHAR(255) NOT NULL,  full_name VARCHAR(255) NOT NULL,  role VARCHAR(50) DEFAULT 'vendor_admin',  is_active BOOLEAN DEFAULT TRUE,  last_login TIMESTAMP,  created_at TIMESTAMP DEFAULT NOW(),  updated_at TIMESTAMP DEFAULT NOW()  );
+-- Create vendor sessions table  CREATE TABLE vendor_sessions (  id SERIAL PRIMARY KEY,  vendor_user_id INTEGER REFERENCES vendor_users(id),  session_token VARCHAR(255) UNIQUE NOT NULL,  expires_at TIMESTAMP NOT NULL,  ip_address INET,  user_agent TEXT,  created_at TIMESTAMP DEFAULT NOW()  );
+-- Add vendor_managed flag to base templates  ALTER TABLE content_templates ADD COLUMN vendor_managed BOOLEAN DEFAULT FALSE;  ALTER TABLE source_templates ADD COLUMN vendor_managed BOOLEAN DEFAULT FALSE;  ALTER TABLE medium_templates ADD COLUMN vendor_managed BOOLEAN DEFAULT FALSE;  ALTER TABLE term_templates ADD COLUMN vendor_managed BOOLEAN DEFAULT FALSE;
+-- Update existing base templates to be vendor managed  UPDATE content_templates SET vendor_managed = TRUE WHERE is_base_template = TRUE;  UPDATE source_templates SET vendor_managed = TRUE WHERE is_base_template = TRUE;  UPDATE medium_templates SET vendor_managed = TRUE WHERE is_base_template = TRUE;  UPDATE term_templates SET vendor_managed = TRUE WHERE is_base_template = TRUE;
+
+text
+### 2. Dynamic Pricing Configuration
+-- Create pricing_plans table for dynamic plan management  CREATE TABLE pricing_plans (  id SERIAL PRIMARY KEY,  plan_code VARCHAR(50) UNIQUE NOT NULL,  plan_name VARCHAR(100) NOT NULL,  description TEXT,  monthly_price_cents INTEGER NOT NULL,  annual_price_cents INTEGER,  trial_days INTEGER DEFAULT 14,  max_campaigns INTEGER,  max_users INTEGER,  max_utm_links INTEGER,  features JSONB NOT NULL DEFAULT '{}',  is_active BOOLEAN DEFAULT TRUE,  sort_order INTEGER DEFAULT 0,  created_at TIMESTAMP DEFAULT NOW(),  updated_at TIMESTAMP DEFAULT NOW()  );
+-- Insert default pricing plans  INSERT INTO pricing_plans (plan_code, plan_name, monthly_price_cents, max_campaigns, max_users, max_utm_links, features) VALUES  ('free_trial', 'Free Trial', 0, 10, 1, 50, '{"chat_wizard": false, "api_access": false, "white_label": false, "priority_support": false}'),  ('starter', 'Starter', 2900, 100, 3, 1000, '{"chat_wizard": true, "api_access": false, "white_label": false, "priority_support": false}'),  ('professional', 'Professional', 7900, -1, 10, -1, '{"chat_wizard": true, "api_access": false, "white_label": false, "priority_support": true}'),  ('agency', 'Agency', 14900, -1, 25, -1, '{"chat_wizard": true, "api_access": true, "white_label": true, "priority_support": true}');
+-- Add pricing_plan_id to accounts table  ALTER TABLE accounts ADD COLUMN pricing_plan_id INTEGER REFERENCES pricing_plans(id);  UPDATE accounts SET pricing_plan_id = (SELECT id FROM pricing_plans WHERE plan_code = 'professional' LIMIT 1);
+
+text
+### 3. Account Status Management
+-- Add account status tracking  ALTER TABLE accounts ADD COLUMN account_status VARCHAR(50) DEFAULT 'active';  ALTER TABLE accounts ADD COLUMN status_reason TEXT;  ALTER TABLE accounts ADD COLUMN status_changed_at TIMESTAMP;  ALTER TABLE accounts ADD COLUMN status_changed_by INTEGER REFERENCES vendor_users(id);
+-- Create account_status_history table  CREATE TABLE account_status_history (  id SERIAL PRIMARY KEY,  account_id INTEGER REFERENCES accounts(id),  old_status VARCHAR(50),  new_status VARCHAR(50),  reason TEXT,  changed_by INTEGER REFERENCES vendor_users(id),  changed_at TIMESTAMP DEFAULT NOW()  );
+
+text
+## AUTHENTICATION SYSTEM
+### 4. Vendor User Authentication (Separate from Customer Auth)
+// Vendor authentication endpoints (separate from Firebase)  // POST /vendor/auth/login  // POST /vendor/auth/logout  // POST /vendor/auth/refresh  // GET /vendor/auth/verify
+// Implement separate authentication middleware for vendor routes  const authenticateVendor = async (req, res, next) => {  const token = req.headers.authorization?.replace('Bearer ', '');
+
+text
+if (!token) {
+    return res.status(401).json({ error: 'Vendor authentication required' });
+}
+try {
+    const session = await db.query(
+        'SELECT vs.*, vu.* FROM vendor_sessions vs JOIN vendor_users vu ON vs.vendor_user_id = vu.id WHERE vs.session_token = $1 AND vs.expires_at > NOW() AND vu.is_active = TRUE',
+        [token]
+    );
+    if (session.rows.length === 0) {
+        return res.status(401).json({ error: 'Invalid or expired vendor session' });
+    }
+    req.vendorUser = session.rows;
+    next();
+} catch (error) {
+    return res.status(401).json({ error: 'Vendor authentication failed' });
+}
+};
+
+text
+## VENDOR ADMIN PANEL FRONTEND
+### 5. App Administration Panel Routes & Components
+// Create vendor admin routes (separate from main app)  // /vendor/login - Vendor login page  // /vendor/dashboard - Main admin dashboard  // /vendor/accounts - Account management  // /vendor/templates - Base template management  // /vendor/pricing - Pricing plan management  // /vendor/analytics - Platform analytics
+// Vendor Admin Layout Component  const VendorAdminLayout = ({ children }) => {  return (  <div className="vendor-admin-layout">  <VendorSidebar />  <div className="vendor-main-content">  <VendorHeader />  {children}  </div>  </div>  );  };
+// Vendor Navigation Sidebar  const VendorSidebar = () => {  return (  <nav className="vendor-sidebar">  <div className="vendor-logo">UTM Builder Admin</div>  <ul className="vendor-nav">  <li><Link to="/vendor/dashboard">Dashboard</Link></li>  <li><Link to="/vendor/accounts">Account Management</Link></li>  <li><Link to="/vendor/templates">Base Templates</Link></li>  <li><Link to="/vendor/pricing">Pricing Plans</Link></li>  <li><Link to="/vendor/analytics">Platform Analytics</Link></li>  <li><Link to="/vendor/settings">System Settings</Link></li>  </ul>  </nav>  );  };
+
+text
+### 6. Account Management Interface
+// Account Management Page Features:  const AccountManagementPage = () => {  return (  <div className="vendor-account-management">  <PageHeader title="Account Management" />
+
+text
+        {/* Account Search & Filters */}
+        <div className="account-filters">
+            <SearchInput placeholder="Search accounts..." />
+            <Select placeholder="Filter by status">
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="trial">Trial</option>
+                <option value="cancelled">Cancelled</option>
+            </Select>
+            <Select placeholder="Filter by plan">
+                <option value="starter">Starter</option>
+                <option value="professional">Professional</option>
+                <option value="agency">Agency</option>
+            </Select>
+        </div>
+        {/* Accounts Table */}
+        <AccountsTable 
+            accounts={accounts}
+            onStatusChange={handleStatusChange}
+            onPlanChange={handlePlanChange}
+            onViewAccount={handleViewAccount}
+        />
+    </div>
+);
+};
+// Account Actions Modal  const AccountActionsModal = ({ account, onClose }) => {  return (  <Modal onClose={onClose}>  <div className="account-actions">  <h3>Account Actions: {account.name}</h3>
+
+text
+            {/* Change Account Status */}
+            <div className="action-section">
+                <label>Account Status</label>
+                <Select value={account.status} onChange={handleStatusChange}>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="cancelled">Cancelled</option>
+                </Select>
+                <TextArea placeholder="Reason for status change..." />
+            </div>
+            {/* Change Pricing Plan */}
+            <div className="action-section">
+                <label>Pricing Plan</label>
+                <Select value={account.plan_id} onChange={handlePlanChange}>
+                    {pricingPlans.map(plan => (
+                        <option key={plan.id} value={plan.id}>{plan.name}</option>
+                    ))}
+                </Select>
+            </div>
+            {/* Account Impersonation */}
+            <div className="action-section">
+                <Button onClick={() => impersonateAccount(account.id)}>
+                    Login as Account Admin
+                </Button>
+            </div>
+        </div>
+    </Modal>
+);
+};
+
+text
+### 7. Base Template Management Interface
+const BaseTemplateManagement = () => {  return (  <div className="vendor-template-management">  <PageHeader title="Base Template Management" />
+
+text
+        <Tabs>
+            <Tab label="Source Templates">
+                <TemplateSection 
+                    templates={sourceTemplates}
+                    type="source"
+                    onAdd={handleAddTemplate}
+                    onEdit={handleEditTemplate}
+                    onDelete={handleDeleteTemplate}
+                />
+            </Tab>
+            <Tab label="Medium Templates">
+                <TemplateSection 
+                    templates={mediumTemplates}
+                    type="medium"
+                    onAdd={handleAddTemplate}
+                    onEdit={handleEditTemplate}
+                    onDelete={handleDeleteTemplate}
+                />
+            </Tab>
+            <Tab label="Content Templates">
+                <TemplateSection 
+                    templates={contentTemplates}
+                    type="content"
+                    onAdd={handleAddTemplate}
+                    onEdit={handleEditTemplate}
+                    onDelete={handleDeleteTemplate}
+                />
+            </Tab>
+            <Tab label="Term Templates">
+                <TemplateSection 
+                    templates={termTemplates}
+                    type="term"
+                    onAdd={handleAddTemplate}
+                    onEdit={handleEditTemplate}
+                    onDelete={handleDeleteTemplate}
+                />
+            </Tab>
+        </Tabs>
+    </div>
+);
+};
+
+text
+### 8. Pricing Plan Management Interface
+const PricingPlanManagement = () => {  return (  <div className="vendor-pricing-management">  <PageHeader  title="Pricing Plan Management"  action={<Button onClick={handleCreatePlan}>Create New Plan</Button>}  />
+
+text
+        <div className="pricing-plans-grid">
+            {pricingPlans.map(plan => (
+                <PricingPlanCard 
+                    key={plan.id}
+                    plan={plan}
+                    onEdit={handleEditPlan}
+                    onToggleActive={handleToggleActive}
+                    onDelete={handleDeletePlan}
+                />
+            ))}
+        </div>
+    </div>
+);
+};
+const PricingPlanEditor = ({ plan, onSave, onCancel }) => {  return (  <div className="pricing-plan-editor">  <div className="editor-section">  <label>Plan Details</label>  <Input label="Plan Name" value={plan.name} onChange={handleNameChange} />  <TextArea label="Description" value={plan.description} />  <Input type="number" label="Monthly Price (cents)" value={plan.monthly_price_cents} />  <Input type="number" label="Trial Days" value={plan.trial_days} />  </div>
+
+text
+        <div className="editor-section">
+            <label>Usage Limits</label>
+            <Input type="number" label="Max Campaigns (-1 for unlimited)" value={plan.max_campaigns} />
+            <Input type="number" label="Max Users" value={plan.max_users} />
+            <Input type="number" label="Max UTM Links (-1 for unlimited)" value={plan.max_utm_links} />
+        </div>
+        <div className="editor-section">
+            <label>Feature Access</label>
+            <CheckboxGroup value={plan.features}>
+                <Checkbox name="chat_wizard" label="Chat Wizard" />
+                <Checkbox name="api_access" label="API Access" />
+                <Checkbox name="white_label" label="White Label Reports" />
+                <Checkbox name="priority_support" label="Priority Support" />
+                <Checkbox name="advanced_analytics" label="Advanced Analytics" />
+            </CheckboxGroup>
+        </div>
+    </div>
+);
+};
+
+text
+## VENDOR API ENDPOINTS
+### 9. Vendor Admin API Routes
+// Account Management Endpoints  app.get('/vendor/api/accounts', authenticateVendor, getAccounts);  app.put('/vendor/api/accounts/:id/status', authenticateVendor, updateAccountStatus);  app.put('/vendor/api/accounts/:id/plan', authenticateVendor, updateAccountPlan);  app.post('/vendor/api/accounts/:id/impersonate', authenticateVendor, impersonateAccount);
+// Template Management Endpoints  app.get('/vendor/api/templates/:type', authenticateVendor, getBaseTemplates);  app.post('/vendor/api/templates/:type', authenticateVendor, createBaseTemplate);  app.put('/vendor/api/templates/:type/:id', authenticateVendor, updateBaseTemplate);  app.delete('/vendor/api/templates/:type/:id', authenticateVendor, deleteBaseTemplate);
+// Pricing Plan Management Endpoints  app.get('/vendor/api/pricing-plans', authenticateVendor, getPricingPlans);  app.post('/vendor/api/pricing-plans', authenticateVendor, createPricingPlan);  app.put('/vendor/api/pricing-plans/:id', authenticateVendor, updatePricingPlan);  app.delete('/vendor/api/pricing-plans/:id', authenticateVendor, deletePricingPlan);
+// Platform Analytics Endpoints  app.get('/vendor/api/analytics/overview', authenticateVendor, getPlatformOverview);  app.get('/vendor/api/analytics/revenue', authenticateVendor, getRevenueAnalytics);  app.get('/vendor/api/analytics/usage', authenticateVendor, getUsageAnalytics);
+
+text
+### 10. Security & Access Control Implementation
+// Implement IP whitelisting for vendor access  const ALLOWED_VENDOR_IPS = process.env.VENDOR_ALLOWED_IPS?.split(',') || [];
+const vendorIPWhitelist = (req, res, next) => {  if (ALLOWED_VENDOR_IPS.length > 0) {  const clientIP = req.ip || req.connection.remoteAddress;  if (!ALLOWED_VENDOR_IPS.includes(clientIP)) {  return res.status(403).json({ error: 'Access denied from this IP address' });  }  }  next();  };
+// Apply IP whitelist to all vendor routes  app.use('/vendor', vendorIPWhitelist);
+// Audit logging for all vendor actions  const auditVendorAction = async (vendorUserId, action, details) => {  await db.query(  'INSERT INTO vendor_audit_log (vendor_user_id, action, details, ip_address, timestamp) VALUES ($1, $2, $3, $4, NOW())',  [vendorUserId, action, JSON.stringify(details), req.ip]  );  };
+
+text
+## TESTING & SECURITY REQUIREMENTS
+### 11. Implementation Checklist
+- [ ] Vendor user authentication completely separate from customer auth
+- [ ] All vendor routes protected with authentication and IP whitelist
+- [ ] Base template changes propagate to all customer accounts correctly
+- [ ] Pricing plan changes affect customer feature access immediately
+- [ ] Account status changes prevent/allow appropriate access
+- [ ] Vendor admin panel is responsive and user-friendly
+- [ ] All vendor actions are audit logged
+- [ ] Account impersonation works without compromising security
+- [ ] Vendor users cannot accidentally access customer data
+- [ ] Platform analytics provide meaningful business insights
+### 12. Security Considerations
+- Use strong password requirements for vendor users
+- Implement 2FA for vendor authentication (future enhancement)
+- Session timeout after 8 hours of inactivity
+- All vendor actions logged with timestamp and IP
+- Separate database connection pool for vendor operations
+- Rate limiting on vendor API endpoints
+- Regular security audits of vendor access patterns
+## SUCCESS CRITERIA
+- You and Pål Erik can manage all aspects of UTM Builder platform
+- Account status changes take effect immediately across the application  
+- Pricing plan modifications update customer feature access in real-time
+- Base template changes are available to all customers instantly
+- Comprehensive audit trail of all administrative actions
+- Platform analytics provide insights for business decision making
+Implementation Priority
+Day 1: Database & Authentication
+Vendor user tables and authentication system
+Pricing plans table and dynamic configuration
+Account status management system
+Day 2: Core Admin Features
+Account management interface
+Pricing plan editor
+Base template management
+Day 3: Analytics & Security
+Platform analytics dashboard
+Audit logging system
+Security hardening and testing
+This implementation gives you complete administrative control over UTM Builder while maintaining clear separation between vendor operations and customer data.

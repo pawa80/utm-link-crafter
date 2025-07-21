@@ -6,6 +6,8 @@ import { requirePermission, requireAccountAccess, hasPermission, canManageUser, 
 import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "@shared/validation";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
+import vendorRoutes from "./vendorRoutes";
+import { setupVendorSystem, assignDefaultPricingPlans } from "./setupVendorSystem";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
   const firebaseUid = req.headers['x-firebase-uid'];
@@ -36,6 +38,10 @@ const authMiddleware = async (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Seed UTM templates on startup
   await seedUtmTemplates();
+  
+  // Setup vendor system (admin user, pricing plans)
+  await setupVendorSystem();
+  await assignDefaultPricingPlans();
   
   // Create or get user
   app.post("/api/users", async (req, res) => {
@@ -1292,6 +1298,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
+
+  // Mount vendor routes under /vendor-api (not easily guessable)
+  app.use('/vendor-api', vendorRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
