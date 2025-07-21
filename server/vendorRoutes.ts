@@ -73,18 +73,17 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
     const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
-    // Get UTM sources usage with proper base/custom classification
+    // Get UTM sources usage with proper base/custom classification from account templates
     const sourcesData = await db
       .select({
         name: utmLinks.utm_source,
         count: count(utmLinks.id),
-        type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (
-            SELECT 1 FROM ${baseUtmTemplates} 
-            WHERE ${baseUtmTemplates.utmSource} = ${utmLinks.utm_source}
-          ) THEN 'base'::text 
-          ELSE 'custom'::text 
-        END`,
+        type: sql<'base' | 'custom'>`COALESCE(
+          (SELECT LOWER(${sourceTemplates.type}) FROM ${sourceTemplates} 
+           WHERE ${sourceTemplates.sourceName} = ${utmLinks.utm_source} 
+           LIMIT 1), 
+          'custom'
+        )::text`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
         createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
@@ -97,18 +96,17 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .groupBy(utmLinks.utm_source)
       .orderBy(desc(count(utmLinks.id)));
 
-    // Get UTM mediums usage with proper base/custom classification
+    // Get UTM mediums usage with proper base/custom classification from account templates
     const mediumsData = await db
       .select({
         name: utmLinks.utm_medium,
         count: count(utmLinks.id),
-        type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (
-            SELECT 1 FROM ${baseUtmTemplates} 
-            WHERE ${baseUtmTemplates.utmMedium} = ${utmLinks.utm_medium}
-          ) THEN 'base'::text 
-          ELSE 'custom'::text 
-        END`,
+        type: sql<'base' | 'custom'>`COALESCE(
+          (SELECT LOWER(${userUtmTemplates.type}) FROM ${userUtmTemplates} 
+           WHERE ${userUtmTemplates.utmMedium} = ${utmLinks.utm_medium} 
+           LIMIT 1), 
+          'custom'
+        )::text`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
         createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
@@ -121,18 +119,17 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       .groupBy(utmLinks.utm_medium)
       .orderBy(desc(count(utmLinks.id)));
 
-    // Get UTM content usage with proper base/custom classification
+    // Get UTM content usage with proper base/custom classification from account templates
     const contentData = await db
       .select({
         name: utmLinks.utm_content,
         count: count(utmLinks.id),
-        type: sql<'base' | 'custom'>`CASE 
-          WHEN EXISTS (
-            SELECT 1 FROM ${baseUtmTemplates} 
-            WHERE ${baseUtmTemplates.utmContent} = ${utmLinks.utm_content}
-          ) THEN 'base'::text 
-          ELSE 'custom'::text 
-        END`,
+        type: sql<'base' | 'custom'>`COALESCE(
+          (SELECT LOWER(${userUtmTemplates.type}) FROM ${userUtmTemplates} 
+           WHERE ${userUtmTemplates.utmContent} = ${utmLinks.utm_content} 
+           LIMIT 1), 
+          'custom'
+        )::text`,
         lastUsed: sql<string>`MAX(${utmLinks.createdAt})`,
         createdAt: sql<string>`MIN(${utmLinks.createdAt})`
       })
@@ -150,7 +147,7 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
     const allTermTemplates = await db
       .select({
         termValue: userTermTemplates.termValue,
-        isCustom: userTermTemplates.isCustom,
+        type: userTermTemplates.type,
         createdAt: userTermTemplates.createdAt
       })
       .from(userTermTemplates)
@@ -177,7 +174,7 @@ router.get('/analytics/dashboard', authenticateVendor, async (req: Request, res:
       return {
         name: template.termValue,
         count: usage?.count || 0,
-        type: template.isCustom ? 'custom' as const : 'base' as const,
+        type: template.type?.toLowerCase() as 'base' | 'custom' || 'custom',
         lastUsed: usage?.lastUsed || null,
         createdAt: template.createdAt.toISOString()
       };

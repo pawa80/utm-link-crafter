@@ -124,6 +124,7 @@ export const sourceTemplates = pgTable("source_templates", {
   isArchived: boolean("is_archived").default(false),
   archivedMediums: text("archived_mediums").array().default([]), // List of archived mediums for this source
   vendorManaged: boolean("vendor_managed").default(false), // true for base templates copied to users
+  type: text("type", { enum: ["Base", "Custom"] }).default("Custom"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -169,6 +170,7 @@ export const userUtmTemplates = pgTable("user_utm_templates", {
   description: text("description"),
   isArchived: boolean("is_archived").default(false),
   isCustom: boolean("is_custom").default(false), // true if user-added, false if from base template
+  type: text("type", { enum: ["Base", "Custom"] }).default("Custom"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -191,6 +193,7 @@ export const userTermTemplates = pgTable("user_term_templates", {
   category: text("category").default("general"),
   isCustom: boolean("is_custom").default(false),
   isArchived: boolean("is_archived").default(false),
+  type: text("type", { enum: ["Base", "Custom"] }).default("Custom"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
