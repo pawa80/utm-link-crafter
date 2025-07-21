@@ -99,7 +99,7 @@ export default function Settings() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             
             {/* Template Management Card */}
-            <FeatureGate feature="customTemplates" fallback={
+            <FeatureGate featureKey="customTemplates" fallback={
               <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
                 <CardHeader className="text-center pb-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -138,7 +138,7 @@ export default function Settings() {
             </FeatureGate>
 
             {/* Tag Management Card */}
-            <FeatureGate feature="campaignManagement" fallback={
+            <FeatureGate featureKey="tagManagement" fallback={
               <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
                 <CardHeader className="text-center pb-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -177,7 +177,7 @@ export default function Settings() {
             </FeatureGate>
 
             {/* Account Management Card */}
-            <FeatureGate feature="multiUser" fallback={
+            <FeatureGate featureKey="multiUser" fallback={
               <Card className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-gray-200 opacity-50">
                 <CardHeader className="text-center pb-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
