@@ -1,9 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema, pricingPlans } from "@shared/schema";
 import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions";
 import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "@shared/validation";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates";
 import vendorRoutes from "./vendorRoutes";
