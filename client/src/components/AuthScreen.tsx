@@ -229,8 +229,13 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowPassword(!showPassword);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground focus:outline-none z-10"
+                        tabIndex={-1}
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
@@ -294,8 +299,13 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowPassword(!showPassword);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground focus:outline-none z-10"
+                        tabIndex={-1}
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
@@ -317,8 +327,13 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowConfirmPassword(!showConfirmPassword);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground focus:outline-none z-10"
+                        tabIndex={-1}
                       >
                         {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
