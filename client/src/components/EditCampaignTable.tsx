@@ -333,7 +333,7 @@ export default function EditCampaignTable({
         </div>
       </Card>
 
-      {/* UTM Links Table */}
+      {/* UTM Links Table - Grouped by Source */}
       <Card>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -341,216 +341,252 @@ export default function EditCampaignTable({
             <span className="text-sm text-gray-600">{editableLinks.length} links</span>
           </div>
 
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-sm">Landing Page</th>
-                  <th className="text-left p-3 font-medium text-sm">Medium</th>
-                  <th className="text-left p-3 font-medium text-sm">Content</th>
-                  <th className="text-left p-3 font-medium text-sm">Term</th>
-                  <th className="text-left p-3 font-medium text-sm">UTM Link</th>
-                  <th className="text-left p-3 font-medium text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {editableLinks.map((link, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <Select
-                        value={link.targetUrl}
-                        onValueChange={(value) => updateLinkField(index, 'targetUrl', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {landingPages.map(page => (
-                            <SelectItem key={page.id} value={page.url}>{page.url}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-3">
-                      <Select
-                        value={link.utm_medium}
-                        onValueChange={(value) => updateLinkField(index, 'utm_medium', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableMediums(link.utm_source).map(medium => (
-                            <SelectItem key={medium} value={medium}>{medium}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-3">
-                      <Input
-                        value={link.utm_content || ''}
-                        onChange={(e) => updateLinkField(index, 'utm_content', e.target.value)}
-                        placeholder="Content"
-                        className="w-full"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Select
-                        value={link.utm_term || ''}
-                        onValueChange={(value) => updateLinkField(index, 'utm_term', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select term" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {termTemplates.map((term: any) => (
-                            <SelectItem key={term.id} value={term.termValue}>{term.termValue}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-3">
-                      <div className="font-mono text-xs text-blue-600 break-all max-w-xs">
-                        {link.fullUtmLink}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => duplicateLink(index)}
-                          className="w-8 h-8 p-0"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteLink(index)}
-                          className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {editableLinks.map((link, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs font-medium">Landing Page</Label>
-                    <Select
-                      value={link.targetUrl}
-                      onValueChange={(value) => updateLinkField(index, 'targetUrl', value)}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {landingPages.map(page => (
-                          <SelectItem key={page.id} value={page.url}>{page.url}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs font-medium">Medium</Label>
-                      <Select
-                        value={link.utm_medium}
-                        onValueChange={(value) => updateLinkField(index, 'utm_medium', value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableMediums(link.utm_source).map(medium => (
-                            <SelectItem key={medium} value={medium}>{medium}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-xs font-medium">Term</Label>
-                      <Select
-                        value={link.utm_term || ''}
-                        onValueChange={(value) => updateLinkField(index, 'utm_term', value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select term" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {termTemplates.map((term: any) => (
-                            <SelectItem key={term.id} value={term.termValue}>{term.termValue}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-medium">Content</Label>
-                    <Input
-                      value={link.utm_content || ''}
-                      onChange={(e) => updateLinkField(index, 'utm_content', e.target.value)}
-                      placeholder="Content"
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-medium">UTM Link</Label>
-                    <div className="mt-1 p-2 bg-gray-50 rounded border font-mono text-xs text-blue-600 break-all">
-                      {link.fullUtmLink}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => duplicateLink(index)}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Duplicate
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteLink(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(link.fullUtmLink);
-                        toast({ title: "Link copied to clipboard" });
-                      }}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
+          {/* Group links by source */}
+          {Object.entries(
+            editableLinks.reduce((acc: Record<string, any[]>, link, index) => {
+              const source = link.utm_source;
+              if (!acc[source]) {
+                acc[source] = [];
+              }
+              acc[source].push({ ...link, originalIndex: index });
+              return acc;
+            }, {})
+          ).map(([sourceName, sourceLinks]) => (
+            <div key={sourceName} className="mb-6 border rounded-lg overflow-hidden">
+              {/* Source Header */}
+              <div className="bg-blue-50 p-3 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 capitalize">{sourceName}</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
+                      navigator.clipboard.writeText(sourceLinksText);
+                      toast({
+                        title: "Source links copied!",
+                        description: `Copied ${sourceLinks.length} ${sourceName} links to clipboard`,
+                      });
+                    }}
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    Copy Source Links
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left p-3 font-medium text-sm">Landing Page</th>
+                      <th className="text-left p-3 font-medium text-sm">Medium</th>
+                      <th className="text-left p-3 font-medium text-sm">Content</th>
+                      <th className="text-left p-3 font-medium text-sm">Term</th>
+                      <th className="text-left p-3 font-medium text-sm">UTM Link</th>
+                      <th className="text-left p-3 font-medium text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sourceLinks.map((link) => (
+                      <tr key={link.originalIndex} className="border-b hover:bg-gray-50">
+                        <td className="p-3">
+                          <Select
+                            value={link.targetUrl}
+                            onValueChange={(value) => updateLinkField(link.originalIndex, 'targetUrl', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {landingPages.map(page => (
+                                <SelectItem key={page.id} value={page.url}>{page.url}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3">
+                          <Select
+                            value={link.utm_medium}
+                            onValueChange={(value) => updateLinkField(link.originalIndex, 'utm_medium', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getAvailableMediums(link.utm_source).map(medium => (
+                                <SelectItem key={medium} value={medium}>{medium}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3">
+                          <Input
+                            value={link.utm_content || ''}
+                            onChange={(e) => updateLinkField(link.originalIndex, 'utm_content', e.target.value)}
+                            placeholder="Content"
+                            className="w-full"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Select
+                            value={link.utm_term || ''}
+                            onValueChange={(value) => updateLinkField(link.originalIndex, 'utm_term', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select term" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {termTemplates.map((term: any) => (
+                                <SelectItem key={term.id} value={term.termValue}>{term.termValue}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-mono text-xs text-blue-600 break-all max-w-xs">
+                            {link.fullUtmLink}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateLink(link.originalIndex)}
+                              className="w-8 h-8 p-0"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteLink(link.originalIndex)}
+                              className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4 p-4">
+                {sourceLinks.map((link) => (
+                  <div key={link.originalIndex} className="border rounded-lg p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs font-medium">Landing Page</Label>
+                        <Select
+                          value={link.targetUrl}
+                          onValueChange={(value) => updateLinkField(link.originalIndex, 'targetUrl', value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {landingPages.map(page => (
+                              <SelectItem key={page.id} value={page.url}>{page.url}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs font-medium">Medium</Label>
+                          <Select
+                            value={link.utm_medium}
+                            onValueChange={(value) => updateLinkField(link.originalIndex, 'utm_medium', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getAvailableMediums(link.utm_source).map(medium => (
+                                <SelectItem key={medium} value={medium}>{medium}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs font-medium">Term</Label>
+                          <Select
+                            value={link.utm_term || ''}
+                            onValueChange={(value) => updateLinkField(link.originalIndex, 'utm_term', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select term" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {termTemplates.map((term: any) => (
+                                <SelectItem key={term.id} value={term.termValue}>{term.termValue}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium">Content</Label>
+                        <Input
+                          value={link.utm_content || ''}
+                          onChange={(e) => updateLinkField(link.originalIndex, 'utm_content', e.target.value)}
+                          placeholder="Content"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium">UTM Link</Label>
+                        <div className="mt-1 p-2 bg-gray-50 rounded border font-mono text-xs text-blue-600 break-all">
+                          {link.fullUtmLink}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pt-2">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateLink(link.originalIndex)}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Duplicate
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteLink(link.originalIndex)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(link.fullUtmLink);
+                            toast({ title: "Link copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
