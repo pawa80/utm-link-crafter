@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { signInWithEmail, signUpWithEmail, createUserAccount } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, Eye, EyeOff } from "lucide-react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
@@ -110,19 +111,39 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setIsLoading(true);
     
     try {
+      let firebaseUser;
+      
       // Create Firebase user first if using email/password
       if (activeTab === "signup" && password) {
-        await signUpWithEmail(userEmail, password);
+        const userCredential = await signUpWithEmail(userEmail, password);
+        firebaseUser = userCredential.user;
+      } else {
+        // For Google sign-in, user is already authenticated
+        firebaseUser = auth.currentUser;
+      }
+      
+      if (!firebaseUser) {
+        throw new Error("No authenticated user found");
       }
       
       // Create account with selected plan and details
-      await createUserAccount({
-        email: userEmail,
-        accountName: accountData.accountName,
-        pricingPlanId: accountData.pricingPlanId,
-        industry: accountData.industry,
-        teamSize: accountData.teamSize,
-        useCases: accountData.useCases
+      const idToken = await firebaseUser.getIdToken();
+      
+      await apiRequest('/api/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-firebase-uid': firebaseUser.uid,
+        },
+        body: JSON.stringify({
+          firebaseUid: firebaseUser.uid,
+          email: userEmail,
+          accountName: accountData.accountName,
+          pricingPlanId: accountData.pricingPlanId,
+          industry: accountData.industry,
+          teamSize: accountData.teamSize,
+          useCases: accountData.useCases,
+        }),
       });
       
       toast({
