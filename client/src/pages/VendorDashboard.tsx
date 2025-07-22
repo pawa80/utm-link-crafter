@@ -36,6 +36,128 @@ interface DashboardData {
   }>;
 }
 
+interface ProfileAnalyticsData {
+  industryBreakdown: Array<{ industry: string; count: number }>;
+  teamSizeBreakdown: Array<{ teamSize: string; count: number }>;
+  useCasesBreakdown: Array<{ useCase: string; count: number }>;
+}
+
+const ProfileAnalytics: React.FC = () => {
+  const { token } = useVendorAuth();
+
+  const { data: profileData, isLoading } = useQuery<ProfileAnalyticsData>({
+    queryKey: ['/vendor-api/dashboard/profile-analytics'],
+    queryFn: async () => {
+      const response = await fetch('/vendor-api/dashboard/profile-analytics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch profile analytics data');
+      return response.json();
+    },
+    enabled: !!token
+  });
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat().format(num);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="bg-white border-gray-200">
+            <CardHeader>
+              <div className="h-5 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-100 rounded animate-pulse" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[...Array(3)].map((_, j) => (
+                <div key={j} className="flex items-center justify-between">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24" />
+                  <div className="h-6 bg-gray-100 rounded animate-pulse w-12" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Industry Distribution */}
+      <Card className="bg-white border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-900">Industry Distribution</CardTitle>
+          <CardDescription className="text-gray-600">Account breakdown by industry</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {profileData?.industryBreakdown.length ? (
+            profileData.industryBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <span className="text-gray-700">{item.industry || 'Not specified'}</span>
+                <Badge variant="outline" className="border-gray-300 text-gray-700">
+                  {formatNumber(item.count)}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-500 text-sm text-center py-4">No industry data available</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Team Size Distribution */}
+      <Card className="bg-white border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-900">Team Size Distribution</CardTitle>
+          <CardDescription className="text-gray-600">Account breakdown by team size</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {profileData?.teamSizeBreakdown.length ? (
+            profileData.teamSizeBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <span className="text-gray-700">{item.teamSize || 'Not specified'}</span>
+                <Badge variant="outline" className="border-gray-300 text-gray-700">
+                  {formatNumber(item.count)}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-500 text-sm text-center py-4">No team size data available</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Use Cases Distribution */}
+      <Card className="bg-white border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-900">Use Cases Distribution</CardTitle>
+          <CardDescription className="text-gray-600">Account breakdown by use cases</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {profileData?.useCasesBreakdown.length ? (
+            profileData.useCasesBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <span className="text-gray-700">{item.useCase || 'Not specified'}</span>
+                <Badge variant="outline" className="border-gray-300 text-gray-700">
+                  {formatNumber(item.count)}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-500 text-sm text-center py-4">No use case data available</div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const VendorDashboard: React.FC = () => {
   const { vendorUser, logout, token } = useVendorAuth();
 
@@ -194,6 +316,9 @@ const VendorDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Profile Analytics Tables */}
+        <ProfileAnalytics />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

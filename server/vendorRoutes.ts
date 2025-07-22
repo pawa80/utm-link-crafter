@@ -16,7 +16,7 @@ import {
   baseTermTemplates,
   tags
 } from "@shared/schema";
-import { eq, desc, count, sql, and, isNull, or } from "drizzle-orm";
+import { eq, desc, count, sql, and, isNull, or, isNotNull, ne } from "drizzle-orm";
 import { authenticateVendor, loginVendorUser, logoutVendorUser, hashPassword } from "./vendorAuth";
 import { insertVendorUserSchema, insertPricingPlanSchema, updateAccountSchema } from "@shared/schema";
 
@@ -782,6 +782,65 @@ router.delete('/pricing-plans/:id', authenticateVendor, async (req: Request, res
   } catch (error) {
     console.error('Pricing plan deletion error:', error);
     res.status(500).json({ error: 'Failed to delete pricing plan' });
+  }
+});
+
+// Profile Analytics Endpoints
+router.get('/dashboard/profile-analytics', authenticateVendor, async (req: Request, res: Response) => {
+  try {
+    // Industry distribution
+    const industryBreakdown = await db
+      .select({
+        industry: accounts.industry,
+        count: count()
+      })
+      .from(accounts)
+      .where(and(
+        isNotNull(accounts.industry),
+        ne(accounts.industry, '')
+      ))
+      .groupBy(accounts.industry)
+      .orderBy(desc(count()));
+
+    // Team size distribution
+    const teamSizeBreakdown = await db
+      .select({
+        teamSize: accounts.team_size,
+        count: count()
+      })
+      .from(accounts)
+      .where(and(
+        isNotNull(accounts.team_size),
+        ne(accounts.team_size, '')
+      ))
+      .groupBy(accounts.team_size)
+      .orderBy(desc(count()));
+
+    // Use cases distribution (need to unnest the array)
+    const useCasesResult = await db.execute(sql`
+      SELECT 
+        UNNEST(use_cases) as use_case,
+        COUNT(*) as count
+      FROM accounts 
+      WHERE use_cases IS NOT NULL 
+        AND array_length(use_cases, 1) > 0
+      GROUP BY use_case 
+      ORDER BY count DESC
+    `);
+
+    const useCasesBreakdown = useCasesResult.rows.map(row => ({
+      useCase: row.use_case,
+      count: parseInt(row.count as string)
+    }));
+
+    res.json({
+      industryBreakdown,
+      teamSizeBreakdown,
+      useCasesBreakdown
+    });
+  } catch (error) {
+    console.error('Profile analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile analytics data' });
   }
 });
 
