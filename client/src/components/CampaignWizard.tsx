@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateUTMLink, validateUrl } from "@/lib/utm";
 import { Plus, Copy, X, ChevronUp, ChevronDown } from "lucide-react";
 import type { User, SourceTemplate, UtmLink, Tag } from "@shared/schema";
+import EditCampaignTable from "./EditCampaignTable";
 
 interface CampaignWizardProps {
   user: User;
@@ -1054,6 +1055,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       });
     }
   };
+
+  // If in edit mode, show the editable table view instead of the form
+  if (editMode && existingCampaignData.length > 0) {
+    return <EditCampaignTable 
+      existingCampaignData={existingCampaignData}
+      existingLandingPages={existingLandingPages}
+      sourceTemplates={sourceTemplates}
+      termTemplates={termTemplates}
+      user={user}
+      onSave={() => {
+        // Navigate back to campaigns page after save
+        navigate('/campaigns');
+      }}
+    />;
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
