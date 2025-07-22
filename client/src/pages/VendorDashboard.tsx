@@ -96,18 +96,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardDescription className="text-gray-600">Account breakdown by industry</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {profileData?.industryBreakdown.length ? (
-            profileData.industryBreakdown.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-gray-700">{item.industry || 'Not specified'}</span>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
-                  {formatNumber(item.count)}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-gray-500 text-sm text-center py-4">No industry data available</div>
-          )}
+          {profileData?.industryBreakdown.map((item, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="text-gray-700">{item.industry}</span>
+              <Badge 
+                variant="outline" 
+                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
+              >
+                {formatNumber(item.count)}
+              </Badge>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -118,18 +117,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardDescription className="text-gray-600">Account breakdown by team size</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {profileData?.teamSizeBreakdown.length ? (
-            profileData.teamSizeBreakdown.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-gray-700">{item.teamSize || 'Not specified'}</span>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
-                  {formatNumber(item.count)}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-gray-500 text-sm text-center py-4">No team size data available</div>
-          )}
+          {profileData?.teamSizeBreakdown.map((item, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="text-gray-700">{item.teamSize}</span>
+              <Badge 
+                variant="outline" 
+                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
+              >
+                {formatNumber(item.count)}
+              </Badge>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -140,18 +138,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardDescription className="text-gray-600">Account breakdown by use cases</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {profileData?.useCasesBreakdown.length ? (
-            profileData.useCasesBreakdown.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-gray-700">{item.useCase || 'Not specified'}</span>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
-                  {formatNumber(item.count)}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-gray-500 text-sm text-center py-4">No use case data available</div>
-          )}
+          {profileData?.useCasesBreakdown.map((item, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="text-gray-700">{item.useCase}</span>
+              <Badge 
+                variant="outline" 
+                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
+              >
+                {formatNumber(item.count)}
+              </Badge>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>

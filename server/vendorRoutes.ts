@@ -788,39 +788,49 @@ router.delete('/pricing-plans/:id', authenticateVendor, async (req: Request, res
 // Profile Analytics Endpoints
 router.get('/dashboard/profile-analytics', authenticateVendor, async (req: Request, res: Response) => {
   try {
-    // Industry distribution
-    const industryBreakdown = await db
-      .select({
-        industry: accounts.industry,
-        count: count()
-      })
-      .from(accounts)
-      .where(and(
-        isNotNull(accounts.industry),
-        ne(accounts.industry, '')
-      ))
-      .groupBy(accounts.industry)
-      .orderBy(desc(count()));
+    // Define all possible values (same as in SignUpWizard)
+    const ALL_INDUSTRIES = [
+      "E-commerce", "SaaS/Technology", "Marketing Agency", "Media/Publishing",
+      "Education", "Healthcare", "Financial Services", "Non-profit",
+      "Consulting", "Real Estate", "Travel/Hospitality", "Other"
+    ];
 
-    // Team size distribution
-    const teamSizeBreakdown = await db
-      .select({
-        teamSize: accounts.team_size,
-        count: count()
-      })
-      .from(accounts)
-      .where(and(
-        isNotNull(accounts.team_size),
-        ne(accounts.team_size, '')
-      ))
-      .groupBy(accounts.team_size)
-      .orderBy(desc(count()));
+    const ALL_TEAM_SIZES = [
+      "Just me (1)", "Small team (2-5)", "Medium team (6-20)", 
+      "Large team (21-50)", "Enterprise (50+)"
+    ];
 
-    // Use cases distribution (need to unnest the array)
+    const ALL_USE_CASES = [
+      "Campaign tracking", "A/B testing", "Social media marketing",
+      "Email marketing", "Affiliate tracking", "Multi-channel attribution",
+      "Agency client management", "Other"
+    ];
+
+    // Get actual data from database using direct SQL to avoid any schema issues
+    const industryResult = await db.execute(sql`
+      SELECT 
+        industry,
+        COUNT(*)::int as count
+      FROM accounts 
+      WHERE industry IS NOT NULL AND industry != ''
+      GROUP BY industry 
+      ORDER BY count DESC
+    `);
+
+    const teamSizeResult = await db.execute(sql`
+      SELECT 
+        team_size,
+        COUNT(*)::int as count
+      FROM accounts 
+      WHERE team_size IS NOT NULL AND team_size != ''
+      GROUP BY team_size 
+      ORDER BY count DESC
+    `);
+
     const useCasesResult = await db.execute(sql`
       SELECT 
         UNNEST(use_cases) as use_case,
-        COUNT(*) as count
+        COUNT(*)::int as count
       FROM accounts 
       WHERE use_cases IS NOT NULL 
         AND array_length(use_cases, 1) > 0
@@ -828,9 +838,31 @@ router.get('/dashboard/profile-analytics', authenticateVendor, async (req: Reque
       ORDER BY count DESC
     `);
 
-    const useCasesBreakdown = useCasesResult.rows.map(row => ({
-      useCase: row.use_case,
-      count: parseInt(row.count as string)
+    // Convert actual data to maps for easy lookup
+    const industryMap = new Map(
+      industryResult.rows.map(row => [row.industry as string, row.count as number])
+    );
+    const teamSizeMap = new Map(
+      teamSizeResult.rows.map(row => [row.team_size as string, row.count as number])
+    );
+    const useCasesMap = new Map(
+      useCasesResult.rows.map(row => [row.use_case as string, row.count as number])
+    );
+
+    // Build complete breakdown with zeros for missing values
+    const industryBreakdown = ALL_INDUSTRIES.map(industry => ({
+      industry,
+      count: industryMap.get(industry) || 0
+    }));
+
+    const teamSizeBreakdown = ALL_TEAM_SIZES.map(teamSize => ({
+      teamSize,
+      count: teamSizeMap.get(teamSize) || 0
+    }));
+
+    const useCasesBreakdown = ALL_USE_CASES.map(useCase => ({
+      useCase,
+      count: useCasesMap.get(useCase) || 0
     }));
 
     res.json({
