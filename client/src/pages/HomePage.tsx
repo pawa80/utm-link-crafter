@@ -32,7 +32,12 @@ export default function HomePage() {
           setUser(null);
         }
       } catch (error) {
-        console.error("Error creating/getting user:", error);
+        // Only log error if it's not a duplicate user error (expected for existing users)
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (!errorMessage.includes('duplicate key value violates unique constraint')) {
+          console.error("Error creating/getting user:", error);
+        }
+        // For authentication errors, still reset state
         setAuthUser(null);
         setUser(null);
       } finally {

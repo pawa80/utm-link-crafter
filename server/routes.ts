@@ -147,6 +147,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(user);
     } catch (error: any) {
+      // Don't return error for duplicate user creation attempts
+      if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+        // If it's a duplicate error, try to get the existing user
+        try {
+          const existingUser = await storage.getUserByFirebaseUid(userData.firebaseUid);
+          if (existingUser) {
+            return res.json(existingUser);
+          }
+        } catch (getError) {
+          // If we can't get the existing user, return the original error
+        }
+      }
       res.status(400).json({ message: error.message });
     }
   });

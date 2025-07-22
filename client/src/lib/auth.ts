@@ -84,7 +84,8 @@ export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create/get user: ${response.statusText}`);
+    const errorData = await response.text();
+    throw new Error(`Failed to create/get user: ${response.statusText} - ${errorData}`);
   }
 
   const userData = await response.json();

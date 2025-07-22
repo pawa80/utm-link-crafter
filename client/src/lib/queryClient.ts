@@ -4,6 +4,10 @@ import { auth } from "./firebase";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    // Don't throw error for duplicate user creation (expected behavior)
+    if (text.includes('duplicate key value violates unique constraint')) {
+      return; // Silent handling for expected duplicates
+    }
     throw new Error(`${res.status}: ${text}`);
   }
 }
