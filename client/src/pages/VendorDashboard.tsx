@@ -275,7 +275,7 @@ const VendorDashboard: React.FC = () => {
         </div>
 
         {/* Account Status and Plan Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           <Card className="bg-white border-gray-200">
             <CardHeader>
               <CardTitle className="text-gray-900">Account Status Breakdown</CardTitle>
