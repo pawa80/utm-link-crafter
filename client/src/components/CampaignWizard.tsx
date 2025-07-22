@@ -1529,7 +1529,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       )}
 
       {/* Section 6: Campaign Links Preview */}
-      {getCheckedSourcesWithContent().length > 0 && (
+      {generatedUtmLinks.length > 0 && (
         <Card>
           <SectionHeader title="Campaign Links" />
           <div className="p-6">
@@ -1537,11 +1537,11 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  const allLinks = getCheckedSourcesWithContent().map(link => link.utmLink).join('\n');
+                  const allLinks = generatedUtmLinks.map(link => link.fullUtmLink).join('\n');
                   navigator.clipboard.writeText(allLinks);
                   toast({
                     title: "All links copied!",
-                    description: `Copied ${getCheckedSourcesWithContent().length} UTM links to clipboard`,
+                    description: `Copied ${generatedUtmLinks.length} UTM links to clipboard`,
                   });
                 }}
               >
@@ -1550,9 +1550,9 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
               </Button>
             </div>
             
-            {/* Group links by source like Campaign Management page */}
+            {/* Group generated links by source like Campaign Management page */}
             {Object.entries(
-              getCheckedSourcesWithContent().reduce((acc: Record<string, any[]>, link) => {
+              generatedUtmLinks.reduce((acc: Record<string, any[]>, link) => {
                 if (!acc[link.sourceName]) {
                   acc[link.sourceName] = [];
                 }
@@ -1568,7 +1568,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                       variant="outline" 
                       size="sm"
                       onClick={() => {
-                        const sourceLinksText = sourceLinks.map(link => link.utmLink).join('\n');
+                        const sourceLinksText = sourceLinks.map(link => link.fullUtmLink).join('\n');
                         navigator.clipboard.writeText(sourceLinksText);
                         toast({
                           title: "Source links copied!",
@@ -1586,12 +1586,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 <div className="hidden md:block">
                   {/* Headers */}
                   <div className="mb-2 px-3">
-                    {/* First line: Landing Page, Medium, Content, Term */}
-                    <div className="grid gap-4 mb-1" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
+                    {/* First line: Landing Page, Medium, Content, Term, Actions */}
+                    <div className="grid gap-4 mb-1" style={{ gridTemplateColumns: '1fr 120px 150px 120px 80px' }}>
                       <span className="text-sm font-medium text-gray-700">Landing Page</span>
                       <span className="text-sm font-medium text-gray-700">Medium</span>
                       <span className="text-sm font-medium text-gray-700">Content</span>
                       <span className="text-sm font-medium text-gray-700">Term</span>
+                      <span className="text-sm font-medium text-gray-700">Actions</span>
                     </div>
                     {/* Second line: Link name, UTM Link, Actions */}
                     <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
@@ -1605,11 +1606,47 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   {sourceLinks.map((link: any, index: number) => (
                     <div key={index} className="border-b last:border-b-0 py-3 px-3 hover:bg-gray-50">
                       {/* First line: Landing Page, Medium, Content, Term */}
-                      <div className="grid gap-4 mb-2 items-center" style={{ gridTemplateColumns: '1fr 120px 150px 120px' }}>
-                        <span className="text-sm break-words">{landingPages.length > 0 ? landingPages[0].url : targetUrl}</span>
+                      <div className="grid gap-4 mb-2 items-center" style={{ gridTemplateColumns: '1fr 120px 150px 120px 80px' }}>
+                        <span className="text-sm break-words">{link.landingPageUrl}</span>
                         <span className="text-sm">{link.medium}</span>
                         <span className="text-sm">{link.content}</span>
                         <span className="text-sm">{link.term || '—'}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Duplicate this specific row
+                              const newLink = {
+                                ...link,
+                                id: `${link.id}-dup-${Date.now()}`,
+                              };
+                              setGeneratedUtmLinks(prev => [...prev, newLink]);
+                              toast({
+                                title: "Row duplicated",
+                                description: "UTM link row has been duplicated",
+                              });
+                            }}
+                            className="w-8 h-8 p-0"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Delete this specific row
+                              setGeneratedUtmLinks(prev => prev.filter(l => l.id !== link.id));
+                              toast({
+                                title: "Row deleted",
+                                description: "UTM link row has been removed",
+                              });
+                            }}
+                            className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                       {/* Second line: Link name, UTM Link, Actions */}
                       <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
@@ -1619,13 +1656,13 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                           className="bg-gray-50 border rounded px-3 py-2 text-sm w-full"
                         />
                         <div className="bg-gray-50 border rounded p-3 min-h-[44px] break-all text-xs leading-relaxed w-full font-mono text-blue-600">
-                          {link.utmLink}
+                          {link.fullUtmLink}
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            navigator.clipboard.writeText(link.utmLink);
+                            navigator.clipboard.writeText(link.fullUtmLink);
                             toast({ title: "Link copied to clipboard" });
                           }}
                           className="w-full mt-1"
@@ -1642,23 +1679,56 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                   {sourceLinks.map((link: any, index: number) => (
                     <div key={index} className="p-4 border-b last:border-b-0">
                       <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Landing Page:</span> {landingPages.length > 0 ? landingPages[0].url : targetUrl}</div>
+                        <div><span className="font-medium">Landing Page:</span> {link.landingPageUrl}</div>
                         <div><span className="font-medium">Medium:</span> {link.medium}</div>
                         <div><span className="font-medium">Content:</span> {link.content}</div>
                         {link.term && <div><span className="font-medium">Term:</span> {link.term}</div>}
                         <div><span className="font-medium">Link name:</span> {campaignName} - {link.sourceName} - {link.medium}</div>
                         <div className="flex justify-between items-center mt-3">
-                          <span className="font-mono text-xs text-blue-600 break-all flex-1 mr-2">{link.utmLink}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(link.utmLink);
-                              toast({ title: "Link copied to clipboard" });
-                            }}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
+                          <span className="font-mono text-xs text-blue-600 break-all flex-1 mr-2">{link.fullUtmLink}</span>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(link.fullUtmLink);
+                                toast({ title: "Link copied to clipboard" });
+                              }}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newLink = {
+                                  ...link,
+                                  id: `${link.id}-dup-${Date.now()}`,
+                                };
+                                setGeneratedUtmLinks(prev => [...prev, newLink]);
+                                toast({
+                                  title: "Row duplicated",
+                                  description: "UTM link row has been duplicated",
+                                });
+                              }}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setGeneratedUtmLinks(prev => prev.filter(l => l.id !== link.id));
+                                toast({
+                                  title: "Row deleted",
+                                  description: "UTM link row has been removed",
+                                });
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
