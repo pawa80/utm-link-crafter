@@ -12,27 +12,21 @@ import { auth } from "@/lib/firebase";
 import { createOrGetUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
 import type { User } from "@shared/schema";
+import FeatureGate from "@/components/FeatureGate";
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initializing, setInitializing] = useState(true);
   const [, setLocation] = useLocation();
-  const hasChatWizard = useHasFeature('chatWizard');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Mark as no longer initializing on first auth state change
-      if (initializing) {
-        setInitializing(false);
-      }
-      
       try {
         if (firebaseUser) {
           setAuthUser(firebaseUser);
           const userData = await createOrGetUser(firebaseUser);
-          setUser(userData);
+          setUser(userData as User);
         } else {
           setAuthUser(null);
           setUser(null);
@@ -47,7 +41,7 @@ export default function HomePage() {
     });
 
     return () => unsubscribe();
-  }, [initializing]);
+  }, []);
 
   const handleAuthSuccess = async () => {
     // Auth state change will be handled by the useEffect
@@ -57,7 +51,7 @@ export default function HomePage() {
     setLocation("/");
   };
 
-  if (loading || initializing) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 flex items-center justify-center">
         <div className="text-center animate-fade-in">
@@ -72,13 +66,19 @@ export default function HomePage() {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
+  return <AuthenticatedHomePage user={user} onLogout={handleLogout} />;
+}
+
+function AuthenticatedHomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const hasChatWizard = useHasFeature('chatWizard');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted via-background to-cyan/5 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Top Navigation with Logo and User */}
         <div className="flex justify-between items-center mb-8 pt-4">
           <Logo />
-          <UserHeader user={user} onLogout={handleLogout} />
+          <UserHeader user={user} onLogout={onLogout} />
         </div>
 
         {/* Header */}
@@ -135,9 +135,11 @@ export default function HomePage() {
               </Link>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Manage Campaigns Card */}
-          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in">
+        {/* Secondary Action Card */}
+        <div className="flex justify-center mb-8">
+          <Card className="card-modern group hover:shadow-2xl transition-all duration-300 animate-fade-in w-full max-w-md">
             <CardHeader className="text-center pb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-cyan via-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Settings size={40} className="text-white" />
@@ -157,67 +159,31 @@ export default function HomePage() {
           </Card>
         </div>
 
-        {/* Disabled Chat Wizard - Show at bottom only when disabled, same size as main cards */}
+        {/* Chat Wizard Disabled Card - Show only if disabled */}
         {!hasChatWizard && (
-          <div className="mb-12 max-w-5xl mx-auto animate-fade-in">
-            <div className="flex justify-center">
-              <div className="w-full max-w-md">
-                <Card className="card-modern border-dashed border-2 border-muted-foreground/30 bg-muted/10">
-                  <CardHeader className="text-center pb-6">
-                    <div className="w-20 h-20 bg-muted-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                      <MessageCircle size={40} className="text-muted-foreground/50" />
-                    </div>
-                    <CardTitle className="text-2xl font-bold text-muted-foreground">Chat Wizard</CardTitle>
-                    <CardDescription className="text-base leading-relaxed text-muted-foreground">
-                      AI-guided campaign creation - Available in premium plans
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button disabled className="w-full h-14 text-lg font-semibold" variant="outline">
-                      Upgrade to Access
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
+          <FeatureGate featureKey="chatWizard">
+            <div></div>
+            <Card className="card-modern border-2 border-muted bg-muted/10 max-w-md mx-auto">
+              <CardHeader className="text-center pb-6">
+                <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <MessageCircle size={40} className="text-muted-foreground" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-muted-foreground">Chat Wizard</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  AI-powered campaign creation assistant
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full h-14 text-lg font-semibold" variant="outline" disabled>
+                  Upgrade Required
+                </Button>
+                <p className="text-sm text-muted-foreground mt-3 text-center">
+                  Available on Professional and higher plans
+                </p>
+              </CardContent>
+            </Card>
+          </FeatureGate>
         )}
-
-        {/* Features Section */}
-        <div className="mt-20 text-center animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-cyan bg-clip-text text-transparent mb-12">
-            Why Choose UTM Builder?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-cyan/5 hover:from-primary/10 hover:to-cyan/10 transition-all duration-300 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-3xl">📊</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Track Performance</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Monitor campaign effectiveness with detailed analytics and insights
-              </p>
-            </div>
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-success/5 to-secondary/5 hover:from-success/10 hover:to-secondary/10 transition-all duration-300 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-success to-success/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-3xl">⚡</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Quick Setup</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Create professional UTM links in minutes with AI-powered assistance
-              </p>
-            </div>
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/5 to-cyan/5 hover:from-secondary/10 hover:to-cyan/10 transition-all duration-300 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-3xl">🎯</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Organized</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Keep all your campaigns and sources neatly organized and accessible
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
