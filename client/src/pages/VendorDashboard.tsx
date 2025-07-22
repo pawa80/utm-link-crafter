@@ -280,18 +280,20 @@ const VendorDashboard: React.FC = () => {
               <CardTitle className="text-gray-900">Account Status Breakdown</CardTitle>
               <CardDescription className="text-gray-600">Distribution of account statuses</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {dashboardData?.accountStatusBreakdown.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${getStatusColor(item.status)}`} />
-                    <span className="text-gray-700 capitalize">{item.status}</span>
+            <CardContent className="p-0">
+              <div className="border-t border-gray-200">
+                {dashboardData?.accountStatusBreakdown.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${getStatusColor(item.status)}`} />
+                      <span className="text-gray-700 font-medium capitalize">{item.status}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {formatNumber(item.count)}
+                    </span>
                   </div>
-                  <Badge variant="outline" className="border-gray-300 text-gray-700">
-                    {formatNumber(item.count)}
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           </Card>
 
@@ -300,15 +302,17 @@ const VendorDashboard: React.FC = () => {
               <CardTitle className="text-gray-900">Pricing Plan Distribution</CardTitle>
               <CardDescription className="text-gray-600">Accounts by pricing plan</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {dashboardData?.planBreakdown.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-gray-700">{item.planName || 'No Plan'}</span>
-                  <Badge variant="outline" className="border-gray-300 text-gray-700">
-                    {formatNumber(item.count)}
-                  </Badge>
-                </div>
-              ))}
+            <CardContent className="p-0">
+              <div className="border-t border-gray-200">
+                {dashboardData?.planBreakdown.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                    <span className="text-gray-700 font-medium">{item.planName || 'No Plan'}</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {formatNumber(item.count)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
