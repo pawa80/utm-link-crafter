@@ -9,7 +9,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createOrGetUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
 import type { User, UtmLink } from "@shared/schema";
 
@@ -46,7 +46,7 @@ export default function NewCampaign() {
       if (firebaseUser) {
         setAuthUser(firebaseUser);
         try {
-          const userData = await createOrGetUser(firebaseUser);
+          const userData = await getUser(firebaseUser);
           setUser(userData);
         } catch (error) {
           console.error("Error creating/getting user:", error);

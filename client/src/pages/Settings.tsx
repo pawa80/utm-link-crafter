@@ -9,7 +9,7 @@ import UserHeader from "@/components/UserHeader";
 import Logo from "@/components/Logo";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createOrGetUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { useHasFeature } from "@/hooks/useFeatures";
 import FeatureGate from "@/components/FeatureGate";
 import type { User as AuthUser } from "firebase/auth";
@@ -26,7 +26,7 @@ export default function Settings() {
       if (firebaseUser) {
         setAuthUser(firebaseUser);
         try {
-          const userData = await createOrGetUser(firebaseUser);
+          const userData = await getUser(firebaseUser);
           setUser(userData);
         } catch (error) {
           console.error("Error creating/getting user:", error);

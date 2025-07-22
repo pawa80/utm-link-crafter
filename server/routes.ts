@@ -163,6 +163,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user by Firebase UID (for auth flow - no auth middleware needed)
+  app.get("/api/users/:uid", async (req, res) => {
+    try {
+      const { uid } = req.params;
+      const user = await storage.getUserByFirebaseUid(uid);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get current user
   app.get("/api/user", authMiddleware, async (req: any, res) => {
     res.json(req.user);

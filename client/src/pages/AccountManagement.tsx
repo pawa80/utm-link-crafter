@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Zap, Users, Plus, Settings, Mail, Trash2, UserPlus, Shield, User, Crown } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createOrGetUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import AuthScreen from "@/components/AuthScreen";
 import UserHeader from "@/components/UserHeader";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -128,7 +128,7 @@ export default function AccountManagement() {
       if (firebaseUser) {
         setAuthUser(firebaseUser);
         try {
-          const userData = await createOrGetUser(firebaseUser);
+          const userData = await getUser(firebaseUser);
           setUser(userData);
         } catch (error) {
           console.error("Error creating/getting user:", error);

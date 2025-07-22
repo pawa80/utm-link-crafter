@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { onAuthStateChange, createOrGetUser } from "@/lib/auth";
+import { onAuthStateChange, getUser } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
 import AuthScreen from "@/components/AuthScreen";
 import SetupScreen from "@/components/SetupScreen";
@@ -26,7 +26,7 @@ export default function Dashboard() {
       
       if (fbUser) {
         try {
-          await createOrGetUser(fbUser);
+          await getUser(fbUser);
           refetch();
         } catch (error) {
           console.error("Error creating/getting user:", error);

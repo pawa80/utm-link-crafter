@@ -67,29 +67,32 @@ export const logout = async () => {
   await signOut(auth);
 };
 
-export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
+export const getUser = async (firebaseUser: FirebaseUser) => {
   const idToken = await firebaseUser.getIdToken();
   
-  const response = await fetch('/api/users', {
-    method: 'POST',
+  // First try to get existing user
+  const response = await fetch(`/api/users/${firebaseUser.uid}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`,
       'x-firebase-uid': firebaseUser.uid,
     },
-    body: JSON.stringify({
-      firebaseUid: firebaseUser.uid,
-      email: firebaseUser.email,
-    }),
   });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Failed to create/get user: ${response.statusText} - ${errorData}`);
+  if (response.ok) {
+    const userData = await response.json();
+    return userData;
   }
 
-  const userData = await response.json();
-  return userData;
+  // If user doesn't exist, return null (don't create automatically)
+  if (response.status === 404) {
+    return null;
+  }
+
+  // For other errors, throw
+  const errorData = await response.text();
+  throw new Error(`Failed to get user: ${response.statusText} - ${errorData}`);
 };
 
 export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {

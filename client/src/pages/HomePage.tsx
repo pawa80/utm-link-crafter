@@ -9,7 +9,7 @@ import { Plus, Settings, Archive, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createOrGetUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
 import type { User } from "@shared/schema";
 import FeatureGate from "@/components/FeatureGate";
@@ -25,8 +25,14 @@ export default function HomePage() {
       try {
         if (firebaseUser) {
           setAuthUser(firebaseUser);
-          const userData = await createOrGetUser(firebaseUser);
-          setUser(userData as User);
+          const userData = await getUser(firebaseUser);
+          if (userData) {
+            setUser(userData as User);
+          } else {
+            // User doesn't exist in database, stay on auth screen
+            setAuthUser(null);
+            setUser(null);
+          }
         } else {
           setAuthUser(null);
           setUser(null);
@@ -58,9 +64,11 @@ export default function HomePage() {
     if (currentUser) {
       try {
         await currentUser.reload();
-        const userData = await createOrGetUser(currentUser);
-        setUser(userData as User);
-        setAuthUser(currentUser);
+        const userData = await getUser(currentUser);
+        if (userData) {
+          setUser(userData as User);
+          setAuthUser(currentUser);
+        }
         setLoading(false);
       } catch (error) {
         console.error("Error in handleAuthSuccess:", error);

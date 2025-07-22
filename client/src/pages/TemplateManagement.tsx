@@ -15,7 +15,7 @@ import { ArrowLeft, Plus, Archive, ArchiveRestore, Trash2, Settings, ArrowUpDown
 import { Link, useLocation } from "wouter";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createOrGetUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import type { User as AuthUser } from "firebase/auth";
 import type { User, SourceTemplate, UtmLink, UserUtmTemplate } from "@shared/schema";
 
@@ -246,7 +246,7 @@ export default function TemplateManagement() {
       if (firebaseUser) {
         setAuthUser(firebaseUser);
         try {
-          const userData = await createOrGetUser(firebaseUser);
+          const userData = await getUser(firebaseUser);
           setUser(userData);
         } catch (error) {
           console.error("Error creating/getting user:", error);
