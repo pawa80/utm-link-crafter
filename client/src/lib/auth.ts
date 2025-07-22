@@ -34,7 +34,7 @@ export const createUserAccount = async (accountData: {
   pricingPlanId: number;
   industry?: string;
   teamSize?: string;
-  useCase?: string;
+  useCases?: string[];
 }) => {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -56,7 +56,7 @@ export const createUserAccount = async (accountData: {
       pricingPlanId: accountData.pricingPlanId,
       industry: accountData.industry,
       teamSize: accountData.teamSize,
-      useCase: accountData.useCase,
+      useCases: accountData.useCases,
     }),
   });
 

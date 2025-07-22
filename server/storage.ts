@@ -149,6 +149,9 @@ export class DatabaseStorage implements IStorage {
       subscriptionTier: "active", // Set as active instead of trial
       pricingPlanId: finalPlanId,
       trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial for all plans
+      industry: (insertUser as any).industry,
+      teamSize: (insertUser as any).teamSize,
+      useCases: (insertUser as any).useCases || [],
     });
 
     // Create user with the account

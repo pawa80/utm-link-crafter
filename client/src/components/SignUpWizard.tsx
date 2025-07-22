@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ interface SignUpWizardProps {
     pricingPlanId: number;
     industry?: string;
     teamSize?: string;
-    useCase?: string;
+    useCases?: string[];
   }) => void;
   onBack: () => void;
 }
@@ -59,7 +60,7 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [industry, setIndustry] = useState("");
   const [teamSize, setTeamSize] = useState("");
-  const [useCase, setUseCase] = useState("");
+  const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
   const [customUseCase, setCustomUseCase] = useState("");
   const { toast } = useToast();
 
@@ -86,17 +87,29 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete signup - validate custom use case if "Other" is selected
-      const finalUseCase = useCase === "Other" ? customUseCase.trim() : useCase;
+      // Complete signup - handle multiple use cases including custom
+      let finalUseCases = [...selectedUseCases];
+      if (selectedUseCases.includes("Other") && customUseCase.trim()) {
+        finalUseCases = finalUseCases.filter(uc => uc !== "Other");
+        finalUseCases.push(customUseCase.trim());
+      }
       
       onComplete({
         accountName: accountName.trim(),
         pricingPlanId: selectedPlanId!,
         industry: industry || undefined,
         teamSize: teamSize || undefined,
-        useCase: finalUseCase || undefined
+        useCases: finalUseCases.length > 0 ? finalUseCases : undefined
       });
     }
+  };
+
+  const toggleUseCase = (useCase: string) => {
+    setSelectedUseCases(prev => 
+      prev.includes(useCase) 
+        ? prev.filter(uc => uc !== useCase)
+        : [...prev, useCase]
+    );
   };
 
   const handlePrevious = () => {
@@ -281,26 +294,28 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
           {currentStep === 3 && (
             <div className="space-y-8">
               <CardHeader className="px-0 pb-6">
-                <CardTitle className="text-2xl">What's Your Main Use Case?</CardTitle>
+                <CardTitle className="text-2xl">What Are Your Goals?</CardTitle>
                 <p className="text-muted-foreground">This helps us recommend the best features for you (optional)</p>
               </CardHeader>
 
               <div className="space-y-6">
                 <div>
-                  <Label className="text-base font-medium">Primary use case</Label>
-                  <RadioGroup value={useCase} onValueChange={setUseCase} className="mt-3">
-                    <div className="grid gap-3">
-                      {USE_CASES.map((uc) => (
-                        <div key={uc} className="flex items-center space-x-2">
-                          <RadioGroupItem value={uc} id={uc} />
-                          <Label htmlFor={uc} className="font-normal">{uc}</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
+                  <Label className="text-base font-medium">What will you use UTM Builder for? (select all that apply)</Label>
+                  <div className="mt-3 grid gap-3">
+                    {USE_CASES.map((uc) => (
+                      <div key={uc} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={uc}
+                          checked={selectedUseCases.includes(uc)}
+                          onCheckedChange={() => toggleUseCase(uc)}
+                        />
+                        <Label htmlFor={uc} className="font-normal cursor-pointer">{uc}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {useCase === "Other" && (
+                {selectedUseCases.includes("Other") && (
                   <div>
                     <Label htmlFor="customUseCase" className="text-base font-medium">Please describe your use case</Label>
                     <Textarea

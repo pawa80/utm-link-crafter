@@ -56,6 +56,10 @@ export const accounts = pgTable("accounts", {
   trialEndDate: timestamp("trial_end_date"),
   featureFlags: json("feature_flags").default({}), // JSON object for feature toggles
   usageLimits: json("usage_limits").default({}), // JSON object for usage limits
+  // Profile data from sign-up wizard
+  industry: text("industry"), // E-commerce, SaaS/Technology, Marketing Agency, etc.
+  teamSize: text("team_size"), // Just me (1), Small team (2-5), etc.
+  useCases: text("use_cases").array().default([]), // Multiple use cases: Campaign tracking, A/B testing, etc.
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -122,7 +122,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customField2Options: userData.customField2Options,
         customField3Name: userData.customField3Name,
         customField3InUrl: userData.customField3InUrl || false,
-        customField3Options: userData.customField3Options
+        customField3Options: userData.customField3Options,
+        // Profile data from sign-up wizard
+        industry: (userData as any).industry,
+        teamSize: (userData as any).teamSize,
+        useCases: (userData as any).useCases
       }, userData.accountName || `${userData.email.split('@')[0]}'s Company`, userData.pricingPlanId);
       
       // Create user template copies from base templates with account context
