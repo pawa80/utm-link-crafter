@@ -161,8 +161,7 @@ function AuthenticatedHomePage({ user, onLogout }: { user: User; onLogout: () =>
 
         {/* Chat Wizard Disabled Card - Show only if disabled */}
         {!hasChatWizard && (
-          <FeatureGate featureKey="chatWizard">
-            <div></div>
+          <div className="flex justify-center">
             <Card className="card-modern border-2 border-muted bg-muted/10 max-w-md mx-auto">
               <CardHeader className="text-center pb-6">
                 <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -182,7 +181,7 @@ function AuthenticatedHomePage({ user, onLogout }: { user: User; onLogout: () =>
                 </p>
               </CardContent>
             </Card>
-          </FeatureGate>
+          </div>
         )}
       </div>
     </div>
