@@ -88,7 +88,6 @@ export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
   }
 
   const userData = await response.json();
-  console.log("API response userData:", userData);
   return userData;
 };
 
