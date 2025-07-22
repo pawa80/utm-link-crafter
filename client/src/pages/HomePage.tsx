@@ -17,28 +17,37 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [, setLocation] = useLocation();
   const hasChatWizard = useHasFeature('chatWizard');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setAuthUser(firebaseUser);
-        try {
+      // Mark as no longer initializing on first auth state change
+      if (initializing) {
+        setInitializing(false);
+      }
+      
+      try {
+        if (firebaseUser) {
+          setAuthUser(firebaseUser);
           const userData = await createOrGetUser(firebaseUser);
           setUser(userData);
-        } catch (error) {
-          console.error("Error creating/getting user:", error);
+        } else {
+          setAuthUser(null);
+          setUser(null);
         }
-      } else {
+      } catch (error) {
+        console.error("Error creating/getting user:", error);
         setAuthUser(null);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initializing]);
 
   const handleAuthSuccess = async () => {
     // Auth state change will be handled by the useEffect
@@ -48,7 +57,7 @@ export default function HomePage() {
     setLocation("/");
   };
 
-  if (loading) {
+  if (loading || initializing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 flex items-center justify-center">
         <div className="text-center animate-fade-in">
