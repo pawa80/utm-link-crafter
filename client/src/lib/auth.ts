@@ -70,9 +70,10 @@ export const logout = async () => {
 export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
   const idToken = await firebaseUser.getIdToken();
   
-  const response = await apiRequest('/api/users', {
+  const response = await fetch('/api/users', {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`,
       'x-firebase-uid': firebaseUser.uid,
     },
@@ -82,7 +83,13 @@ export const createOrGetUser = async (firebaseUser: FirebaseUser) => {
     }),
   });
 
-  return response;
+  if (!response.ok) {
+    throw new Error(`Failed to create/get user: ${response.statusText}`);
+  }
+
+  const userData = await response.json();
+  console.log("API response userData:", userData);
+  return userData;
 };
 
 export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
