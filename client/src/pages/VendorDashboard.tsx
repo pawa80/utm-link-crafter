@@ -73,13 +73,15 @@ const ProfileAnalytics: React.FC = () => {
               <div className="h-5 bg-gray-200 rounded animate-pulse" />
               <div className="h-4 bg-gray-100 rounded animate-pulse" />
             </CardHeader>
-            <CardContent className="space-y-3">
-              {[...Array(3)].map((_, j) => (
-                <div key={j} className="flex items-center justify-between">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24" />
-                  <div className="h-6 bg-gray-100 rounded animate-pulse w-12" />
-                </div>
-              ))}
+            <CardContent className="p-0">
+              <div className="border-t border-gray-200">
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32" />
+                    <div className="h-4 bg-gray-100 rounded animate-pulse w-8" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -95,18 +97,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardTitle className="text-gray-900">Industry Distribution</CardTitle>
           <CardDescription className="text-gray-600">Account breakdown by industry</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {profileData?.industryBreakdown.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-700">{item.industry}</span>
-              <Badge 
-                variant="outline" 
-                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
-              >
-                {formatNumber(item.count)}
-              </Badge>
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div className="border-t border-gray-200">
+            {profileData?.industryBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <span className="text-gray-700 font-medium">{item.industry}</span>
+                <span className={`text-sm font-semibold ${item.count > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {formatNumber(item.count)}
+                </span>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -116,18 +117,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardTitle className="text-gray-900">Team Size Distribution</CardTitle>
           <CardDescription className="text-gray-600">Account breakdown by team size</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {profileData?.teamSizeBreakdown.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-700">{item.teamSize}</span>
-              <Badge 
-                variant="outline" 
-                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
-              >
-                {formatNumber(item.count)}
-              </Badge>
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div className="border-t border-gray-200">
+            {profileData?.teamSizeBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <span className="text-gray-700 font-medium">{item.teamSize}</span>
+                <span className={`text-sm font-semibold ${item.count > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {formatNumber(item.count)}
+                </span>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -137,18 +137,17 @@ const ProfileAnalytics: React.FC = () => {
           <CardTitle className="text-gray-900">Use Cases Distribution</CardTitle>
           <CardDescription className="text-gray-600">Account breakdown by use cases</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {profileData?.useCasesBreakdown.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-700">{item.useCase}</span>
-              <Badge 
-                variant="outline" 
-                className={`border-gray-300 ${item.count > 0 ? 'text-gray-700' : 'text-gray-400'}`}
-              >
-                {formatNumber(item.count)}
-              </Badge>
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div className="border-t border-gray-200">
+            {profileData?.useCasesBreakdown.map((item, index) => (
+              <div key={index} className="flex items-center justify-between px-6 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <span className="text-gray-700 font-medium">{item.useCase}</span>
+                <span className={`text-sm font-semibold ${item.count > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {formatNumber(item.count)}
+                </span>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
