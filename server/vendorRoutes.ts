@@ -849,21 +849,21 @@ router.get('/dashboard/profile-analytics', authenticateVendor, async (req: Reque
       useCasesResult.rows.map(row => [row.use_case as string, row.count as number])
     );
 
-    // Build complete breakdown with zeros for missing values
+    // Build complete breakdown with zeros for missing values and sort by count descending
     const industryBreakdown = ALL_INDUSTRIES.map(industry => ({
       industry,
       count: industryMap.get(industry) || 0
-    }));
+    })).sort((a, b) => b.count - a.count);
 
     const teamSizeBreakdown = ALL_TEAM_SIZES.map(teamSize => ({
       teamSize,
       count: teamSizeMap.get(teamSize) || 0
-    }));
+    })).sort((a, b) => b.count - a.count);
 
     const useCasesBreakdown = ALL_USE_CASES.map(useCase => ({
       useCase,
       count: useCasesMap.get(useCase) || 0
-    }));
+    })).sort((a, b) => b.count - a.count);
 
     res.json({
       industryBreakdown,
