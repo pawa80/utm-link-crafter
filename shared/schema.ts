@@ -254,7 +254,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   pricingPlanId: z.number().optional(),
   industry: z.string().optional(),
   teamSize: z.string().optional(),
-  useCase: z.string().optional(),
+  useCases: z.array(z.string()).optional(),
 });
 
 export const insertUtmLinkSchema = createInsertSchema(utmLinks).omit({

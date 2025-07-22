@@ -151,7 +151,10 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         description: `Welcome to UTM Builder! Your account "${accountData.accountName}" has been set up.`,
       });
       
-      onAuthSuccess();
+      // Small delay to ensure the toast is shown before redirect
+      setTimeout(() => {
+        onAuthSuccess();
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Account Setup Error",

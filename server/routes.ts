@@ -103,31 +103,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user with their own company account (Super Admin role automatically assigned)
       const { user, account } = await storage.createUserWithAccount({
         firebaseUid: userData.firebaseUid,
-        email: userData.email,
-        role: 'super_admin', // NEW: Explicitly set as Super Admin
-        categories: userData.categories || [],
-        defaultSources: userData.defaultSources || [],
-        defaultMediums: userData.defaultMediums || [],
-        defaultCampaignNames: userData.defaultCampaignNames || [],
-        isSetupComplete: userData.isSetupComplete || false,
-        showCampaignTerm: userData.showCampaignTerm ?? true,
-        showInternalCampaignId: userData.showInternalCampaignId ?? true,
-        showCategory: userData.showCategory ?? true,
-        showCustomFields: userData.showCustomFields || false,
-        customField1Name: userData.customField1Name,
-        customField1InUrl: userData.customField1InUrl || false,
-        customField1Options: userData.customField1Options,
-        customField2Name: userData.customField2Name,
-        customField2InUrl: userData.customField2InUrl || false,
-        customField2Options: userData.customField2Options,
-        customField3Name: userData.customField3Name,
-        customField3InUrl: userData.customField3InUrl || false,
-        customField3Options: userData.customField3Options,
-        // Profile data from sign-up wizard
-        industry: (userData as any).industry,
-        teamSize: (userData as any).teamSize,
-        useCases: (userData as any).useCases
-      }, userData.accountName || `${userData.email.split('@')[0]}'s Company`, userData.pricingPlanId);
+        email: userData.email || '',
+        role: 'super_admin',
+        categories: [],
+        defaultSources: [],
+        defaultMediums: [],
+        defaultCampaignNames: [],
+        isSetupComplete: false,
+        showCampaignTerm: true,
+        showInternalCampaignId: true,
+        showCategory: true,
+        showCustomFields: false,
+        customField1Name: undefined,
+        customField1InUrl: false,
+        customField1Options: undefined,
+        customField2Name: undefined,
+        customField2InUrl: false,
+        customField2Options: undefined,
+        customField3Name: undefined,
+        customField3InUrl: false,
+        customField3Options: undefined,
+        // Include profile data in user object for account creation
+        industry: userData.industry,
+        teamSize: userData.teamSize,
+        useCases: userData.useCases || []
+      }, userData.accountName || `${(userData.email || '').split('@')[0]}'s Company`, userData.pricingPlanId);
       
       // Create user template copies from base templates with account context
       await storage.createUserTemplatesFromBase(user.id, account.id);
