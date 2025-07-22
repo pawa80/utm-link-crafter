@@ -283,7 +283,7 @@ router.get('/accounts', authenticateVendor, async (req: Request, res: Response) 
       .select({
         account: accounts,
         plan: pricingPlans,
-        userCount: count(users.id),
+        userCount: sql<number>`COUNT(DISTINCT ${users.id})`,
         campaignCount: sql<number>`COUNT(DISTINCT ${utmLinks.utm_campaign})`,
         utmLinkCount: count(utmLinks.id)
       })
