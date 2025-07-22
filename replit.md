@@ -545,6 +545,13 @@ Changelog:
   - **Single Account Creation**: Sign-up wizard now remains the ONLY place where new accounts are created with proper user data
   - **Eliminated Duplicate Pattern**: No more creation of empty "email's Company" accounts alongside user-specified account names
   - **VERIFIED WORKING**: Sign-up process now creates exactly one account per user with proper profile data and no duplicates
+- July 22, 2025. Vendor Dashboard Analytics Sorting and Account Profile Display Enhancement (COMPLETED):
+  - **Analytics Sorting Fix**: Modified vendor dashboard profile analytics tables (Industry Distribution, Team Size Distribution, Use Cases Distribution) to sort by highest count first instead of alphabetical order
+  - **Account Profile Information Display**: Enhanced VendorAccounts.tsx to display sign-up profile information on account management cards
+  - **Profile Data Integration**: Added industry, team size, and use cases fields to account card display below Plan and Created information
+  - **Visual Enhancement**: Made all labels bold (Plan, Created, Industry, Team Size, Use Cases) for better readability and visual hierarchy
+  - **Smart Display Logic**: Profile information only shows when data exists, preventing empty field display for accounts without profile data
+  - **Data Verification**: Confirmed profile data flows correctly from sign-up process to vendor dashboard display
 
 ## User Preferences
 

@@ -304,24 +304,24 @@ const VendorAccounts: React.FC = () => {
                 </div>
                 <CardDescription className="text-gray-600 space-y-1">
                   <div>
-                    Plan: {account.plan?.planName || 'No Plan'} • 
-                    Created: {new Date(account.account.createdAt).toLocaleDateString()}
+                    <span className="font-semibold">Plan:</span> {account.plan?.planName || 'No Plan'} • 
+                    <span className="font-semibold">Created:</span> {new Date(account.account.createdAt).toLocaleDateString()}
                   </div>
                   {(account.account.industry || account.account.teamSize || (account.account.useCases && account.account.useCases.length > 0)) && (
                     <div className="space-y-1 text-sm">
                       {account.account.industry && (
                         <div>
-                          <span className="text-gray-500">Industry:</span> {account.account.industry}
+                          <span className="font-semibold text-gray-700">Industry:</span> {account.account.industry}
                         </div>
                       )}
                       {account.account.teamSize && (
                         <div>
-                          <span className="text-gray-500">Team Size:</span> {account.account.teamSize}
+                          <span className="font-semibold text-gray-700">Team Size:</span> {account.account.teamSize}
                         </div>
                       )}
                       {account.account.useCases && account.account.useCases.length > 0 && (
                         <div>
-                          <span className="text-gray-500">Use Cases:</span> {account.account.useCases.join(', ')}
+                          <span className="font-semibold text-gray-700">Use Cases:</span> {account.account.useCases.join(', ')}
                         </div>
                       )}
                     </div>
