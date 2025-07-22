@@ -552,6 +552,14 @@ Changelog:
   - **Visual Enhancement**: Made all labels bold (Plan, Created, Industry, Team Size, Use Cases) for better readability and visual hierarchy
   - **Smart Display Logic**: Profile information only shows when data exists, preventing empty field display for accounts without profile data
   - **Data Verification**: Confirmed profile data flows correctly from sign-up process to vendor dashboard display
+- July 22, 2025. Campaign Links UI and Custom Input Functionality Enhancement (COMPLETED):
+  - **Duplicate Row Icon Removal**: Removed duplicate row functionality from Campaign Links since users cannot modify fields in that section
+  - **Campaign Links Display Fix**: Fixed Campaign Links to show ALL generated UTM links for multiple landing pages instead of only showing one per source-medium combination
+  - **Custom Content Input**: Added "Add Content" buttons to Content section allowing users to create custom content variations with auto-selection
+  - **Custom Term Input**: Added "Add Term" buttons to Terms section allowing users to create custom term variations with auto-selection
+  - **Interactive Input Fields**: Both custom inputs support Enter key submission, auto-focus, and proper validation with Add/Cancel buttons
+  - **State Management**: Enhanced component state to handle custom content and term inputs with proper cleanup and toast notifications
+  - **Free Plan Access**: Custom content and term addition functionality available to Free plan users for enhanced campaign customization
 
 ## User Preferences
 

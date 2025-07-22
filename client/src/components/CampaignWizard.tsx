@@ -56,6 +56,10 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const [selectedContent, setSelectedContent] = useState<{ [key: string]: string[] }>({});
   const [selectedTerms, setSelectedTerms] = useState<{ [key: string]: string[] }>({});
   const [generatedUtmLinks, setGeneratedUtmLinks] = useState<any[]>([]);
+  const [showCustomContentInput, setShowCustomContentInput] = useState<{ [key: string]: boolean }>({});
+  const [customContentInput, setCustomContentInput] = useState<{ [key: string]: string }>({});
+  const [showCustomTermInput, setShowCustomTermInput] = useState<{ [key: string]: boolean }>({});
+  const [customTermInput, setCustomTermInput] = useState<{ [key: string]: string }>({});
   
   // All sections are now always visible
 
@@ -286,6 +290,55 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         ...prev,
         [contentKey]: updated
       };
+    });
+  };
+
+  const handleAddCustomContent = (contentKey: string) => {
+    const customValue = customContentInput[contentKey]?.trim();
+    if (!customValue) return;
+    
+    // Add to content variants
+    setContentVariants(prev => ({
+      ...prev,
+      [contentKey]: [
+        ...(prev[contentKey] || []),
+        { id: `custom-${Date.now()}`, content: customValue }
+      ]
+    }));
+    
+    // Auto-select the new content
+    setSelectedContent(prev => ({
+      ...prev,
+      [contentKey]: [...(prev[contentKey] || []), customValue]
+    }));
+    
+    // Clear input and hide
+    setCustomContentInput(prev => ({ ...prev, [contentKey]: '' }));
+    setShowCustomContentInput(prev => ({ ...prev, [contentKey]: false }));
+    
+    toast({
+      title: "Custom content added",
+      description: `Added "${customValue}" to content options`,
+    });
+  };
+
+  const handleAddCustomTerm = (contentKey: string) => {
+    const customValue = customTermInput[contentKey]?.trim();
+    if (!customValue) return;
+    
+    // Auto-select the new term
+    setSelectedTerms(prev => ({
+      ...prev,
+      [contentKey]: [...(prev[contentKey] || []), customValue]
+    }));
+    
+    // Clear input and hide
+    setCustomTermInput(prev => ({ ...prev, [contentKey]: '' }));
+    setShowCustomTermInput(prev => ({ ...prev, [contentKey]: false }));
+    
+    toast({
+      title: "Custom term added",
+      description: `Added "${customValue}" to term options`,
     });
   };
 
@@ -1471,6 +1524,55 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                             ) : (
                               <p className="text-sm text-gray-500">No content suggestions available for this combination.</p>
                             )}
+                            
+                            {/* Add Custom Content */}
+                            {showCustomContentInput[contentKey] ? (
+                              <div className="flex gap-2 mt-2">
+                                <input
+                                  type="text"
+                                  value={customContentInput[contentKey] || ''}
+                                  onChange={(e) => setCustomContentInput(prev => ({
+                                    ...prev,
+                                    [contentKey]: e.target.value
+                                  }))}
+                                  placeholder="Enter custom content"
+                                  className="px-3 py-1 border rounded text-sm flex-1"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleAddCustomContent(contentKey);
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAddCustomContent(contentKey)}
+                                  disabled={!customContentInput[contentKey]?.trim()}
+                                >
+                                  Add
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowCustomContentInput(prev => ({ ...prev, [contentKey]: false }));
+                                    setCustomContentInput(prev => ({ ...prev, [contentKey]: '' }));
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCustomContentInput(prev => ({ ...prev, [contentKey]: true }))}
+                                className="mt-2"
+                              >
+                                + Add Content
+                              </Button>
+                            )}
                           </div>
                         );
                       })}
@@ -1517,6 +1619,55 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                                 </Button>
                               ))}
                             </div>
+                            
+                            {/* Add Custom Term */}
+                            {showCustomTermInput[contentKey] ? (
+                              <div className="flex gap-2 mt-2">
+                                <input
+                                  type="text"
+                                  value={customTermInput[contentKey] || ''}
+                                  onChange={(e) => setCustomTermInput(prev => ({
+                                    ...prev,
+                                    [contentKey]: e.target.value
+                                  }))}
+                                  placeholder="Enter custom term"
+                                  className="px-3 py-1 border rounded text-sm flex-1"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleAddCustomTerm(contentKey);
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAddCustomTerm(contentKey)}
+                                  disabled={!customTermInput[contentKey]?.trim()}
+                                >
+                                  Add
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowCustomTermInput(prev => ({ ...prev, [contentKey]: false }));
+                                    setCustomTermInput(prev => ({ ...prev, [contentKey]: '' }));
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCustomTermInput(prev => ({ ...prev, [contentKey]: true }))}
+                                className="mt-2"
+                              >
+                                + Add Term
+                              </Button>
+                            )}
                           </div>
                         );
                       })}
@@ -1611,42 +1762,21 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                         <span className="text-sm">{link.medium}</span>
                         <span className="text-sm">{link.content}</span>
                         <span className="text-sm">{link.term || '—'}</span>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Duplicate this specific row
-                              const newLink = {
-                                ...link,
-                                id: `${link.id}-dup-${Date.now()}`,
-                              };
-                              setGeneratedUtmLinks(prev => [...prev, newLink]);
-                              toast({
-                                title: "Row duplicated",
-                                description: "UTM link row has been duplicated",
-                              });
-                            }}
-                            className="w-8 h-8 p-0"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Delete this specific row
-                              setGeneratedUtmLinks(prev => prev.filter(l => l.id !== link.id));
-                              toast({
-                                title: "Row deleted",
-                                description: "UTM link row has been removed",
-                              });
-                            }}
-                            className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Delete this specific row
+                            setGeneratedUtmLinks(prev => prev.filter(l => l.id !== link.id));
+                            toast({
+                              title: "Row deleted",
+                              description: "UTM link row has been removed",
+                            });
+                          }}
+                          className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
                       </div>
                       {/* Second line: Link name, UTM Link, Actions */}
                       <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 1fr 80px' }}>
@@ -1693,23 +1823,6 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                               onClick={() => {
                                 navigator.clipboard.writeText(link.fullUtmLink);
                                 toast({ title: "Link copied to clipboard" });
-                              }}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newLink = {
-                                  ...link,
-                                  id: `${link.id}-dup-${Date.now()}`,
-                                };
-                                setGeneratedUtmLinks(prev => [...prev, newLink]);
-                                toast({
-                                  title: "Row duplicated",
-                                  description: "UTM link row has been duplicated",
-                                });
                               }}
                             >
                               <Copy className="w-4 h-4" />
