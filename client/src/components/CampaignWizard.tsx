@@ -1671,12 +1671,12 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
       )}
 
       {/* Save Campaign Button */}
-      {getCheckedSourcesWithContent().length > 0 && (
+      {generatedUtmLinks.length > 0 && (
         <div className="flex justify-end pt-6">
           <Button
             onClick={() => {
-              // Check what links we're trying to save
-              const linksToSave = getCheckedSourcesWithContent();
+              // Use the correctly generated UTM links from autoPopulateUtmLinks()
+              const linksToSave = generatedUtmLinks;
               
               if (linksToSave.length === 0) {
                 toast({
@@ -1687,17 +1687,17 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 return;
               }
               
-              // Prepare UTM links data with userId and accountId (like ChatWizard)
+              // Prepare UTM links data using the complete generated links (includes all landing pages)
               const utmLinks = linksToSave.map(link => ({
                 userId: user.id,
                 accountId: user.accountId,
-                targetUrl: landingPages.length > 0 ? landingPages[0].url : link.utmLink.split('?')[0],
-                fullUtmLink: link.utmLink,
+                targetUrl: link.targetUrl,
+                fullUtmLink: link.fullUtmLink,
                 utm_campaign: campaignName,
-                utm_source: link.sourceName,
-                utm_medium: link.medium,
-                utm_content: link.content,
-                utm_term: link.term || '',
+                utm_source: link.utm_source,
+                utm_medium: link.utm_medium,
+                utm_content: link.utm_content,
+                utm_term: link.utm_term || '',
                 tags: selectedTags
               }));
               
@@ -1721,7 +1721,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
             disabled={createCampaignMutation.isPending}
           >
-            {createCampaignMutation.isPending ? "Saving..." : `Save Campaign Links (${getCheckedSourcesWithContent().length})`}
+            {createCampaignMutation.isPending ? "Saving..." : `Save Campaign Links (${generatedUtmLinks.length})`}
           </Button>
         </div>
       )}
