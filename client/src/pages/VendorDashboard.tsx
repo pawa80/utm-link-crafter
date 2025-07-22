@@ -66,7 +66,7 @@ const ProfileAnalytics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {[...Array(3)].map((_, i) => (
           <Card key={i} className="bg-white border-gray-200">
             <CardHeader>
@@ -88,7 +88,7 @@ const ProfileAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {/* Industry Distribution */}
       <Card className="bg-white border-gray-200">
         <CardHeader>
