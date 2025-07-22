@@ -430,6 +430,12 @@ Changelog:
   - Modified duplicate campaign validation to skip duplicate checks when adding to existing campaigns
   - Chat Wizard now properly passes isExistingCampaign flag when creating landing pages for existing campaigns
   - Users can now successfully add UTM links with different tags to their existing campaigns through Chat Wizard
+- July 22, 2025. Enhanced Email Authentication with Password Confirmation and Show/Hide (COMPLETED):
+  - **Password Confirmation**: Added confirm password field to email sign-up form with real-time validation
+  - **Show/Hide Password**: Added eye icon toggles for both password and confirm password fields in sign-up and sign-in forms
+  - **Password Validation**: Enhanced password validation with 6-character minimum requirement and mismatch detection
+  - **User Experience**: Real-time feedback showing password mismatch errors and password requirements
+  - **Security Enhancement**: Improved password entry experience while maintaining security standards
 - July 22, 2025. Authentication Flow Debugging and UserHeader Display Fix (COMPLETED):
   - **Authentication Issue Resolution**: Fixed React hooks order violations and component structure in HomePage
   - **Component Architecture**: Split HomePage into main component (handles auth) and AuthenticatedHomePage (shows content)
