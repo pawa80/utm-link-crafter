@@ -151,10 +151,14 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         description: `Welcome to UTM Builder! Your account "${accountData.accountName}" has been set up.`,
       });
       
-      // Small delay to ensure the toast is shown before redirect
-      setTimeout(() => {
-        onAuthSuccess();
-      }, 1000);
+      // Force Firebase auth state refresh before redirect
+      if (firebaseUser) {
+        await firebaseUser.reload();
+        await firebaseUser.getIdToken(true); // Force refresh
+      }
+      
+      // Ensure we have the auth state before redirecting
+      onAuthSuccess();
     } catch (error: any) {
       toast({
         title: "Account Setup Error",

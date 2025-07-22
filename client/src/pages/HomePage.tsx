@@ -36,10 +36,14 @@ export default function HomePage() {
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (!errorMessage.includes('duplicate key value violates unique constraint')) {
           console.error("Error creating/getting user:", error);
+          // For unexpected errors, still reset auth state
+          setAuthUser(null);
+          setUser(null);
+        } else {
+          // For duplicate user errors, keep the Firebase user but clear the user data
+          // This will maintain auth state but let the user creation retry
+          setUser(null);
         }
-        // For authentication errors, still reset state
-        setAuthUser(null);
-        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -49,7 +53,19 @@ export default function HomePage() {
   }, []);
 
   const handleAuthSuccess = async () => {
-    // Auth state change will be handled by the useEffect
+    // Force a reload of the auth state to ensure we get the latest user data
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        await currentUser.reload();
+        const userData = await createOrGetUser(currentUser);
+        setUser(userData as User);
+        setAuthUser(currentUser);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error in handleAuthSuccess:", error);
+      }
+    }
   };
 
   const handleLogout = () => {
