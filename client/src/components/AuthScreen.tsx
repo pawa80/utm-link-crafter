@@ -105,7 +105,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     pricingPlanId: number;
     industry?: string;
     teamSize?: string;
-    useCase?: string;
+    useCases?: string[];
   }) => {
     setIsLoading(true);
     
@@ -122,7 +122,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         pricingPlanId: accountData.pricingPlanId,
         industry: accountData.industry,
         teamSize: accountData.teamSize,
-        useCase: accountData.useCase
+        useCases: accountData.useCases
       });
       
       toast({
