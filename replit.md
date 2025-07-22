@@ -537,6 +537,14 @@ Changelog:
   - **Data Integration**: Profile data (industry, team size, use cases) properly flows from sign-up to vendor dashboard analytics
   - **Authentication Flow Enhancement**: Improved Firebase auth state refresh and synchronization to prevent sign-up flow interruptions
   - **VERIFIED WORKING**: Full sign-up process tested and confirmed working - users can successfully complete registration and access home page
+- July 22, 2025. Critical Duplicate Account Creation Bug Fix (COMPLETED):
+  - **Root Cause Identified**: Both sign-up wizard and authentication flow were creating accounts, resulting in duplicate accounts per user
+  - **Authentication Architecture Fix**: Replaced createOrGetUser with getUser function that only retrieves existing users without creating accounts
+  - **API Endpoint Addition**: Added GET /api/users/:uid endpoint for safe user retrieval during authentication flow
+  - **Import Error Resolution**: Fixed all component imports across the application (HomePage, Dashboard, Settings, etc.) to use new getUser function
+  - **Single Account Creation**: Sign-up wizard now remains the ONLY place where new accounts are created with proper user data
+  - **Eliminated Duplicate Pattern**: No more creation of empty "email's Company" accounts alongside user-specified account names
+  - **VERIFIED WORKING**: Sign-up process now creates exactly one account per user with proper profile data and no duplicates
 
 ## User Preferences
 
