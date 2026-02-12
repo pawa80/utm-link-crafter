@@ -1,4 +1,2 @@
 // Vercel serverless function wrapper
-import app from '../server/index.js';
-
-export default app;
+export { default } from '../server/vercel-app.js';
