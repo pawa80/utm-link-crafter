@@ -35,6 +35,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     try {
       if (activeTab === "signin") {
         await signInWithEmail(email, password);
+        onAuthSuccess();
       } else {
         // Validate password confirmation for signup
         if (password !== confirmPassword) {
@@ -45,7 +46,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           });
           return;
         }
-        
+
         if (password.length < 6) {
           toast({
             title: "Password Too Short",
@@ -54,14 +55,28 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           });
           return;
         }
-        
+
         // For signup, show the wizard instead of immediate signup
         setUserEmail(email);
         setShowSignUpWizard(true);
         return;
       }
-      onAuthSuccess();
     } catch (error: any) {
+      // If signup fails because email already exists, try signing in instead
+      if (error.code === 'auth/email-already-in-use') {
+        try {
+          await signInWithEmail(email, password);
+          onAuthSuccess();
+          return;
+        } catch (signInError: any) {
+          toast({
+            title: "Authentication Error",
+            description: signInError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       toast({
         title: "Authentication Error",
         description: error.message,
