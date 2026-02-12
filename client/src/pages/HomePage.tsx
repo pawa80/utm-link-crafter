@@ -18,6 +18,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -28,28 +29,22 @@ export default function HomePage() {
           const userData = await getUser(firebaseUser);
           if (userData) {
             setUser(userData as User);
+            setNeedsSetup(false);
           } else {
-            // User doesn't exist in database, stay on auth screen
-            setAuthUser(null);
+            // Firebase user exists but no DB record — needs account setup
             setUser(null);
+            setNeedsSetup(true);
           }
         } else {
           setAuthUser(null);
           setUser(null);
+          setNeedsSetup(false);
         }
       } catch (error) {
-        // Only log error if it's not a duplicate user error (expected for existing users)
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (!errorMessage.includes('duplicate key value violates unique constraint')) {
-          console.error("Error creating/getting user:", error);
-          // For unexpected errors, still reset auth state
-          setAuthUser(null);
-          setUser(null);
-        } else {
-          // For duplicate user errors, keep the Firebase user but clear the user data
-          // This will maintain auth state but let the user creation retry
-          setUser(null);
-        }
+        console.error("Error creating/getting user:", error);
+        setAuthUser(null);
+        setUser(null);
+        setNeedsSetup(false);
       } finally {
         setLoading(false);
       }
@@ -91,11 +86,51 @@ export default function HomePage() {
     );
   }
 
-  if (!authUser || !user) {
+  if (!authUser || (!user && !needsSetup)) {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
-  return <AuthenticatedHomePage user={user} onLogout={handleLogout} />;
+  if (needsSetup && authUser) {
+    // Firebase user exists but no DB record — create one with defaults
+    const createDefaultUser = async () => {
+      try {
+        const idToken = await authUser.getIdToken();
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'x-firebase-uid': authUser.uid,
+          },
+          body: JSON.stringify({
+            firebaseUid: authUser.uid,
+            email: authUser.email,
+            accountName: authUser.displayName
+              ? `${authUser.displayName}'s Account`
+              : `${(authUser.email || '').split('@')[0]}'s Account`,
+          }),
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData as User);
+          setNeedsSetup(false);
+        }
+      } catch (error) {
+        console.error("Error creating user:", error);
+      }
+    };
+    createDefaultUser();
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent/5 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/20 border-t-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Setting up your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AuthenticatedHomePage user={user!} onLogout={handleLogout} />;
 }
 
 function AuthenticatedHomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
