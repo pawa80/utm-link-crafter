@@ -100,6 +100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(existingUser);
       }
       
+      // If no pricing plan specified, default to the free plan
+      if (!userData.pricingPlanId) {
+        const freePlan = await db.query.pricingPlans.findFirst({
+          where: eq(pricingPlans.planCode, 'free')
+        });
+        if (freePlan) {
+          userData.pricingPlanId = freePlan.id;
+        }
+      }
+
       // Create user with their own company account (Super Admin role automatically assigned)
       const { user, account } = await storage.createUserWithAccount({
         firebaseUid: userData.firebaseUid,

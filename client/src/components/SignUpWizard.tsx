@@ -57,28 +57,33 @@ const USE_CASES = [
 export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [accountName, setAccountName] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [industry, setIndustry] = useState("");
   const [teamSize, setTeamSize] = useState("");
   const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
   const [customUseCase, setCustomUseCase] = useState("");
   const { toast } = useToast();
 
-  // Get available pricing plans
-  const { data: pricingPlans = [], isLoading: isLoadingPlans } = useQuery({
+  // Get available pricing plans - auto-select free plan
+  const { data: pricingPlans = [] } = useQuery({
     queryKey: ['/api/pricing-plans'],
     enabled: true
   });
+
+  // Auto-select free plan (or first available plan)
+  const freePlan = Array.isArray(pricingPlans)
+    ? pricingPlans.find((p: PricingPlan) => p.planCode === 'free') || pricingPlans[0]
+    : null;
+  const selectedPlanId = freePlan?.id ?? null;
 
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(0)}`;
   };
 
   const handleNext = () => {
-    if (currentStep === 1 && (!accountName.trim() || !selectedPlanId)) {
+    if (currentStep === 1 && !accountName.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter your account name and select a pricing plan.",
+        description: "Please enter your account name.",
         variant: "destructive",
       });
       return;
@@ -175,7 +180,7 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
             <div className="space-y-8">
               <CardHeader className="px-0 pb-6">
                 <CardTitle className="text-2xl">Set Up Your Account</CardTitle>
-                <p className="text-muted-foreground">Choose your account name and select the perfect plan for your needs.</p>
+                <p className="text-muted-foreground">Choose a name for your account to get started.</p>
               </CardHeader>
 
               <div className="space-y-6">
@@ -189,62 +194,6 @@ export default function SignUpWizard({ userEmail, onComplete, onBack }: SignUpWi
                     placeholder="My Company, Inc."
                     className="text-lg py-3"
                   />
-                </div>
-
-                <div>
-                  <Label className="text-base font-medium">Choose Your Plan *</Label>
-                  <p className="text-sm text-muted-foreground mb-4">You can upgrade or downgrade anytime</p>
-                  
-                  {isLoadingPlans ? (
-                    <div className="text-center py-8">Loading pricing plans...</div>
-                  ) : (
-                    <RadioGroup value={selectedPlanId?.toString()} onValueChange={(value) => setSelectedPlanId(parseInt(value))}>
-                      <div className="grid gap-4">
-                        {Array.isArray(pricingPlans) && pricingPlans.map((plan: PricingPlan) => (
-                          <div key={plan.id} className="relative">
-                            <RadioGroupItem value={plan.id.toString()} id={plan.id.toString()} className="sr-only" />
-                            <Label
-                              htmlFor={plan.id.toString()}
-                              className={`block p-6 border-2 rounded-lg cursor-pointer transition-all hover:border-primary/50 ${
-                                selectedPlanId === plan.id ? 'border-primary bg-primary/5' : 'border-border'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3 mb-2">
-                                    <h3 className="font-semibold text-lg">{plan.planName}</h3>
-                                    {recommendedPlan(plan.planCode) && (
-                                      <Badge className="bg-gradient-to-r from-secondary to-accent text-white">
-                                        <Zap size={12} className="mr-1" />
-                                        Recommended
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {plan.description && (
-                                    <p className="text-muted-foreground mb-3">{plan.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                    {plan.maxCampaigns && <span>• {plan.maxCampaigns} campaigns</span>}
-                                    {plan.maxUsers && <span>• {plan.maxUsers} users</span>}
-                                    {plan.maxUtmLinks && <span>• {plan.maxUtmLinks} UTM links</span>}
-                                    {!plan.maxCampaigns && !plan.maxUsers && !plan.maxUtmLinks && <span>• Unlimited</span>}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-2xl font-bold">
-                                    {plan.monthlyPriceCents === 0 ? 'Free' : formatPrice(plan.monthlyPriceCents)}
-                                  </div>
-                                  {plan.monthlyPriceCents > 0 && (
-                                    <div className="text-sm text-muted-foreground">/month</div>
-                                  )}
-                                </div>
-                              </div>
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </RadioGroup>
-                  )}
                 </div>
               </div>
             </div>
