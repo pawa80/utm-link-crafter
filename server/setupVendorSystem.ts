@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { vendorUsers, pricingPlans } from "@shared/schema.js";
+import { vendorUsers, pricingPlans } from "../shared/schema.js";
 import { hashPassword } from "./vendorAuth";
 import { eq } from "drizzle-orm";
 
@@ -166,7 +166,7 @@ export async function assignDefaultPricingPlans() {
     }
 
     // Update accounts that don't have a pricing plan
-    const { accounts } = await import("@shared/schema.js");
+    const { accounts } = await import("../shared/schema.js");
     
     const result = await db
       .update(accounts)

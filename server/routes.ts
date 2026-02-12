@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema, pricingPlans } from "@shared/schema";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema, pricingPlans } from "../shared/schema.js";
 import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions.js";
-import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "@shared/validation.js";
+import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "../shared/validation.js";
 import { eq } from "drizzle-orm";
 import { db } from "./db.js";
 import { z } from "zod";

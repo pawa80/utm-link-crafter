@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "./db";
-import { vendorSessions, vendorUsers } from "@shared/schema.js";
+import { vendorSessions, vendorUsers } from "../shared/schema.js";
 import { eq, and, gt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import crypto from "crypto";

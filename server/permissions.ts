@@ -1,4 +1,4 @@
-import type { User } from "@shared/schema.js";
+import type { User } from "../shared/schema.js";
 
 // Role hierarchy for permission validation
 export const ROLE_HIERARCHY = {

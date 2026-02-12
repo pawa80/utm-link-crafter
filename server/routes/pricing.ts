@@ -1,7 +1,7 @@
 // API endpoint for getting pricing plans for public signup
 import { Router } from "express";
 import { db } from "../db.js";
-import { pricingPlans } from "@shared/schema.js";
+import { pricingPlans } from "../../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 const router = Router();
