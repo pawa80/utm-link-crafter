@@ -15,10 +15,10 @@ import {
   baseUtmTemplates,
   baseTermTemplates,
   tags
-} from "@shared/schema";
+} from "@shared/schema.js";
 import { eq, desc, count, sql, and, isNull, or, isNotNull, ne } from "drizzle-orm";
 import { authenticateVendor, loginVendorUser, logoutVendorUser, hashPassword } from "./vendorAuth";
-import { insertVendorUserSchema, insertPricingPlanSchema, updateAccountSchema } from "@shared/schema";
+import { insertVendorUserSchema, insertPricingPlanSchema, updateAccountSchema } from "@shared/schema.js";
 
 const router = Router();
 

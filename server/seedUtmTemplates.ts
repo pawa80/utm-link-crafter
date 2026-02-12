@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { baseUtmTemplates } from "@shared/schema";
+import { baseUtmTemplates } from "@shared/schema.js";
 
 const defaultUtmTemplates = [
   { utmSource: "google", utmMedium: "cpc", utmContent: "text-ad", description: "Google Ads - Tekstannonse" },

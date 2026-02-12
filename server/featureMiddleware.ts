@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { db } from './db';
-import { accounts, users, pricingPlans } from '@shared/schema';
+import { db } from './db.js';
+import { accounts, users, pricingPlans } from '@shared/schema.js';
 import { eq } from 'drizzle-orm';
 
 export interface FeatureRequest extends Request {

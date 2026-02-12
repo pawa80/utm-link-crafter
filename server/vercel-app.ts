@@ -24,18 +24,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register your routes
-registerRoutes(app);
-
-// Error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-  res.status(status).json({ message });
+// Register your routes (must await - seeds templates and sets up vendor system)
+const setupPromise = registerRoutes(app).then(() => {
+  // Error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+  });
 });
 
-// Export for Vercel
-export default app;
+// Export for Vercel - wrap in handler that awaits setup
+const handler = async (req: any, res: any) => {
+  await setupPromise;
+  return app(req, res);
+};
+
+export default handler;
 
 // Also export for local development
 if (process.env.NODE_ENV !== 'production') {
