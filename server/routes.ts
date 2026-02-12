@@ -9,6 +9,7 @@ import { db } from "./db.js";
 import { z } from "zod";
 import { seedUtmTemplates, getUniqueSourcesAndMediums } from "./seedUtmTemplates.js";
 import vendorRoutes from "./vendorRoutes.js";
+import pricingRoutes from "./routes/pricing.js";
 import { setupVendorSystem, assignDefaultPricingPlans } from "./setupVendorSystem.js";
 
 const authMiddleware = async (req: any, res: any, next: any) => {
@@ -88,7 +89,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup vendor system (admin user, pricing plans)
   await setupVendorSystem();
   await assignDefaultPricingPlans();
-  
+
+  // Public routes (no auth required)
+  app.use("/api", pricingRoutes);
+
   // Create or get user
   app.post("/api/users", async (req, res) => {
     try {
