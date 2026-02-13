@@ -78,7 +78,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   // Auto-populate UTM links when data changes
   useEffect(() => {
     autoPopulateUtmLinks();
-  }, [campaignName, sourceStates, selectedContent, selectedTerms, landingPages]);
+  }, [campaignName, targetUrl, sourceStates, selectedContent, selectedTerms, landingPages]);
 
   // Define autoPopulateUtmLinks function before useEffect
   // (moved above to fix dependency issue)
@@ -187,11 +187,18 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
   const autoPopulateUtmLinks = () => {
     const checkedSources = Object.entries(sourceStates)
       .filter(([, state]) => state.checked && state.selectedMediums.length > 0);
-    
-    if (checkedSources.length === 0 || !campaignName.trim() || landingPages.length === 0) {
+
+    // Need at least one source, a campaign name, and a URL (either landing pages or targetUrl)
+    const hasUrl = landingPages.length > 0 || targetUrl.trim();
+    if (checkedSources.length === 0 || !campaignName.trim() || !hasUrl) {
       setGeneratedUtmLinks([]);
       return;
     }
+
+    // Build the list of URLs to generate links for
+    const urlsToUse = landingPages.length > 0
+      ? landingPages.filter(lp => lp.url.trim())
+      : [{ id: 'single-url', url: targetUrl.trim(), label: '' }];
 
     const links: any[] = [];
     checkedSources.forEach(([sourceName, state]) => {
@@ -200,10 +207,8 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         const contents = selectedContent[contentKey] || [];
         if (contents.length === 0) return; // Skip if no content selected
         const terms = selectedTerms[contentKey] || [''];
-        
-        landingPages.forEach(landingPage => {
-          if (!landingPage.url.trim()) return;
-          
+
+        urlsToUse.forEach(landingPage => {
           contents.forEach(content => {
             terms.forEach(term => {
               const fullUtmLink = generateUTMLink({
@@ -214,7 +219,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
                 utm_content: content,
                 utm_term: term
               });
-              
+
               links.push({
                 id: `${sourceName}-${medium}-${content}-${term}-${landingPage.id}`,
                 sourceName,
@@ -236,7 +241,7 @@ export default function CampaignWizard({ user, onSaveSuccess, editMode = false, 
         });
       });
     });
-    
+
     setGeneratedUtmLinks(links);
   };
 
