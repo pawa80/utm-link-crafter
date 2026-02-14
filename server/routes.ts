@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
-import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema, pricingPlans } from "../shared/schema.js";
+import { insertUserSchema, insertUtmLinkSchema, insertSourceTemplateSchema, updateUserSchema, insertTagSchema, insertCampaignLandingPageSchema, insertAccountSchema, insertInvitationSchema, userRoleSchema, pricingPlans, accounts, users } from "../shared/schema.js";
 import { requirePermission, requireAccountAccess, hasPermission, canManageUser, canChangeUserRole, canModifyCampaign, validateAccountAccess } from "./permissions.js";
 import { validateUrl, stripUtmParameters, sanitizeUtmParameter, campaignValidationSchema, generateUTMLink, checkDuplicateCampaign, formatValidationError, termTemplateSchema } from "../shared/validation.js";
 import { eq } from "drizzle-orm";
@@ -1442,6 +1442,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching pricing plans:', error);
       res.status(500).json({ message: "Failed to fetch pricing plans" });
+    }
+  });
+
+  // One-time admin endpoint: upgrade account to enterprise and fix plan features
+  app.post("/api/admin/upgrade-enterprise", async (req, res) => {
+    try {
+      const { email, adminKey } = req.body;
+      if (adminKey !== "utm-admin-2026") {
+        return res.status(403).json({ message: "Invalid admin key" });
+      }
+      if (!email) {
+        return res.status(400).json({ message: "Email required" });
+      }
+
+      // Update all pricing plans to include tagManagement
+      const allPlans = await db.select().from(pricingPlans);
+      for (const plan of allPlans) {
+        const features = (plan.features as Record<string, boolean>) || {};
+        const shouldHaveTagMgmt = ['starter', 'professional', 'enterprise'].includes(plan.planCode);
+        if (features.tagManagement === undefined) {
+          features.tagManagement = shouldHaveTagMgmt;
+          await db.update(pricingPlans).set({ features }).where(eq(pricingPlans.id, plan.id));
+        }
+      }
+
+      // Find enterprise plan
+      const [enterprisePlan] = await db.select().from(pricingPlans).where(eq(pricingPlans.planCode, 'enterprise'));
+      if (!enterprisePlan) {
+        return res.status(404).json({ message: "Enterprise plan not found" });
+      }
+
+      // Find user by email
+      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (user.length === 0) {
+        return res.status(404).json({ message: `User ${email} not found` });
+      }
+
+      // Update account to enterprise
+      const [updated] = await db
+        .update(accounts)
+        .set({ pricingPlanId: enterprisePlan.id, subscriptionTier: 'enterprise' })
+        .where(eq(accounts.id, user[0].accountId))
+        .returning();
+
+      res.json({
+        message: `Account upgraded to enterprise`,
+        accountId: updated.id,
+        planId: enterprisePlan.id,
+        plansUpdated: allPlans.length
+      });
+    } catch (error: any) {
+      console.error("Admin upgrade error:", error);
+      res.status(500).json({ message: error.message });
     }
   });
 
