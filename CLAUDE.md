@@ -35,9 +35,9 @@ https://utm-link-crafter-jg3g.vercel.app
 
 ## Environment Variables (Vercel)
 - `DATABASE_URL` — Neon PostgreSQL connection string
-- `VITE_FIREBASE_API_KEY` — `AIzaSyAmj4Fvx5sUy4pAWIaLDoMOfJJsMJhDUcw`
+- `VITE_FIREBASE_API_KEY` — set in Vercel env vars (do not commit)
 - `VITE_FIREBASE_PROJECT_ID` — `utmlinkcrafter-replitnew`
-- `VITE_FIREBASE_APP_ID` — `1:40657725142:web:3ac01b770d235eb1e38b77`
+- `VITE_FIREBASE_APP_ID` — set in Vercel env vars (do not commit)
 - `RESEND_API_KEY` — optional, for email invitations
 
 ## Important Conventions
