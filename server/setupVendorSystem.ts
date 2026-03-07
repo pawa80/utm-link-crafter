@@ -16,7 +16,7 @@ export async function setupVendorSystem() {
     }
 
     // Create default vendor admin user
-    const defaultPassword = 'VendorAdmin2025!';
+    const defaultPassword = process.env.VENDOR_ADMIN_PASSWORD || 'CHANGE_ME_ON_FIRST_LOGIN';
     const hashedPassword = await hashPassword(defaultPassword);
 
     await db.insert(vendorUsers).values({
@@ -30,7 +30,7 @@ export async function setupVendorSystem() {
 
     console.log('Created default vendor admin user:');
     console.log('Email: admin@utmbuilder.vendor');
-    console.log('Password: VendorAdmin2025!');
+    console.log('Password: [set via VENDOR_ADMIN_PASSWORD env var]');
     console.log('Access URL: /vendor-admin-38291');
 
     // Create default pricing plans
@@ -144,7 +144,7 @@ export async function setupVendorSystem() {
     console.log('\n=== VENDOR ACCESS INFORMATION ===');
     console.log('URL: /vendor-admin-38291');
     console.log('Email: admin@utmbuilder.vendor');
-    console.log('Password: VendorAdmin2025!');
+    console.log('Password: [set via VENDOR_ADMIN_PASSWORD env var]');
     console.log('====================================\n');
 
   } catch (error) {

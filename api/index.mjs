@@ -1499,7 +1499,7 @@ async function setupVendorSystem() {
       console.log("Vendor system already set up, skipping initialization");
       return;
     }
-    const defaultPassword = "VendorAdmin2025!";
+    const defaultPassword = process.env.VENDOR_ADMIN_PASSWORD || "CHANGE_ME_ON_FIRST_LOGIN";
     const hashedPassword = await hashPassword(defaultPassword);
     await db.insert(vendorUsers).values({
       email: "admin@utmbuilder.vendor",
@@ -1511,7 +1511,7 @@ async function setupVendorSystem() {
     });
     console.log("Created default vendor admin user:");
     console.log("Email: admin@utmbuilder.vendor");
-    console.log("Password: VendorAdmin2025!");
+    console.log("Password: [set via VENDOR_ADMIN_PASSWORD env var]");
     console.log("Access URL: /vendor-admin-38291");
     const defaultPlans = [
       {
@@ -1624,7 +1624,7 @@ async function setupVendorSystem() {
     console.log("\n=== VENDOR ACCESS INFORMATION ===");
     console.log("URL: /vendor-admin-38291");
     console.log("Email: admin@utmbuilder.vendor");
-    console.log("Password: VendorAdmin2025!");
+    console.log("Password: [set via VENDOR_ADMIN_PASSWORD env var]");
     console.log("====================================\n");
   } catch (error) {
     console.error("Error setting up vendor system:", error);
@@ -1899,8 +1899,16 @@ async function registerRoutes(app2) {
 var app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+var allowedOrigins = [
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
+  "https://utm-link-crafter-jg3g.vercel.app",
+  "http://localhost:5000"
+].filter(Boolean);
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || "";
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With, x-firebase-uid");
   if (req.method === "OPTIONS") {
