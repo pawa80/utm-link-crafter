@@ -49,7 +49,7 @@ https://utm-link-crafter-jg3g.vercel.app
 
 ## Vendor Admin
 - URL: `/vendor-admin-38291`
-- Credentials: admin@utmbuilder.vendor / VendorAdmin2025!
+- Credentials: admin@utmbuilder.vendor / [set via `VENDOR_ADMIN_PASSWORD` env var in Vercel, fallback `CHANGE_ME_ON_FIRST_LOGIN`]
 - Manages: accounts, pricing plans, base templates, analytics
 
 ## Feature Gating
@@ -63,9 +63,6 @@ https://utm-link-crafter-jg3g.vercel.app
 - Schema in `shared/schema.ts` (20+ tables)
 - On startup, `registerRoutes()` seeds UTM templates and pricing plans, creates default vendor admin
 - Push schema: `DATABASE_URL="..." npx drizzle-kit push`
-
-## Admin Endpoints
-- `POST /api/admin/upgrade-enterprise` — One-time endpoint to upgrade an account to enterprise tier. Body: `{"email": "...", "adminKey": "utm-admin-2026"}`. Also fixes tagManagement feature flag in all plans.
 
 ## Pal's Account
 - Email: pwaagbo@gmail.com (Google sign-in)
